@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https:; base-uri 'none'; form-action 'none'">
+  <title>Chat</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="sidebar">
+      <button id="new-chat" class="primary">+ New chat</button>
+      <ul id="chat-list" class="chat-list"></ul>
+      <div class="sidebar-footer">
+        <button id="export-btn">Export</button>
+        <button id="import-btn">Import</button>
+        <button id="settings-btn">Settings</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
+      </div>
+    </aside>
+    <main>
+      <header>
+        <button id="menu-btn" class="menu-btn" aria-label="Show chats">☰</button>
+        <select id="model-select" aria-label="Model"></select>
+        <span id="notice" class="notice" role="status"></span>
+      </header>
+      <div id="messages" class="messages"></div>
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="Message (Enter to send, Shift+Enter for a new line)"></textarea>
+        <button id="send-btn" class="primary">Send</button>
+      </div>
+    </main>
+  </div>
+
+  <dialog id="settings">
+    <h2>Settings</h2>
+    <label>LiteLLM base URL
+      <input id="set-base-url" type="url" placeholder="https://litellm.example.com" autocomplete="off" spellcheck="false">
+    </label>
+    <label>API key
+      <input id="set-api-key" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false">
+    </label>
+    <label>System prompt (optional)
+      <textarea id="set-system" rows="3"></textarea>
+    </label>
+    <p id="settings-status" class="settings-status" role="status"></p>
+    <div class="row">
+      <button id="save-settings" class="primary">Save</button>
+      <button id="test-conn">Test connection</button>
+      <button id="close-settings">Close</button>
+    </div>
+    <div class="row danger-zone">
+      <button id="forget-key">Forget key</button>
+      <button id="delete-all" class="danger">Delete all local data</button>
+    </div>
+    <p class="hint">Your key and chats are stored only in this browser. Requests go only to the base URL above.</p>
+  </dialog>
+
+  <div id="drop-overlay" class="drop-overlay" hidden>Drop a chat export (.json) to import</div>
+</body>
+</html>
