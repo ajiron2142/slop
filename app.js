@@ -189,6 +189,18 @@ async function removeChat(id) {
 
 const closeSidebar = () => $('app').classList.remove('sidebar-open');
 
+function applyStyle() {
+  const basic = state.settings.basicStyle;
+  $('theme').href = basic ? 'basic.css' : 'style.css';
+  $('style-btn').textContent = basic ? 'Fancy mode' : 'Basic mode';
+}
+
+function toggleStyle() {
+  state.settings.basicStyle = !state.settings.basicStyle;
+  applyStyle();
+  store.saveSettings(state.settings);
+}
+
 // ---- settings ----
 
 function openSettings(status = '') {
@@ -250,6 +262,7 @@ async function deleteAll() {
   }
   await store.clearAll();
   state.settings = await store.loadSettings();
+  applyStyle();
   state.chats = [];
   state.active = null;
   state.models = [];
@@ -335,6 +348,7 @@ modelSelect.addEventListener('change', () => {
 $('new-chat').addEventListener('click', newChat);
 $('menu-btn').addEventListener('click', () => $('app').classList.toggle('sidebar-open'));
 $('settings-btn').addEventListener('click', () => openSettings());
+$('style-btn').addEventListener('click', toggleStyle);
 $('close-settings').addEventListener('click', () => dialog.close());
 $('save-settings').addEventListener('click', saveSettingsForm);
 $('test-conn').addEventListener('click', testConnection);
@@ -376,6 +390,7 @@ document.addEventListener('drop', (e) => {
 async function init() {
   navigator.storage?.persist?.().catch(() => {});
   state.settings = await store.loadSettings();
+  applyStyle();
   await reloadChatList();
   renderModels(modelSelect, [], state.settings.model);
   render();
