@@ -26,20 +26,30 @@ Later, only if the UI code becomes painful to maintain: migrate to **Preact 10.x
 ## File layout
 ```
 index.html       the single page; CSP <meta>; loads app.js as a module
-style.css
+style.css        includes a prefers-color-scheme dark theme (CSS only)
 app.js           entry point; wires modules together; owns the state object + render()
 api.js           LiteLLM calls: listModels(), streamChat() (SSE parsing, abort support)
 storage.js       idb-keyval wrapper: settings, chats
 ui.js            DOM rendering for chat list, messages, settings panel
 markdown.js      renderMarkdown(text) => DOMPurify.sanitize(marked.parse(text))
 vendor/          marked, purify, idb-keyval + README.md (name, version, source URL)
+Dockerfile       FROM nginxinc/nginx-unprivileged; COPY . /usr/share/nginx/html
 ```
 Keep to roughly 4–6 source files. Do not split into tiny files for their own sake.
+Vendor the **ESM builds** so they can be `import`ed: `marked.esm.js`, `purify.es.mjs`, `idb-keyval` ESM bundle.
 
 ## Architecture
 - A single `state` object in `app.js` (settings, models, chats list, active chat id, streaming status).
-- A `render()` function redraws the UI from `state`. Event handlers update `state` and call `render()`. Keeping state and rendering separate makes a later Preact port a straightforward move.
+- A `render()` function redraws the chat list and message pane from `state`. Event handlers update `state` and call `render()`. Keeping state and rendering separate makes a later Preact port a straightforward move.
+- `render()` must **not** rebuild the composer textarea or the settings inputs; those are persistent DOM nodes, so a redraw never clears a half-typed message or steals focus.
 - During streaming, update only the in-progress message node. Throttle re-rendering of markdown with `requestAnimationFrame` to avoid sluggishness on long replies.
+- All click handling for dynamically created elements (copy button, chat list items, delete) uses **event delegation** on a parent node. The CSP forbids inline `onclick` attributes.
+
+## API details (api.js)
+- Request body: `{ model, messages, stream: true }` only. Do not send `temperature`, `max_tokens` or other parameters by default; some models behind LiteLLM reject them. If `settings.systemPrompt` is non-empty, prepend `{ role: "system", content }` to `messages`.
+- SSE parsing: read `response.body` with a `TextDecoder`, keep a string buffer, split on `\n`, and handle lines starting with `data: `. A chunk can end mid-line, so leftover text stays in the buffer for the next read. Stop on `data: [DONE]`. Append `choices[0].delta.content` when present; ignore other delta fields (`role`, `reasoning_content`, tool calls).
+- A non-2xx response has a JSON error body. Surface its `error.message` (or the status text) as an error bubble in the chat, so 401, 404 (unknown model) and 429 are visible. Keep the user's message in the chat so they can retry.
+- `streamChat()` accepts an `AbortSignal`. On abort, keep whatever text has streamed so far and save it.
 
 ## Storage schema (IndexedDB via idb-keyval)
 - `settings` → `{ baseUrl, apiKey, model, systemPrompt }`
@@ -47,36 +57,46 @@ Keep to roughly 4–6 source files. Do not split into tiny files for their own s
 - `chat:<id>` → `{ id, messages: [{ role, content, ts }] }`
 - Keep metadata separate from message bodies so the chat list (and a later search index) never has to load full conversations.
 - Generate ids with `crypto.randomUUID()`.
+- `title` is the first user message, trimmed to ~40 characters. Manual rename is not in the MVP.
+- Deleting a chat removes **both** `chatmeta:<id>` and `chat:<id>`.
+- Save the active chat after every completed or aborted assistant message, not on every token.
 - Call `navigator.storage.persist()` on startup.
 
 ## Security requirements (not optional)
 1. **Every** piece of rendered model output goes through `DOMPurify.sanitize()`. Model output is untrusted. An XSS bug could steal the locally stored API key.
-2. CSP via `<meta http-equiv="Content-Security-Policy">`, for example: `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src <configured LiteLLM origin>;`. Because `connect-src` depends on the user's configured base URL, decide between a permissive `https:` and a documented requirement to edit the meta tag.
-3. No inline scripts, no inline event handlers, no third-party scripts.
-4. The API key is stored in IndexedDB only, sent only as `Authorization: Bearer <key>` to the configured base URL, and has a "Forget key" button. Never log it.
+2. CSP via `<meta http-equiv="Content-Security-Policy">`, exactly:
+   `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https:; base-uri 'none'; form-action 'none'`
+   Decision: `connect-src https:` rather than a hard-coded host, because the base URL is user-configurable. This is acceptable because `connect-src` only matters once script runs, and `script-src 'self'` plus DOMPurify already prevent that. `img-src` deliberately blocks remote images, which closes the markdown image-URL exfiltration trick; remote images in model output simply do not render. If the LiteLLM host is plain `http://` (unlikely), the meta tag must be edited.
+3. No inline scripts, no inline event handlers, no inline styles, no third-party scripts.
+4. The API key is stored in IndexedDB only, sent only as `Authorization: Bearer <key>` to the configured base URL, and has a "Forget key" button. Never log it, never put it in a URL.
 5. Do not include the API key in exports.
 
 ## MVP features (build in this order)
-1. **Settings panel:** base URL, API key, system prompt, with save and forget-key buttons.
-2. **Model picker:** populated from `GET /v1/models`.
-3. **Streaming chat:** send the message history to `/v1/chat/completions` with `stream: true` and render tokens as they arrive.
+1. **Settings panel:** base URL, API key, system prompt, with save, forget-key and "delete all local data" buttons. Settings open automatically on first run when no base URL is set.
+2. **Model picker:** populated from `GET /v1/models` (show every `id` returned, sorted; remember the last selection).
+3. **Streaming chat:** send the message history to `/v1/chat/completions` with `stream: true` and render tokens as they arrive. Enter sends, Shift+Enter inserts a newline. Auto-scroll while streaming unless the user has scrolled up.
 4. **Stop button:** abort the stream via `AbortController`.
-5. **New chat** and **chat list** (select, delete, rename-by-first-message title).
-6. **Markdown rendering** with code blocks and a copy button, sanitized.
+5. **New chat** and **chat list** (select, delete; auto-title from first message).
+6. **Markdown rendering** with code blocks and a copy button, sanitized. User messages render as plain text, not markdown.
 7. **Export / import** as a single `.json` file (below).
-8. **Connection test** in settings that reports whether a failure is CORS, auth (401/403) or network. This matters a lot (see risks).
+8. **Connection test** in settings that calls `GET /v1/models` and reports whether a failure is CORS (`TypeError` from `fetch` with no status), auth (401/403), or another HTTP status. This matters a lot (see risks).
+
+Not in the MVP: manual rename, editing or regenerating messages, temperature and other parameters, image or file input, token counting.
+
+## Verification
+There is no test framework. Verify by serving the folder (`python -m http.server`), opening it in a browser and walking the Definition of done. Check the console for CSP violations; there must be none.
 
 ## Export / import format
 Single JSON file, `{ "version": 1, "exportedAt": ISO8601, "chats": [{ "meta": {...}, "messages": [...] }] }`. Exclude the API key. Import validates `version` and **merges** (skip existing ids by default). Export triggers a download via `Blob` plus a temporary `<a download>`. Import also accepts drag-and-drop of the file.
 
 ## Key risk to verify first: CORS
-Browsers block requests to LiteLLM unless it allows the app's origin, and we are **not** the LiteLLM admin. Before building features, run this from the browser dev console on a page served at the intended origin:
+Browsers block requests to LiteLLM unless it allows the app's origin, and we are **not** the LiteLLM admin. The `Authorization` header always triggers a CORS preflight, so this cannot be sidestepped. Build the settings panel and connection test first, deploy that skeleton, and test from the real origin. Until then, the same check from any page's dev console is a good proxy:
 `fetch("https://<litellm-host>/v1/models",{headers:{Authorization:"Bearer sk-..."}}).then(r=>r.json()).then(console.log)`
 - Works → proceed as a pure static app.
-- Fails with a CORS error → either ask the admin to allow the origin, or add a small nginx location that serves the static files and proxies `/v1/*` to LiteLLM (same origin, so no CORS, and the key is passed through, not stored).
+- Fails with a CORS error → either ask the admin to allow the origin, or add a small nginx location that serves the static files and proxies `/v1/*` to LiteLLM (same origin, so no CORS, and the key is passed through, not stored). Keep that proxy config in the repo but off by default.
 
 ## Deployment
-A minimal container: `nginxinc/nginx-unprivileged` serving the static files (OpenShift runs containers with arbitrary UIDs). Optional later: the `/v1/*` proxy described above.
+`Dockerfile`: `FROM nginxinc/nginx-unprivileged:stable-alpine`, copy the app into `/usr/share/nginx/html`, listen on 8080 (the image's default). OpenShift runs containers with arbitrary UIDs, which this image handles. No custom `nginx.conf` is needed for the MVP. Optional later: the `/v1/*` proxy described above.
 
 ## Explicitly out of scope for the MVP
 Service worker / offline PWA, local models (Ollama, LM Studio), keyword and semantic search, passphrase-encrypted key storage, sharing, party mode, P2P, Preact. Design so none of these are blocked, but do not build them now.
