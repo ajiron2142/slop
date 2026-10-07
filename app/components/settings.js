@@ -1,6 +1,6 @@
 import { $ } from '../dom.js';
 import { createPicker } from './picker.js';
-import { listThemes, applyTheme } from '../theme.js';
+import { listThemes, applyTheme, warmFonts } from '../theme.js';
 
 // The settings dialog: connection, system prompt, theme, and local data.
 export function createSettings({ getSettings, onSave, onTest, onForgetKey, onDeleteAll, onExport, onImport }) {
@@ -13,6 +13,7 @@ export function createSettings({ getSettings, onSave, onTest, onForgetKey, onDel
 
   const themes = createPicker($('theme-picker'), {
     label: 'Theme',
+    onOpen: warmFonts,
     onSelect: (id) => { applyTheme(id); onSave({ theme: id }, { quiet: true }); },
   });
 

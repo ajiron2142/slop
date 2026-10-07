@@ -119,5 +119,9 @@
   animation: chomp 0.3s ease-in-out infinite alternate;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .theme-chomp .chat-title::before, .theme-chomp .send { animation: none; }
+}
+
 /* Code colours: the four ghosts and a yellow power pellet. */
 .theme-chomp { --code-keyword: #ffe600; --code-string: #ffb8ff; --code-number: #ffb852; --code-title: #00ffff; --code-attr: #ff5c5c; --code-comment: #8c8cff; }

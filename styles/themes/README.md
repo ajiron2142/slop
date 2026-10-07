@@ -9,8 +9,10 @@ A theme is one self-contained CSS file in this folder. It sets the tokens from `
 3. Add one line to `index.html` next to the others:
 
    ```html
-   <link rel="stylesheet" href="styles/themes/mytheme.css" data-theme="mytheme" data-name="My theme">
+   <link rel="stylesheet" href="styles/themes/mytheme.css" media="not all" data-theme="mytheme" data-name="My theme">
    ```
+
+   `media="not all"` keeps it from slowing the first paint; the app switches it on when it's chosen.
 
 It shows up in Settings → Theme automatically.
 

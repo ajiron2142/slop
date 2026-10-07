@@ -21,20 +21,22 @@ docker build -t chat .
 docker run -p 8080:8080 chat
 ```
 
-The image is `nginx-unprivileged`, so it runs under OpenShift's arbitrary UIDs.
+The image is `nginx-unprivileged`, so it runs under OpenShift's arbitrary UIDs. `nginx.conf` turns on gzip, has the browser re-check app files on each load (so a new release is never mixed with old cached files), caches fonts for a month, and stops other sites from embedding the page.
 
 ## How it's organised
 
 ```
 index.html            the page; loads every stylesheet and app/main.js
+nginx.conf            web server settings for the Docker image
 app/                  behaviour
+  boot.js             applies the saved theme before the first paint (plain script, not a module)
   main.js             state and wiring: sending, streaming, chats, models
   api.js              LiteLLM calls (/v1/models, streaming /v1/chat/completions)
   storage.js          settings and chats in IndexedDB, search, export/import
   folder.js           read-only folder tools for the model (list_files, read_file)
   stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)
   markdown.js         markdown to sanitised HTML
-  highlight.js        syntax colours for code blocks (which languages are included)
+  highlight.js        syntax colours for code blocks; loads highlight.js on first use (lists the languages)
   theme.js            theme list, switching, font warm-up
   dom.js              two tiny DOM helpers
   components/         one file per piece of UI
@@ -65,6 +67,8 @@ vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
 **Connected folders.** In Chrome and Edge the paperclip also offers **Connect folder (read-only)**. The folder belongs to that one chat and is remembered with it. While a folder is connected, each request also sends two tools, `list_files` and `read_file`. When the model calls one, the browser reads from the folder (`folder.js`), sends the result back, and asks again, up to 10 rounds. The reply shows a line such as "Read src/app.js". With no folder connected, requests are exactly as before, so models without tool support are unaffected. Firefox and Safari don't have this browser feature; there the paperclip just attaches files.
 
 **Usage meter.** Each request asks LiteLLM to include token usage at the end of the stream (`stream_options.include_usage`), and each reply saves its own counts, timing and cost. On startup the app also reads `/model/info` for each model's context limit and prices. The meter above the message box shows how full the current model's context is and what the chat has cost; models without a price there (like locally hosted ones) count as free. If the proxy doesn't allow `/model/info`, the meter shows token counts without limits or costs. **Show detailed stats** in Settings adds a per-model table to the meter and a Stats card under each reply.
+
+**Kept fast on purpose.** Theme stylesheets download in the background and only the chosen one is switched on, so 27 themes don't slow the first paint. `boot.js` applies the saved theme before anything shows, so there's no flash of the default. Code colouring loads on first use, already-rendered messages are reused instead of rebuilt, a streaming reply only repaints what's needed, and chat search keeps a small in-memory index instead of reloading every chat.
 
 Each component only touches its own part of the page and reports back to `main.js` through callbacks like `onSend` or `onOpen`.
 

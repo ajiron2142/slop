@@ -11,6 +11,19 @@ const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rec
 export function createMessages(pane, { onRetry }) {
   let stick = true;
   const openStats = new Set(); // replies whose Stats card is open, by timestamp
+  // Rendered messages, reused while nothing about them has changed. Re-rendering markdown
+  // and code colours is the expensive part, so this keeps switching models, toggling
+  // settings and finishing a reply quick even in long chats.
+  const built = new WeakMap();
+  const nodeFor = (m, streaming, showStats) => {
+    if (streaming) return messageNode(m, true, false);
+    const key = `${m.content.length}|${m.tools?.length ?? 0}|${m.stats ? 1 : 0}|${showStats}`;
+    const hit = built.get(m);
+    if (hit?.key === key) return hit.node;
+    const node = messageNode(m, false, showStats && openStats);
+    built.set(m, { key, node });
+    return node;
+  };
 
   pane.addEventListener('scroll', () => {
     stick = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 40;
@@ -46,7 +59,7 @@ export function createMessages(pane, { onRetry }) {
       if (toBottom) stick = true;
       pane.replaceChildren(
         ...(messages.length
-          ? messages.map((m) => messageNode(m, m === streamingMsg, showStats && openStats))
+          ? messages.map((m) => nodeFor(m, m === streamingMsg, showStats))
           : [el('div', 'empty', 'Start a conversation.')]),
       );
       follow();

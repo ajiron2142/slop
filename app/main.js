@@ -6,7 +6,7 @@
 import { listModels, getModelInfo, streamChat, toApiContent } from './api.js';
 import * as store from './storage.js';
 import { $ } from './dom.js';
-import { applyTheme, warmFonts } from './theme.js';
+import { applyTheme, rememberForBoot } from './theme.js';
 import { folderSupported, pickFolder, allowRead, folderPrompt, FOLDER_TOOLS, runTool } from './folder.js';
 import { summarize, costOf, limitOf } from './stats.js';
 import { createSidebar } from './components/sidebar.js';
@@ -43,7 +43,11 @@ const sidebar = createSidebar({
   onOpen: openChat,
   onDelete: removeChat,
   onSearch: reloadChatList,
-  onCollapse: (collapsed) => { state.settings.sidebarCollapsed = collapsed; store.saveSettings(state.settings); },
+  onCollapse: (collapsed) => {
+    state.settings.sidebarCollapsed = collapsed;
+    store.saveSettings(state.settings);
+    rememberForBoot({ collapsed });
+  },
 });
 
 const messages = createMessages($('messages'), { onRetry: retry });
@@ -101,12 +105,17 @@ const settings = createSettings({
   },
   async onDeleteAll() {
     if (!confirm('Delete all chats, settings and your API key from this browser?')) return ['', ''];
-    state.streaming?.controller.abort();
+    if (state.streaming) {
+      state.streaming.chat.deleted = true;
+      state.streaming.controller.abort();
+    }
     await store.clearAll();
     state.settings = await store.loadSettings();
     state.active = null;
     state.draftFolder = null;
     applyTheme('');
+    sidebar.setCollapsed(false);
+    rememberForBoot({ collapsed: false });
     await reloadChatList();
     await refreshModels();
     render();
@@ -232,10 +241,12 @@ async function complete(chat) {
           firstAt ??= performance.now();
           text += delta;
           msg.content += delta;
-          if (!frame) frame = requestAnimationFrame(() => {
-            frame = 0;
-            if (state.active === chat) messages.update(msg);
-          });
+          if (frame) return;
+          // Repaint once per frame; very long replies repaint less often, since each repaint
+          // re-renders the whole reply's markdown (up to 150 ms apart at ~30,000 characters).
+          const paint = () => { frame = 0; if (state.active === chat) messages.update(msg); };
+          const wait = Math.min(150, msg.content.length / 200);
+          frame = wait < 16 ? requestAnimationFrame(paint) : setTimeout(paint, wait);
         },
       });
       finish = why ?? 'stop';
@@ -267,6 +278,7 @@ async function complete(chat) {
     }
   }
   cancelAnimationFrame(frame);
+  clearTimeout(frame);
 
   msg.content = msg.content.trimEnd();
   if (!msg.content && !msg.tools) chat.messages.splice(chat.messages.indexOf(msg), 1);
@@ -364,10 +376,10 @@ async function init() {
   state.settings = await store.loadSettings();
   applyTheme(state.settings.theme);
   sidebar.setCollapsed(state.settings.sidebarCollapsed);
+  rememberForBoot({ collapsed: state.settings.sidebarCollapsed });
   await reloadChatList();
   modelPicker.set([], state.settings.model);
   render();
-  warmFonts();
   if (!state.settings.baseUrl) settings.open('Welcome! Enter your LiteLLM base URL and API key.');
   else refreshModels();
 }

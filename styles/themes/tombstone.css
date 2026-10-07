@@ -75,16 +75,12 @@
   border: 1px solid rgba(220, 235, 240, 0.2);
   text-shadow: 0 0 10px rgba(220, 240, 245, 0.35);
   box-shadow: 0 0 26px rgba(200, 230, 235, 0.12), inset 0 0 18px rgba(200, 230, 235, 0.07);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
-  animation: tombstone-float 6s ease-in-out infinite alternate-reverse;
 }
 .theme-tombstone .assistant { max-width: 100%; }
 .theme-tombstone .assistant .who::before { content: "Whispered by "; }
 .theme-tombstone .assistant .body {
   padding: 0;
   text-shadow: 0 0 14px rgba(200, 230, 235, 0.28);
-  animation: tombstone-float 7s ease-in-out infinite alternate;
 }
 .theme-tombstone .body li::marker { color: var(--muted); }
 .theme-tombstone .body code { color: var(--accent); }
@@ -96,3 +92,10 @@
 
 /* Code colours: ghost green, old parchment and moonlight. */
 .theme-tombstone { --code-keyword: #9fd6b0; --code-string: #d9c58a; --code-number: #e0a0a0; --code-title: #9fc3e6; --code-attr: #c7b3e6; --code-comment: #8a989d; }
+
+/* The ghostly float, on the latest few messages only (animating every message costs frames in long chats). */
+.theme-tombstone .msg.user:nth-last-child(-n+4) .body { animation: tombstone-float 6s ease-in-out infinite alternate-reverse; }
+.theme-tombstone .msg.assistant:nth-last-child(-n+4) .body { animation: tombstone-float 7s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) {
+  .theme-tombstone::after, .theme-tombstone .body { animation: none !important; }
+}

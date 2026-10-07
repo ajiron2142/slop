@@ -3,6 +3,7 @@ import { el } from '../dom.js';
 // The chat list: open, delete, search, collapse to a rail, and the slide-over menu on narrow screens.
 export function createSidebar({ app, list, search, menuButton, collapseButton, scrim, onOpen, onDelete, onSearch, onCollapse }) {
   let timer = 0;
+  let shown = null; // the list and active chat last rendered, to skip identical re-renders
 
   list.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
@@ -35,6 +36,8 @@ export function createSidebar({ app, list, search, menuButton, collapseButton, s
     setCollapsed,
     query: () => search.value.trim(),
     render(chats, activeId) {
+      if (shown?.chats === chats && shown.activeId === activeId) return;
+      shown = { chats, activeId };
       if (!chats.length) {
         list.replaceChildren(el('li', 'chat-empty', search.value.trim() ? 'No matches' : 'No chats yet'));
         return;

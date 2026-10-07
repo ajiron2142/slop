@@ -21,7 +21,13 @@ export async function loadMessages(id) {
   return (await get(`chat:${id}`))?.messages ?? [];
 }
 
+// Lower-cased title and message text per chat, built on the first search and kept up to date,
+// so typing in the search box doesn't reload every chat (attachments included) each time.
+let searchIndex = null;
+const searchText = (meta, messages) => [meta.title, ...messages.map((m) => m.content)].join('\n').toLowerCase();
+
 export function saveChat(meta, messages) {
+  searchIndex?.set(meta.id, searchText(meta, messages));
   return setMany([
     [`chatmeta:${meta.id}`, meta],
     [`chat:${meta.id}`, { id: meta.id, messages }],
@@ -32,19 +38,26 @@ export function saveChat(meta, messages) {
 export async function searchChats(query) {
   const q = query.toLowerCase();
   const metas = await listChatMeta();
-  const bodies = await getMany(metas.map((m) => `chat:${m.id}`));
-  return metas.filter((m, i) =>
-    m.title.toLowerCase().includes(q) ||
-    (bodies[i]?.messages ?? []).some((msg) => msg.content.toLowerCase().includes(q)));
+  if (!searchIndex) {
+    const bodies = await getMany(metas.map((m) => `chat:${m.id}`));
+    searchIndex = new Map(metas.map((m, i) => [m.id, searchText(m, bodies[i]?.messages ?? [])]));
+  }
+  return metas.filter((m) => (searchIndex.get(m.id) ?? m.title.toLowerCase()).includes(q));
 }
 
-export const deleteChat = (id) => delMany([`chatmeta:${id}`, `chat:${id}`, `folder:${id}`]);
+export function deleteChat(id) {
+  searchIndex?.delete(id);
+  return delMany([`chatmeta:${id}`, `chat:${id}`, `folder:${id}`]);
+}
 
 // A chat's connected folder is a browser file handle, which IndexedDB can store as is.
 export const loadFolder = (id) => get(`folder:${id}`);
 export const saveFolder = (id, handle) => (handle ? set(`folder:${id}`, handle) : del(`folder:${id}`));
 
-export const clearAll = () => clear();
+export function clearAll() {
+  searchIndex = null;
+  return clear();
+}
 
 export async function exportAll() {
   const metas = await listChatMeta();

@@ -94,3 +94,9 @@
 }
 .theme-pocket .send::before { content: "A"; font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #f2d8e3; }
 .theme-pocket .send:active { transform: translateY(2px); box-shadow: 0 1px 0 #5e1435; }
+
+/* Only the latest reply's arrow blinks. */
+.theme-pocket .msg.assistant:not(:last-child) .body::after { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .theme-pocket .assistant .body::after { animation: none; }
+}

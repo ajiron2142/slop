@@ -4,7 +4,7 @@ import { el } from '../dom.js';
 // Used for the model picker and the theme picker.
 let count = 0;
 
-export function createPicker(root, { label, empty = 'Nothing to pick', onSelect }) {
+export function createPicker(root, { label, empty = 'Nothing to pick', onSelect, onOpen }) {
   const id = `picker-${++count}`;
   const button = el('button', 'model');
   button.type = 'button';
@@ -89,6 +89,7 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect 
   }
 
   function open() {
+    onOpen?.();
     place();
     pop.hidden = false;
     button.setAttribute('aria-expanded', 'true');

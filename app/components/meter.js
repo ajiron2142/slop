@@ -23,13 +23,15 @@ export function createMeter({ row, button, pop }) {
       ring.style.setProperty('--p', `${sum.percent ?? 0}%`);
       ring.hidden = sum.percent == null;
       label.textContent = [
-        sum.percent != null ? `${sum.percent}%` : `${fmt.short(sum.context)} tokens`,
+        sum.percent != null ? pct(sum) : `${fmt.short(sum.context)} tokens`,
         sum.cost != null && fmt.usdShort(sum.cost),
       ].filter(Boolean).join(' · ');
       pop.replaceChildren(...context(sum), ...cost(sum), ...(detailed ? details(sum) : []));
     },
   };
 }
+
+const pct = (sum) => (sum.percent === 0 && sum.context > 0 ? '<1%' : `${sum.percent}%`);
 
 const section = (title, right) => {
   const head = el('div', 'meter-sec');
@@ -48,7 +50,7 @@ function context(sum) {
   if (sum.limit == null) return [section('Context'), el('div', 'meter-cap', `${fmt.int(sum.context)} tokens`)];
   const bar = el('div', 'meter-bar');
   bar.style.setProperty('--p', `${sum.percent}%`);
-  return [section('Context', `${sum.percent}%`), bar, el('div', 'meter-cap', `${fmt.int(sum.context)} of ${fmt.int(sum.limit)} tokens`)];
+  return [section('Context', pct(sum)), bar, el('div', 'meter-cap', `${fmt.int(sum.context)} of ${fmt.int(sum.limit)} tokens`)];
 }
 
 function cost(sum) {
