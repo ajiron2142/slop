@@ -1,6 +1,6 @@
 # Chat theme system
 
-A small base stylesheet plus one file per theme. Give this file and the `themes/` folder to an AI along with your app's code, and ask it to adapt the app to this system.
+A small base stylesheet plus one self-contained file per theme. Fonts are shared and self-hosted; if a font is missing, a theme falls back to the next font it lists. Give this file and the `themes/` folder to an AI along with your app's code, and ask it to adapt the app to this system.
 
 **Download everything:** https://github.com/ajiron2142/slop/archive/refs/heads/ccr-60b590e9-4higd9.zip (unzip and use the `themes/` folder)
 
@@ -9,8 +9,7 @@ A small base stylesheet plus one file per theme. Give this file and the `themes/
 ```
 themes/
   base.css        layout + default tokens (always loaded)
-  <name>.css      one file per theme, everything scoped to .theme-<name>
-  assets/         the few SVG drawings themes use (pumpkin, cherry, mountains…)
+  <name>.css      one file per theme, fully self-contained (drawings are inlined)
   fonts.css       @font-face rules for every theme font
   fonts/          self-hosted font files (no Google or other outside requests)
   preview.html    open in a browser to flip through every theme offline
@@ -96,7 +95,7 @@ Notes:
 ## Adding or removing a theme
 
 - **Add:** copy any theme file, rename it and its `.theme-<name>` class, change the tokens, add its `<link>` line.
-- **Remove:** delete the file, its `<link>` line, and any `assets/<name>-*.svg`.
+- **Remove:** delete the file and its `<link>` line.
 
 ## Tokens
 

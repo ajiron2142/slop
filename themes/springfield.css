@@ -12,8 +12,8 @@
   --on-accent: #26221d;
   --marge: #2f6fbf;
   --couch: #8b5a2b;
-  --cloud: url("assets/springfield-cloud.svg");
-  --sprinkles: url("assets/springfield-sprinkles.svg");
+  --cloud: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 80'%3E%3Cg fill='white'%3E%3Ccircle cx='50' cy='50' r='24'/%3E%3Ccircle cx='85' cy='36' r='30'/%3E%3Ccircle cx='124' cy='45' r='26'/%3E%3Ccircle cx='153' cy='55' r='19'/%3E%3Crect x='40' y='50' width='126' height='24' rx='12'/%3E%3C/g%3E%3C/svg%3E");
+  --sprinkles: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cg stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M14 14l3 2' stroke='white'/%3E%3Cpath d='M30 10l-3 2' stroke='%23ffd90f'/%3E%3Cpath d='M36 22l1 3' stroke='%2370c2ec'/%3E%3Cpath d='M33 35l-3 1' stroke='white'/%3E%3Cpath d='M18 36l2-2' stroke='%23ffd90f'/%3E%3Cpath d='M10 26l1-3' stroke='%2370c2ec'/%3E%3Cpath d='M24 9l2 1' stroke='%23e8443a'/%3E%3Cpath d='M38 30l-2 2' stroke='%23e8443a'/%3E%3C/g%3E%3C/svg%3E");
   --user-bg: #ffd90f;
   --bot-bg: #ffffff;
   --code-bg: #f3f7fa;
