@@ -4,6 +4,8 @@ const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_TEXT = 512 * 1024;
 const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|jsonl|yaml|yml|toml|ini|xml|html|css|js|mjs|ts|jsx|tsx|py|rb|go|rs|java|kt|c|h|cpp|hpp|cs|php|sh|ps1|sql|log|env|conf)$/i;
 
+const FOLDER_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+
 const readAs = (file, how) => new Promise((resolve, reject) => {
   const r = new FileReader();
   r.onload = () => resolve(r.result);
@@ -13,8 +15,10 @@ const readAs = (file, how) => new Promise((resolve, reject) => {
 
 // The message box: Enter to send, Shift+Enter for a new line, Send/Stop button,
 // and attachments from the button, paste or drag-and-drop (all the same path).
-export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, onSend, onStop, notify }) {
+// Where folders are supported, the attach button opens a menu: Attach files or Connect folder.
+export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onSend, onStop, notify }) {
   let files = [];
+  let folderName = null;
   let busy = false;
 
   function autosize() {
@@ -22,9 +26,25 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     input.style.height = `${Math.min(input.scrollHeight + 2, 140)}px`;
   }
 
+  function removeButton(label, onClick) {
+    const remove = el('button', 'tray-remove', '×');
+    remove.type = 'button';
+    remove.setAttribute('aria-label', label);
+    remove.addEventListener('click', onClick);
+    return remove;
+  }
+
+  function folderChip() {
+    const chip = el('span', 'tray-chip folder');
+    chip.title = 'Connected folder (read-only)';
+    chip.innerHTML = FOLDER_ICON;
+    chip.append(el('span', 'tray-name', folderName), removeButton(`Disconnect folder ${folderName}`, onDisconnectFolder));
+    return chip;
+  }
+
   function renderTray() {
-    tray.hidden = !files.length;
-    tray.replaceChildren(...files.map((f, i) => {
+    tray.hidden = !files.length && !folderName;
+    tray.replaceChildren(...(folderName ? [folderChip()] : []), ...files.map((f, i) => {
       const chip = el('span', 'tray-chip');
       if (f.kind === 'image') {
         const img = el('img');
@@ -32,12 +52,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
         img.alt = '';
         chip.append(img);
       }
-      chip.append(el('span', 'tray-name', f.name));
-      const remove = el('button', 'tray-remove', '×');
-      remove.type = 'button';
-      remove.setAttribute('aria-label', `Remove ${f.name}`);
-      remove.addEventListener('click', () => { files.splice(i, 1); renderTray(); input.focus(); });
-      chip.append(remove);
+      chip.append(el('span', 'tray-name', f.name), removeButton(`Remove ${f.name}`, () => { files.splice(i, 1); renderTray(); input.focus(); }));
       return chip;
     }));
   }
@@ -83,8 +98,44 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     if (!e.clipboardData.types.includes('text/plain')) e.preventDefault();
     add(pasted);
   });
-  attach.addEventListener('click', () => fileInput.click());
+  attach.addEventListener('click', () => {
+    if (!onConnectFolder) return fileInput.click();
+    if (menu.hidden) openMenu();
+    else closeMenu();
+  });
   fileInput.addEventListener('change', () => { add([...fileInput.files]); fileInput.value = ''; });
+
+  function openMenu() {
+    const r = attach.getBoundingClientRect();
+    menu.style.left = `${r.left}px`;
+    menu.style.bottom = `${window.innerHeight - r.top + 6}px`;
+    menu.hidden = false;
+    attach.setAttribute('aria-expanded', 'true');
+    menu.querySelector('button').focus();
+  }
+  function closeMenu() {
+    menu.hidden = true;
+    attach.setAttribute('aria-expanded', 'false');
+  }
+  if (onConnectFolder) {
+    attach.setAttribute('aria-haspopup', 'menu');
+    attach.setAttribute('aria-expanded', 'false');
+    attach.setAttribute('aria-label', 'Attach files or connect a folder');
+    menu.addEventListener('click', (e) => {
+      const item = e.target.closest('button[data-action]');
+      if (!item) return;
+      closeMenu();
+      if (item.dataset.action === 'files') fileInput.click();
+      else onConnectFolder();
+    });
+    menu.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closeMenu(); attach.focus(); }
+    });
+    document.addEventListener('pointerdown', (e) => {
+      if (!menu.hidden && !menu.contains(e.target) && !attach.contains(e.target)) closeMenu();
+    });
+    window.addEventListener('resize', closeMenu);
+  }
 
   const hasFiles = (e) => e.dataTransfer?.types?.includes('Files');
   let depth = 0;
@@ -107,5 +158,9 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       send.setAttribute('aria-label', busy ? 'Stop' : 'Send');
     },
     focus: () => input.focus(),
+    setFolder(name) {
+      folderName = name || null;
+      renderTray();
+    },
   };
 }

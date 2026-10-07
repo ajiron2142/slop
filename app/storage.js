@@ -1,4 +1,4 @@
-import { get, set, setMany, delMany, keys, getMany, clear } from '../vendor/idb-keyval.js';
+import { get, set, del, setMany, delMany, keys, getMany, clear } from '../vendor/idb-keyval.js';
 
 const DEFAULT_SETTINGS = { baseUrl: '', apiKey: '', model: '', systemPrompt: '', theme: '', recentModels: [], sidebarCollapsed: false };
 
@@ -38,7 +38,11 @@ export async function searchChats(query) {
     (bodies[i]?.messages ?? []).some((msg) => msg.content.toLowerCase().includes(q)));
 }
 
-export const deleteChat = (id) => delMany([`chatmeta:${id}`, `chat:${id}`]);
+export const deleteChat = (id) => delMany([`chatmeta:${id}`, `chat:${id}`, `folder:${id}`]);
+
+// A chat's connected folder is a browser file handle, which IndexedDB can store as is.
+export const loadFolder = (id) => get(`folder:${id}`);
+export const saveFolder = (id, handle) => (handle ? set(`folder:${id}`, handle) : del(`folder:${id}`));
 
 export const clearAll = () => clear();
 

@@ -7,6 +7,7 @@ import { listModels, streamChat, toApiContent } from './api.js';
 import * as store from './storage.js';
 import { $ } from './dom.js';
 import { applyTheme, warmFonts } from './theme.js';
+import { folderSupported, pickFolder, allowRead, folderPrompt, FOLDER_TOOLS, runTool } from './folder.js';
 import { createSidebar } from './components/sidebar.js';
 import { createMessages } from './components/messages.js';
 import { createComposer } from './components/composer.js';
@@ -17,13 +18,15 @@ const state = {
   settings: null,
   models: [],
   chats: [], // chat metadata, newest first (filtered by search)
-  active: null, // { meta, messages }, or null for a new unsaved chat
+  active: null, // { meta, messages, folder }, or null for a new unsaved chat
+  draftFolder: null, // folder connected before a new chat's first message
   streaming: null, // { chat, msg, controller }
 };
 
 const notice = $('notice');
 const notify = (text = '') => { notice.textContent = text; notice.hidden = !text; };
 const withoutErrors = (messages) => messages.filter((m) => m.role !== 'error');
+const MAX_TOOL_ROUNDS = 10;
 
 // ---- components ----
 
@@ -51,6 +54,9 @@ const composer = createComposer({
   tray: $('tray'),
   dropZone: $('chat'),
   overlay: $('drop'),
+  menu: $('attach-menu'),
+  onConnectFolder: folderSupported ? connectFolder : null,
+  onDisconnectFolder: () => setFolder(null),
   onSend: send,
   onStop: () => state.streaming?.controller.abort(),
   notify,
@@ -93,6 +99,7 @@ const settings = createSettings({
     await store.clearAll();
     state.settings = await store.loadSettings();
     state.active = null;
+    state.draftFolder = null;
     applyTheme('');
     await reloadChatList();
     await refreshModels();
@@ -124,6 +131,7 @@ function render(options) {
   const streamingMsg = state.streaming?.chat === state.active ? state.streaming.msg : null;
   messages.render(state.active?.messages ?? [], streamingMsg, options);
   composer.setBusy(Boolean(state.streaming));
+  composer.setFolder((state.active ? state.active.folder : state.draftFolder)?.name);
 }
 
 async function reloadChatList() {
@@ -166,7 +174,9 @@ function send({ text, files }) {
   if (!state.active) {
     const now = Date.now();
     const title = (text || files[0].name).replace(/\s+/g, ' ').slice(0, 40);
-    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now }, messages: [] };
+    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now }, messages: [], folder: state.draftFolder };
+    if (state.draftFolder) store.saveFolder(state.active.meta.id, state.draftFolder);
+    state.draftFolder = null;
   }
   notify('');
   const chat = state.active;
@@ -179,8 +189,11 @@ function send({ text, files }) {
 
 async function complete(chat) {
   const s = state.settings;
+  const folder = chat.folder;
+  const tools = folder ? FOLDER_TOOLS : undefined;
   const history = withoutErrors(chat.messages).map((m) => ({ role: m.role, content: toApiContent(m) }));
-  if (s.systemPrompt.trim()) history.unshift({ role: 'system', content: s.systemPrompt });
+  const system = [s.systemPrompt.trim(), folder && folderPrompt(folder)].filter(Boolean).join('\n\n');
+  if (system) history.unshift({ role: 'system', content: system });
 
   const msg = { role: 'assistant', content: '', ts: Date.now() };
   chat.messages.push(msg);
@@ -190,24 +203,47 @@ async function complete(chat) {
 
   let frame = 0;
   try {
-    await streamChat({
-      settings: s,
-      messages: history,
-      signal: controller.signal,
-      onDelta: (text) => {
-        msg.content += text;
-        if (!frame) frame = requestAnimationFrame(() => {
-          frame = 0;
-          if (state.active === chat) messages.update(msg);
-        });
-      },
-    });
+    if (folder && !(await allowRead(folder))) {
+      throw new Error(`Access to the folder "${folder.name}" wasn't allowed. Retry and allow it, or disconnect the folder.`);
+    }
+    // With a folder connected the model may ask to read files first: run those and ask again.
+    for (let round = 1; ; round++) {
+      let text = '';
+      const { toolCalls } = await streamChat({
+        settings: s,
+        messages: history,
+        tools,
+        signal: controller.signal,
+        onDelta: (delta) => {
+          text += delta;
+          msg.content += delta;
+          if (!frame) frame = requestAnimationFrame(() => {
+            frame = 0;
+            if (state.active === chat) messages.update(msg);
+          });
+        },
+      });
+      if (!toolCalls.length) break;
+      if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of reading files.`);
+      history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
+      for (const call of toolCalls) {
+        const { label, result } = await runTool(folder, call.function.name, call.function.arguments);
+        (msg.tools ??= []).push(label);
+        history.push({ role: 'tool', tool_call_id: call.id, content: result });
+      }
+      if (msg.content) msg.content += '\n\n';
+      if (state.active === chat) render();
+    }
   } catch (e) {
-    if (e.name !== 'AbortError') chat.messages.push({ role: 'error', content: e.message });
+    if (e.name !== 'AbortError') {
+      const hint = tools && e.kind === 'http' ? '\n\nIf this model doesn\'t support tools, disconnect the folder or pick another model.' : '';
+      chat.messages.push({ role: 'error', content: e.message + hint });
+    }
   }
   cancelAnimationFrame(frame);
 
-  if (!msg.content) chat.messages.splice(chat.messages.indexOf(msg), 1);
+  msg.content = msg.content.trimEnd();
+  if (!msg.content && !msg.tools) chat.messages.splice(chat.messages.indexOf(msg), 1);
   state.streaming = null;
   if (!chat.deleted) {
     chat.meta.updated = Date.now();
@@ -230,6 +266,7 @@ function retry() {
 
 function newChat() {
   state.active = null;
+  state.draftFolder = null;
   sidebar.close();
   render();
   composer.focus();
@@ -241,7 +278,7 @@ async function openChat(id) {
   } else {
     const meta = state.chats.find((c) => c.id === id);
     if (!meta) return;
-    state.active = { meta, messages: await store.loadMessages(id) };
+    state.active = { meta, messages: await store.loadMessages(id), folder: folderSupported ? await store.loadFolder(id) : null };
   }
   render({ toBottom: true });
   composer.focus();
@@ -258,6 +295,27 @@ async function removeChat(id) {
   if (state.active?.meta.id === id) state.active = null;
   await reloadChatList();
   render();
+}
+
+// ---- connected folder (per chat, read-only) ----
+
+async function connectFolder() {
+  try {
+    await setFolder(await pickFolder());
+  } catch (e) {
+    if (e.name !== 'AbortError') notify(`Couldn't open the folder: ${e.message}`);
+  }
+}
+
+async function setFolder(handle) {
+  if (state.active) {
+    state.active.folder = handle;
+    await store.saveFolder(state.active.meta.id, handle);
+  } else {
+    state.draftFolder = handle;
+  }
+  composer.setFolder(handle?.name);
+  composer.focus();
 }
 
 // ---- start ----

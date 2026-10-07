@@ -61,6 +61,7 @@
 .user .files { justify-content: flex-end; }
 .file-thumb { width: 140px; max-height: 140px; object-fit: cover; border: 1px solid var(--line); border-radius: 8px; }
 .file-chip { padding: 4px 10px; font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; }
+.tool-log { margin-bottom: 6px; font-size: 12px; color: var(--muted); }
 
 .msg.error .body { padding: 10px 14px; color: #b42318; background: rgba(180, 35, 24, 0.08); border-radius: min(var(--radius), 10px); }
 .msg .retry { margin-top: 8px; }

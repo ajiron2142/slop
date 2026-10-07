@@ -54,19 +54,22 @@ export async function listModels(settings) {
   return [...new Set((body.data ?? []).map((m) => m.id).filter(Boolean))].sort();
 }
 
-export async function streamChat({ settings, messages, signal, onDelta }) {
+// Streams a reply, calling onDelta with each piece of text.
+// Resolves with any tool calls the model made (only possible when tools are sent).
+export async function streamChat({ settings, messages, tools, signal, onDelta }) {
   const res = await request(settings, '/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: settings.model, messages, stream: true }),
+    body: JSON.stringify({ model: settings.model, messages, stream: true, ...(tools && { tools }) }),
     signal,
   });
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
+  const calls = [];
   let buffer = '';
-  for (;;) {
+  read: for (;;) {
     const { done, value } = await reader.read();
-    if (done) return;
+    if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
     buffer = lines.pop();
@@ -74,12 +77,20 @@ export async function streamChat({ settings, messages, signal, onDelta }) {
       const line = raw.trim();
       if (!line.startsWith('data:')) continue;
       const data = line.slice(5).trim();
-      if (data === '[DONE]') return;
+      if (data === '[DONE]') break read;
       let chunk;
       try { chunk = JSON.parse(data); } catch { continue; }
       if (chunk.error) throw new ApiError(chunk.error.message || 'Stream error', 'http');
-      const text = chunk.choices?.[0]?.delta?.content;
-      if (text) onDelta(text);
+      const delta = chunk.choices?.[0]?.delta;
+      if (delta?.content) onDelta(delta.content);
+      // Tool calls arrive in pieces; join them up by index.
+      for (const part of delta?.tool_calls ?? []) {
+        const call = (calls[part.index ?? 0] ??= { id: '', type: 'function', function: { name: '', arguments: '' } });
+        if (part.id) call.id = part.id;
+        if (part.function?.name) call.function.name += part.function.name;
+        if (part.function?.arguments) call.function.arguments += part.function.arguments;
+      }
     }
   }
+  return { toolCalls: calls.filter(Boolean).map((c, i) => ({ ...c, id: c.id || `call_${i}` })) };
 }

@@ -54,6 +54,7 @@ function messageNode(msg, streaming) {
   const node = el('article', `msg ${msg.role}${streaming ? ' streaming' : ''}`);
   node.append(el('span', 'who', LABEL[msg.role]));
   if (msg.files?.length) node.append(filesNode(msg.files));
+  if (msg.tools?.length) node.append(el('div', 'tool-log', msg.tools.join(' · ')));
   const body = el('div', 'body');
   fillBody(body, msg);
   node.append(body);

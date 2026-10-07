@@ -1,4 +1,4 @@
-/* Composer extras: attach button, attachment tray, drop overlay, Stop state. */
+/* Composer extras: attach button and menu, attachment tray, drop overlay, Stop state. */
 .composer .attach { width: 44px; height: 44px; }
 .tray { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px var(--edge) 0; }
 .tray-chip {
@@ -17,6 +17,23 @@
 .tray-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tray-remove { width: 22px; height: 22px; padding: 0; font-size: 15px; line-height: 1; color: var(--muted); background: none; border: 0; border-radius: 50%; cursor: pointer; }
 .tray-remove:hover { color: var(--ink); background: var(--line); }
+.tray-chip.folder .icon { width: 16px; height: 16px; color: var(--muted); }
+
+/* Attach / Connect folder menu (Chrome and Edge). Fixed so it sits above the button. */
+.attach-menu {
+  position: fixed;
+  z-index: 30;
+  display: grid;
+  min-width: 200px;
+  padding: 4px;
+  font-family: var(--font-body);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: min(var(--radius), 12px);
+  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.4);
+}
+.attach-menu button { padding: 8px 10px; font: inherit; font-size: 14px; color: var(--ink); text-align: left; background: none; border: 0; border-radius: 6px; cursor: pointer; }
+.attach-menu button:hover, .attach-menu button:focus-visible { background: var(--surface); outline: none; }
 
 .drop {
   position: absolute;

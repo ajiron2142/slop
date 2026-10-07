@@ -31,13 +31,14 @@ app/                  behaviour
   main.js             state and wiring: sending, streaming, chats, models
   api.js              LiteLLM calls (/v1/models, streaming /v1/chat/completions)
   storage.js          settings and chats in IndexedDB, search, export/import
+  folder.js           read-only folder tools for the model (list_files, read_file)
   markdown.js         markdown to sanitised HTML
   theme.js            theme list, switching, font warm-up
   dom.js              two tiny DOM helpers
   components/         one file per piece of UI
     sidebar.js        chat list, search, mobile menu
     messages.js       message rendering, code copy, retry
-    composer.js       text box, send/stop, attachments (button, paste, drop)
+    composer.js       text box, send/stop, attachments (button, paste, drop), folder chip
     picker.js         searchable dropdown (used for models and themes)
     settings.js       settings dialog
 styles/
@@ -58,6 +59,8 @@ vendor/               marked, DOMPurify, idb-keyval (never edited)
 4. As the reply streams in, **messages** renders it (markdown via `markdown.js`, always sanitised), and the chat is saved again when it finishes.
 5. The **sidebar** lists saved chats; **settings** edits the connection, system prompt and theme.
 
+**Connected folders.** In Chrome and Edge the paperclip also offers **Connect folder (read-only)**. The folder belongs to that one chat and is remembered with it. While a folder is connected, each request also sends two tools, `list_files` and `read_file`. When the model calls one, the browser reads from the folder (`folder.js`), sends the result back, and asks again, up to 10 rounds. The reply shows a line such as "Read src/app.js". With no folder connected, requests are exactly as before, so models without tool support are unaffected. Firefox and Safari don't have this browser feature; there the paperclip just attaches files.
+
 Each component only touches its own part of the page and reports back to `main.js` through callbacks like `onSend` or `onOpen`.
 
 ## Customising
@@ -73,11 +76,13 @@ Each component only touches its own part of the page and reports back to `main.j
 - Everything else (titles, your messages, file names) is inserted as plain text, never as HTML.
 - Your API key and chats live only in this browser's IndexedDB and are sent nowhere except your LiteLLM URL. Settings has **Forget key** and **Delete all local data**.
 - Attachments are read in the browser: images up to 10 MB, text files up to 512 KB. Imported chat files are validated before saving.
+- A connected folder is read-only: the browser grants read access only, and nothing in the app can write. The model can only reach files inside the folder you picked, and the browser asks for permission again after a reload. Files the model reads are sent to your LiteLLM URL like any message. `.git`, `node_modules` and similar folders are skipped, and files over 512 KB aren't read. Disconnect with the × on the folder chip.
 
 ## Features
 
 - Model picker with search and recent models
 - Attach images (sent to vision models) and text files (inlined) with the button, paste or drag-and-drop
+- Connect a folder to a chat, read-only, so the model can look through it (Chrome and Edge, models with tool support)
 - Markdown replies with copyable code blocks, tables and nested lists
 - Chat history with search, export/import, and Stop / Retry
 - Themes, switchable in Settings
