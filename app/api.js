@@ -54,18 +54,40 @@ export async function listModels(settings) {
   return [...new Set((body.data ?? []).map((m) => m.id).filter(Boolean))].sort();
 }
 
-// Streams a reply, calling onDelta with each piece of text.
-// Resolves with any tool calls the model made (only possible when tools are sent).
+// Context limits and prices per model from LiteLLM's /model/info. Optional: if the proxy
+// doesn't allow it, the meter just shows tokens without limits or costs.
+export async function getModelInfo(settings) {
+  try {
+    const body = await (await request(settings, '/model/info')).json();
+    const info = {};
+    for (const m of body.data ?? []) if (m.model_name && !info[m.model_name]) info[m.model_name] = m.model_info ?? {};
+    return info;
+  } catch {
+    return {};
+  }
+}
+
+// Streams a reply, calling onDelta with each piece of text. Resolves with any tool calls
+// the model made (only possible when tools are sent), the token usage the server reports
+// at the end, and why the reply finished ("stop", "length", "tool_calls").
 export async function streamChat({ settings, messages, tools, signal, onDelta }) {
   const res = await request(settings, '/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: settings.model, messages, stream: true, ...(tools && { tools }) }),
+    body: JSON.stringify({
+      model: settings.model,
+      messages,
+      stream: true,
+      stream_options: { include_usage: true },
+      ...(tools && { tools }),
+    }),
     signal,
   });
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   const calls = [];
+  let usage = null;
+  let finish = null;
   let buffer = '';
   read: for (;;) {
     const { done, value } = await reader.read();
@@ -81,6 +103,8 @@ export async function streamChat({ settings, messages, tools, signal, onDelta })
       let chunk;
       try { chunk = JSON.parse(data); } catch { continue; }
       if (chunk.error) throw new ApiError(chunk.error.message || 'Stream error', 'http');
+      if (chunk.usage) usage = readUsage(chunk.usage);
+      finish = chunk.choices?.[0]?.finish_reason ?? finish;
       const delta = chunk.choices?.[0]?.delta;
       if (delta?.content) onDelta(delta.content);
       // Tool calls arrive in pieces; join them up by index.
@@ -92,5 +116,12 @@ export async function streamChat({ settings, messages, tools, signal, onDelta })
       }
     }
   }
-  return { toolCalls: calls.filter(Boolean).map((c, i) => ({ ...c, id: c.id || `call_${i}` })) };
+  return { toolCalls: calls.filter(Boolean).map((c, i) => ({ ...c, id: c.id || `call_${i}` })), usage, finish };
 }
+
+// Token counts, including how much input the provider served from its cache.
+const readUsage = (u) => ({
+  input: u.prompt_tokens ?? 0,
+  output: u.completion_tokens ?? 0,
+  cached: u.prompt_tokens_details?.cached_tokens ?? u.cache_read_input_tokens ?? 0,
+});

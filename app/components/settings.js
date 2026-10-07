@@ -8,6 +8,9 @@ export function createSettings({ getSettings, onSave, onTest, onForgetKey, onDel
   const fields = { baseUrl: $('set-base-url'), apiKey: $('set-api-key'), systemPrompt: $('set-system') };
   const status = $('settings-status');
 
+  const showStats = $('set-stats');
+  showStats.addEventListener('change', () => onSave({ showStats: showStats.checked }, { quiet: true }));
+
   const themes = createPicker($('theme-picker'), {
     label: 'Theme',
     onSelect: (id) => { applyTheme(id); onSave({ theme: id }, { quiet: true }); },
@@ -52,6 +55,7 @@ export function createSettings({ getSettings, onSave, onTest, onForgetKey, onDel
       const s = getSettings();
       for (const [key, input] of Object.entries(fields)) input.value = s[key];
       themes.set(listThemes(), s.theme);
+      showStats.checked = s.showStats;
       setStatus(message);
       if (!dialog.open) dialog.showModal();
     },

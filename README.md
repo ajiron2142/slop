@@ -32,13 +32,15 @@ app/                  behaviour
   api.js              LiteLLM calls (/v1/models, streaming /v1/chat/completions)
   storage.js          settings and chats in IndexedDB, search, export/import
   folder.js           read-only folder tools for the model (list_files, read_file)
+  stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)
   markdown.js         markdown to sanitised HTML
   highlight.js        syntax colours for code blocks (which languages are included)
   theme.js            theme list, switching, font warm-up
   dom.js              two tiny DOM helpers
   components/         one file per piece of UI
     sidebar.js        chat list, search, mobile menu
-    messages.js       message rendering, code copy, retry
+    messages.js       message rendering, code copy, retry, per-reply Stats card
+    meter.js          usage meter above the message box (context and cost)
     composer.js       text box, send/stop, attachments (button, paste, drop), folder chip
     picker.js         searchable dropdown (used for models and themes)
     settings.js       settings dialog
@@ -61,6 +63,8 @@ vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
 5. The **sidebar** lists saved chats; **settings** edits the connection, system prompt and theme.
 
 **Connected folders.** In Chrome and Edge the paperclip also offers **Connect folder (read-only)**. The folder belongs to that one chat and is remembered with it. While a folder is connected, each request also sends two tools, `list_files` and `read_file`. When the model calls one, the browser reads from the folder (`folder.js`), sends the result back, and asks again, up to 10 rounds. The reply shows a line such as "Read src/app.js". With no folder connected, requests are exactly as before, so models without tool support are unaffected. Firefox and Safari don't have this browser feature; there the paperclip just attaches files.
+
+**Usage meter.** Each request asks LiteLLM to include token usage at the end of the stream (`stream_options.include_usage`), and each reply saves its own counts, timing and cost. On startup the app also reads `/model/info` for each model's context limit and prices. The meter above the message box shows how full the current model's context is and what the chat has cost; models without a price there (like locally hosted ones) count as free. If the proxy doesn't allow `/model/info`, the meter shows token counts without limits or costs. **Show detailed stats** in Settings adds a per-model table to the meter and a Stats card under each reply.
 
 Each component only touches its own part of the page and reports back to `main.js` through callbacks like `onSend` or `onOpen`.
 
@@ -86,4 +90,5 @@ Each component only touches its own part of the page and reports back to `main.j
 - Connect a folder to a chat, read-only, so the model can look through it (Chrome and Edge, models with tool support)
 - Markdown replies with syntax-coloured, copyable code blocks, tables and nested lists
 - Chat history with search, export/import, and Stop / Retry
-- Themes, switchable in Settings
+- Themes, switchable in Settings, each with its own code colours
+- Usage meter (context used and cost per chat), with optional detailed stats per reply and per model

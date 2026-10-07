@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="styles/components/composer.css">
   <link rel="stylesheet" href="styles/components/picker.css">
   <link rel="stylesheet" href="styles/components/settings.css">
+  <link rel="stylesheet" href="styles/components/meter.css">
   <!-- Themes: one line each. Add a theme by adding its file and a line here. -->
   <link rel="stylesheet" href="styles/themes/folio.css" data-theme="folio" data-name="Folio">
   <link rel="stylesheet" href="styles/themes/sumi.css" data-theme="sumi" data-name="Sumi">
@@ -64,6 +65,10 @@
       </header>
       <p id="notice" class="notice" role="status" hidden></p>
       <div id="messages" class="messages"></div>
+      <div id="meter-row" class="meter-row" hidden>
+        <div id="meter-pop" class="meter-pop" role="dialog" aria-label="Usage for this chat" hidden></div>
+        <button type="button" id="meter-btn" class="meter" aria-expanded="false" aria-controls="meter-pop" aria-label="Usage for this chat"></button>
+      </div>
       <div id="tray" class="tray" hidden></div>
       <form id="composer" class="composer">
         <button type="button" id="attach-btn" class="icon-btn attach" aria-label="Attach images or text files"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.5-8.5"/></svg></button>
@@ -92,6 +97,7 @@
       <textarea id="set-system" rows="3"></textarea>
     </label>
     <div class="field">Theme <div class="picker block" id="theme-picker"></div></div>
+    <label class="check"><input type="checkbox" id="set-stats"> Show detailed stats <span>Adds a Stats button to each reply, and a per-model breakdown to the usage meter.</span></label>
     <p id="settings-status" class="settings-status" role="status"></p>
     <div class="row">
       <button id="save-settings" class="btn primary">Save</button>

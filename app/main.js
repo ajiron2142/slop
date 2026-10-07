@@ -3,20 +3,23 @@
 //   -> messages (renders it) and storage.js (saves it) -> sidebar (lists chats).
 // Components only handle their own piece of the page and call back here.
 
-import { listModels, streamChat, toApiContent } from './api.js';
+import { listModels, getModelInfo, streamChat, toApiContent } from './api.js';
 import * as store from './storage.js';
 import { $ } from './dom.js';
 import { applyTheme, warmFonts } from './theme.js';
 import { folderSupported, pickFolder, allowRead, folderPrompt, FOLDER_TOOLS, runTool } from './folder.js';
+import { summarize, costOf, limitOf } from './stats.js';
 import { createSidebar } from './components/sidebar.js';
 import { createMessages } from './components/messages.js';
 import { createComposer } from './components/composer.js';
 import { createPicker } from './components/picker.js';
 import { createSettings } from './components/settings.js';
+import { createMeter } from './components/meter.js';
 
 const state = {
   settings: null,
   models: [],
+  modelInfo: {}, // context limits and prices by model name, from LiteLLM
   chats: [], // chat metadata, newest first (filtered by search)
   active: null, // { meta, messages, folder }, or null for a new unsaved chat
   draftFolder: null, // folder connected before a new chat's first message
@@ -45,6 +48,8 @@ const sidebar = createSidebar({
 
 const messages = createMessages($('messages'), { onRetry: retry });
 
+const meter = createMeter({ row: $('meter-row'), button: $('meter-btn'), pop: $('meter-pop') });
+
 const composer = createComposer({
   form: $('composer'),
   input: $('input'),
@@ -71,6 +76,7 @@ const modelPicker = createPicker($('model-picker'), {
     s.recentModels = [id, ...s.recentModels.filter((m) => m !== id)].slice(0, 5);
     store.saveSettings(s);
     showModels();
+    render();
   },
 });
 
@@ -79,7 +85,7 @@ const settings = createSettings({
   async onSave(changes, { quiet } = {}) {
     Object.assign(state.settings, changes);
     await store.saveSettings(state.settings);
-    if (quiet) return ['', ''];
+    if (quiet) { render(); return ['', '']; }
     await refreshModels();
     return ['Saved.', 'ok'];
   },
@@ -129,7 +135,8 @@ $('settings-btn').addEventListener('click', () => settings.open());
 function render(options) {
   sidebar.render(state.chats, state.active?.meta.id);
   const streamingMsg = state.streaming?.chat === state.active ? state.streaming.msg : null;
-  messages.render(state.active?.messages ?? [], streamingMsg, options);
+  messages.render(state.active?.messages ?? [], streamingMsg, { ...options, showStats: state.settings.showStats });
+  meter.render(summarize(state.active?.messages ?? [], state.modelInfo, state.settings.model), state.settings.showStats);
   composer.setBusy(Boolean(state.streaming));
   composer.setFolder((state.active ? state.active.folder : state.draftFolder)?.name);
 }
@@ -145,7 +152,7 @@ async function refreshModels() {
   state.models = [];
   if (s.baseUrl && s.apiKey) {
     try {
-      state.models = await listModels(s);
+      [state.models, state.modelInfo] = await Promise.all([listModels(s), getModelInfo(s)]);
       notify('');
     } catch (e) {
       notify(`Could not load models: ${e.message}`);
@@ -156,6 +163,7 @@ async function refreshModels() {
     await store.saveSettings(s);
   }
   showModels();
+  render();
 }
 
 function showModels() {
@@ -201,6 +209,12 @@ async function complete(chat) {
   state.streaming = { chat, msg, controller };
   render({ toBottom: true });
 
+  // What this reply used: summed over every round, with timing from the first visible word.
+  const model = s.model;
+  const used = { input: 0, output: 0, cached: 0, context: 0, files: 0, rounds: 0 };
+  const started = performance.now();
+  let firstAt = null;
+  let finish = null;
   let frame = 0;
   try {
     if (folder && !(await allowRead(folder))) {
@@ -209,12 +223,13 @@ async function complete(chat) {
     // With a folder connected the model may ask to read files first: run those and ask again.
     for (let round = 1; ; round++) {
       let text = '';
-      const { toolCalls } = await streamChat({
+      const { toolCalls, usage, finish: why } = await streamChat({
         settings: s,
         messages: history,
         tools,
         signal: controller.signal,
         onDelta: (delta) => {
+          firstAt ??= performance.now();
           text += delta;
           msg.content += delta;
           if (!frame) frame = requestAnimationFrame(() => {
@@ -223,19 +238,30 @@ async function complete(chat) {
           });
         },
       });
+      finish = why ?? 'stop';
+      if (usage) {
+        used.input += usage.input;
+        used.output += usage.output;
+        used.cached += usage.cached;
+        used.context = usage.input + usage.output;
+      }
       if (!toolCalls.length) break;
       if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of reading files.`);
       history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
       for (const call of toolCalls) {
         const { label, result } = await runTool(folder, call.function.name, call.function.arguments);
+        if (call.function.name === 'read_file' && !result.startsWith('Error:')) used.files++;
         (msg.tools ??= []).push(label);
         history.push({ role: 'tool', tool_call_id: call.id, content: result });
       }
+      used.rounds++;
       if (msg.content) msg.content += '\n\n';
       if (state.active === chat) render();
     }
   } catch (e) {
-    if (e.name !== 'AbortError') {
+    if (e.name === 'AbortError') finish = 'stopped';
+    else {
+      finish = null;
       const hint = tools && e.kind === 'http' ? '\n\nIf this model doesn\'t support tools, disconnect the folder or pick another model.' : '';
       chat.messages.push({ role: 'error', content: e.message + hint });
     }
@@ -244,6 +270,19 @@ async function complete(chat) {
 
   msg.content = msg.content.trimEnd();
   if (!msg.content && !msg.tools) chat.messages.splice(chat.messages.indexOf(msg), 1);
+  else if (finish) {
+    const info = state.modelInfo[model];
+    const counted = used.context > 0; // a stopped reply never gets the usage report
+    msg.stats = {
+      model,
+      finish,
+      ms: Math.round(performance.now() - started),
+      firstMs: firstAt && Math.round(firstAt - started),
+      ...(counted && { input: used.input, output: used.output, cached: used.cached, context: used.context, cost: costOf(info, used) }),
+      limit: limitOf(info),
+      ...(used.files && { files: used.files, rounds: used.rounds }),
+    };
+  }
   state.streaming = null;
   if (!chat.deleted) {
     chat.meta.updated = Date.now();

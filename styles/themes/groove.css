@@ -78,7 +78,9 @@
 .theme-groove .assistant .who { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; }
 .theme-groove .assistant .who::before { content: "Liner notes · "; color: var(--accent); }
 .theme-groove .body li::marker { color: var(--accent); }
-.theme-groove .body pre { border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; }
+.theme-groove .body .code { border-left: 3px solid var(--accent); }
+.theme-groove .body .code > pre { border-radius: 0 0 8px 0; }
+.theme-groove .code-head { border-top-left-radius: 0; }
 .theme-groove .composer { border-top: 2px solid var(--ink); align-items: center; }
 .theme-groove .composer textarea { background: var(--surface); border-radius: 22px; padding-left: 18px; }
 .theme-groove .send {

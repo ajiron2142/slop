@@ -1,6 +1,6 @@
 import { get, set, del, setMany, delMany, keys, getMany, clear } from '../vendor/idb-keyval.js';
 
-const DEFAULT_SETTINGS = { baseUrl: '', apiKey: '', model: '', systemPrompt: '', theme: '', recentModels: [], sidebarCollapsed: false };
+const DEFAULT_SETTINGS = { baseUrl: '', apiKey: '', model: '', systemPrompt: '', theme: '', recentModels: [], sidebarCollapsed: false, showStats: false };
 
 export async function loadSettings() {
   return { ...DEFAULT_SETTINGS, ...(await get('settings')) };

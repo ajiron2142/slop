@@ -56,7 +56,8 @@
   box-shadow: 0 10px 22px -16px rgba(120, 60, 50, 0.5);
 }
 .theme-adobe .body li::marker { color: var(--accent); }
-.theme-adobe .body pre { border-left: 3px solid var(--turquoise); }
+.theme-adobe .body .code { border-left: 3px solid var(--turquoise); }
+.theme-adobe .body .code > pre, .theme-adobe .code-head { border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .theme-adobe .composer { border-top: 0; background: var(--surface); box-shadow: 0 -3px 0 var(--sun), 0 -6px 0 var(--accent); }
 .theme-adobe .composer textarea { background: #fff; border-color: var(--line); border-radius: 22px; padding-left: 18px; }
 .theme-adobe .send { padding: 0 22px; font-weight: 800; letter-spacing: 0.04em; }

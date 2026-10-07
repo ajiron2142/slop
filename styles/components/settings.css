@@ -28,3 +28,6 @@ dialog.settings {
 .settings-status.ok { color: #1f7a45; }
 .settings-status.bad { color: #b42318; }
 .settings .hint { margin: 14px 0 0; font-size: 12px; color: var(--muted); }
+.settings label.check { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 8px; color: var(--ink); font-size: 14px; }
+.settings label.check input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.settings label.check span { grid-column: 2; font-size: 12px; color: var(--muted); }

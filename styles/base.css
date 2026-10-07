@@ -218,6 +218,7 @@
   .chat.chat .chat-header,
   .chat.chat .messages,
   .chat.chat .tray,
+  .chat.chat .meter-row,
   .chat.chat .notice,
   .chat.chat .composer { padding-inline: max(var(--edge), calc((100% - 760px) / 2)); }
 }

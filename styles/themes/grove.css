@@ -68,7 +68,9 @@
 .theme-grove .who { font-size: 16px; font-style: italic; color: var(--accent); margin-bottom: 4px; }
 .theme-grove .user .body { padding: 10px 16px; border-radius: 4px 16px 16px 16px; }
 .theme-grove .body li::marker { color: var(--accent); }
-.theme-grove .body pre { border-left: 2px solid var(--accent); border-radius: 0 10px 10px 0; }
+.theme-grove .body .code { border-left: 2px solid var(--accent); }
+.theme-grove .body .code > pre { border-radius: 0 0 10px 0; }
+.theme-grove .code-head { border-top-left-radius: 0; }
 .theme-grove .composer textarea { padding-left: 18px; }
 .theme-grove .send { font-family: var(--font-display); font-size: 17px; font-style: italic; font-weight: 600; padding: 0 20px; }
 
