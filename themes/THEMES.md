@@ -2,6 +2,10 @@
 
 One base stylesheet plus one class per theme. Give this whole file to an AI along with your app's code, and ask it to adapt the app to this system.
 
+**Download everything (CSS, self-hosted fonts, offline preview):**
+https://github.com/ajiron2142/slop/archive/refs/heads/ccr-60b590e9-4higd9.zip
+Unzip it and use the `themes/` folder. See **Files** below.
+
 ## How it works
 
 - The **base** (top of the CSS below) sets the layout. Every color, font and spacing value comes from a CSS variable (a "token").
