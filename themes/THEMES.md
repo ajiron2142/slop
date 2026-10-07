@@ -317,6 +317,14 @@ Set on `.chat` in the base and overridden by each theme:
   .streaming .body > :last-child::after { animation: none; }
 }
 
+/* Wide screens: the conversation stays a readable centred column while backgrounds stay full width. */
+.chat { container-type: inline-size; }
+@container (min-width: 820px) {
+  .chat.chat .chat-header,
+  .chat.chat .messages,
+  .chat.chat .composer { padding-inline: max(var(--edge), calc((100% - 760px) / 2)); }
+}
+
 
 /* ============================================================
    FOLIO — a literary quarterly
