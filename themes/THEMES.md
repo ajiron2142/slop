@@ -264,7 +264,7 @@ Set on `.chat` in the base and overridden by each theme:
 
 .composer {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 10px;
   padding: 12px var(--edge) 16px;
   border-top: 1px solid var(--line);
@@ -278,8 +278,11 @@ Set on `.chat` in the base and overridden by each theme:
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 10px 12px;
-  min-height: 42px;
+  box-sizing: border-box;
+  height: 44px;
+  min-height: 44px;
   max-height: 140px;
+  line-height: 22px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -287,8 +290,11 @@ Set on `.chat` in the base and overridden by each theme:
 .composer textarea:focus { border-color: var(--accent); }
 
 .send {
-  display: inline-grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  white-space: nowrap;
   flex-shrink: 0;
   font: inherit;
   font-family: var(--font-meta);
@@ -299,7 +305,7 @@ Set on `.chat` in the base and overridden by each theme:
   border: 0;
   border-radius: var(--radius);
   padding: 0 16px;
-  height: 42px;
+  height: 44px;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.2s;
 }
@@ -1759,7 +1765,7 @@ Set on `.chat` in the base and overridden by each theme:
 .theme-lantern .composer textarea { min-height: 46px; border-radius: 23px; padding-left: 18px; }
 .theme-lantern .composer textarea:focus { box-shadow: 0 0 14px rgba(var(--glow), 0.3); }
 .theme-lantern .send { height: 46px; font-size: 0; padding: 0 22px; border-radius: 23px; }
-.theme-lantern .send::before { content: "Carve"; padding-top: 6px; font-family: var(--font-display); font-size: 19px; letter-spacing: 0.06em; }
+.theme-lantern .send::before { content: "Carve"; padding-top: 2px; font-family: var(--font-display); font-size: 19px; letter-spacing: 0.06em; }
 .theme-lantern .chat-title::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 38'%3E%3Cpath d='M20 10V3' stroke='%234b6a26' stroke-width='3.5' stroke-linecap='round'/%3E%3Cellipse cx='12' cy='23' rx='10' ry='13' fill='%23e8661a'/%3E%3Cellipse cx='28' cy='23' rx='10' ry='13' fill='%23e8661a'/%3E%3Cellipse cx='20' cy='23' rx='10' ry='14' fill='%23f58a2a'/%3E%3Cpath d='M20 10v26M12 11c-3 6-3 18 0 24M28 11c3 6 3 18 0 24' fill='none' stroke='%23c9530f' stroke-width='1' opacity='.6'/%3E%3Cpath d='M10 20l4-6 4 6zM22 20l4-6 4 6z' fill='%23ffd36a'/%3E%3Cpath d='M18 23l2-3 2 3z' fill='%23ffd36a'/%3E%3Cpath d='M9 26l3 3 3-2 3 3 2-2 2 2 3-3 3 2 3-3-2 6-4 2-4-1-4 1-4-2z' fill='%23ffd36a'/%3E%3C/svg%3E"); }
 
 
