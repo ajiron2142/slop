@@ -1,0 +1,94 @@
+/* ============================================================
+   POCKET — the 1989 handheld: pea-green screen, dialogue boxes
+   ============================================================ */
+
+.theme-pocket {
+  --bg: #c9c5bf;
+  --lcd: #9bbc0f;
+  --lcd-2: #8bac0f;
+  --lcd-3: #306230;
+  --lcd-4: #0f380f;
+  --bezel: #4f505e;
+  --surface: var(--lcd);
+  --ink: var(--lcd-4);
+  --muted: var(--lcd-3);
+  --line: var(--lcd-3);
+  --accent: #9a2257;
+  --on-accent: #ffffff;
+  --navy: #2b2f7a;
+  --user-bg: var(--lcd-4);
+  --user-ink: var(--lcd);
+  --bot-bg: var(--lcd-2);
+  --code-bg: rgba(15, 56, 15, 0.12);
+  --font-body: "VT323", ui-monospace, monospace;
+  --font-display: "Nunito", "Arial Rounded MT Bold", sans-serif;
+  --font-meta: "VT323", ui-monospace, monospace;
+  --font-code: "VT323", ui-monospace, monospace;
+  --text: 18px;
+  --leading: 1.2;
+  --bubble-pad: 10px 14px;
+  --bubble-radius: 4px;
+  --gap: 18px;
+  --measure: 90%;
+  --radius: 999px;
+}
+.theme-pocket .chat-header { color: var(--navy); border-bottom: 0; padding-block: 14px 8px; }
+.theme-pocket .chat-title { font-size: 24px; font-weight: 800; font-style: italic; letter-spacing: -0.01em; }
+.theme-pocket .chat-title::after { content: " ™"; font-size: 10px; vertical-align: super; font-style: normal; }
+.theme-pocket .model { background: #b9b5ae; border: 0; color: var(--navy); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25); }
+.theme-pocket .messages {
+  margin: 0 14px;
+  padding: 16px 14px;
+  background: linear-gradient(rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.05)), var(--lcd);
+  border: 16px solid var(--bezel);
+  border-top-width: 26px;
+  padding-bottom: 30px;
+  border-radius: 8px 8px 34px 8px;
+  box-shadow: inset 0 0 10px rgba(15, 56, 15, 0.35);
+}
+.theme-pocket .who { font-size: 16px; margin-bottom: 2px; color: var(--lcd-3); }
+.theme-pocket .user .who { text-align: right; }
+.theme-pocket .user .who::before { content: "▶ "; }
+.theme-pocket .assistant .body {
+  position: relative;
+  border: 3px solid var(--lcd-4);
+  box-shadow: inset 0 0 0 2px var(--lcd-2), inset 0 0 0 3px var(--lcd-4);
+  padding-bottom: 22px;
+}
+.theme-pocket .assistant .body::after {
+  content: "▼";
+  position: absolute;
+  right: 10px;
+  bottom: 2px;
+  font-size: 14px;
+  animation: pocket-blink 1s steps(2, start) infinite;
+}
+@keyframes pocket-blink { to { visibility: hidden; } }
+.theme-pocket .streaming .body > :last-child::after { background: var(--lcd-4); }
+.theme-pocket .body li::marker { content: "• "; }
+.theme-pocket .body code { background: none; text-decoration: underline; }
+.theme-pocket .body pre { font-size: 17px; line-height: 1.2; border: 2px dashed var(--lcd-3); border-radius: 0; }
+.theme-pocket .body pre code { text-decoration: none; }
+.theme-pocket .composer { border-top: 0; align-items: center; gap: 14px; padding-top: 16px; padding-bottom: 20px; }
+.theme-pocket .composer::before {
+  content: "";
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background:
+    linear-gradient(#2c2c2e, #2c2c2e) 50% 50% / 13px 100% no-repeat,
+    linear-gradient(#2c2c2e, #2c2c2e) 50% 50% / 100% 13px no-repeat;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
+}
+.theme-pocket .composer textarea { background: #e4e1dc; border-color: #a9a59e; border-radius: 10px; color: #222; font-family: var(--font-body); font-size: 17px; }
+.theme-pocket .send {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  font-size: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #c2457c, var(--accent) 65%);
+  box-shadow: 0 3px 0 #5e1435, 0 5px 6px rgba(0, 0, 0, 0.3);
+}
+.theme-pocket .send::before { content: "A"; font-family: var(--font-display); font-size: 15px; font-weight: 800; color: #f2d8e3; }
+.theme-pocket .send:active { transform: translateY(2px); box-shadow: 0 1px 0 #5e1435; }

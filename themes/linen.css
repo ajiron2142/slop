@@ -1,0 +1,55 @@
+/* ============================================================
+   LINEN — the everyday one, built to be lived in
+   ============================================================ */
+
+.theme-linen {
+  --bg: #f4f1eb;
+  --surface: #fffdf9;
+  --ink: #2b2824;
+  --muted: #9b958b;
+  --line: #e6dfd3;
+  --accent: #2b2824;
+  --on-accent: #f4f1eb;
+  --user-bg: #2b2824;
+  --user-ink: #f4f1eb;
+  --bot-bg: transparent;
+  --code-bg: #ebe6dc;
+  --font-body: "Instrument Sans", system-ui, sans-serif;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --text: 15px;
+  --leading: 1.62;
+  --bubble-pad: 11px 16px;
+  --bubble-radius: 20px;
+  --gap: 22px;
+  --measure: 82%;
+  --radius: 14px;
+}
+.theme-linen .chat-header { border-bottom: 0; padding-top: 18px; }
+.theme-linen .chat-title { font-size: 27px; font-weight: 400; letter-spacing: -0.01em; }
+.theme-linen .model { background: var(--surface); }
+.theme-linen .user .who { display: none; }
+.theme-linen .assistant { max-width: 100%; }
+.theme-linen .assistant .who::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #c8a27a;
+  vertical-align: 0.1em;
+}
+.theme-linen .user .body { border-bottom-right-radius: 6px; }
+.theme-linen .assistant .body { padding-left: 0; padding-right: 0; }
+.theme-linen .body pre { background: var(--surface); border: 1px solid var(--line); }
+.theme-linen .composer {
+  margin: 0 12px 14px;
+  padding: 7px 7px 7px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  box-shadow: 0 12px 32px -14px rgba(43, 40, 36, 0.28);
+}
+.theme-linen .composer textarea { background: transparent; border: 0; padding: 9px 0; min-height: 40px; }
+.theme-linen .send { width: 40px; height: 40px; padding: 0; border-radius: 50%; font-size: 0; }
+.theme-linen .send::before { content: "↑"; font-size: 18px; }

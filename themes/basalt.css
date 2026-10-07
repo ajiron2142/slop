@@ -1,0 +1,55 @@
+/* ============================================================
+   BASALT — dark, precise, neutral graphite, lit in bone white
+   ============================================================ */
+
+.theme-basalt {
+  --bg: #0d0e0e;
+  --surface: #161717;
+  --ink: #e9ebea;
+  --muted: #777b7a;
+  --line: #252727;
+  --accent: #e6dccb;
+  --glow: 230, 220, 203;
+  --on-accent: #12100c;
+  --user-bg: #171818;
+  --bot-bg: transparent;
+  --code-bg: #121313;
+  --font-body: "Geist", system-ui, sans-serif;
+  --font-meta: "Geist Mono", ui-monospace, monospace;
+  --font-code: "Geist Mono", ui-monospace, monospace;
+  --text: 14.5px;
+  --leading: 1.66;
+  --bubble-radius: 12px;
+  --gap: 26px;
+  --measure: 85%;
+  --radius: 10px;
+}
+
+.theme-basalt .chat-header {
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, rgba(var(--glow), 0.55), var(--line) 38%, var(--line)) 1;
+  background: linear-gradient(rgba(255, 255, 255, 0.02), transparent);
+}
+.theme-basalt .chat-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.theme-basalt .chat-title::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(var(--glow), 0.75), 0 0 22px rgba(var(--glow), 0.3);
+  vertical-align: 0.1em;
+}
+.theme-basalt .model { font-size: 11px; border-radius: 6px; background: var(--surface); }
+.theme-basalt .who { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.theme-basalt .user .body { border: 1px solid var(--line); }
+.theme-basalt .assistant { max-width: 100%; }
+.theme-basalt .assistant .body { padding-left: 0; padding-right: 0; }
+.theme-basalt .body code { color: var(--accent); background: rgba(var(--glow), 0.09); }
+.theme-basalt .body pre code { color: var(--ink); background: none; }
+.theme-basalt .body pre { border: 1px solid var(--line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04); }
+.theme-basalt .body li::marker { color: var(--muted); }
+.theme-basalt .composer textarea:focus { box-shadow: 0 0 0 3px rgba(var(--glow), 0.14); }
+.theme-basalt .send { font-weight: 500; }

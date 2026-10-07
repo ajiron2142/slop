@@ -1,0 +1,66 @@
+/* ============================================================
+   SUMI — ink on rice paper
+   ============================================================ */
+
+.theme-sumi {
+  --bg: #f3efe6;
+  --surface: #ebe5d8;
+  --ink: #1b1a18;
+  --muted: #8f887b;
+  --line: #d9d1c1;
+  --accent: #b8412c;
+  --on-accent: #f7f3ea;
+  --user-bg: transparent;
+  --bot-bg: transparent;
+  --code-bg: #e8e1d2;
+  --font-body: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-display: var(--font-body);
+  --font-meta: "Zen Kaku Gothic New", system-ui, sans-serif;
+  --text: 15.5px;
+  --leading: 1.95;
+  --bubble-pad: 0;
+  --bubble-radius: 0;
+  --gap: 40px;
+  --edge: 28px;
+  --measure: 100%;
+  --user-align: stretch;
+  --radius: 0;
+  background-image: radial-gradient(rgba(60, 50, 30, 0.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+.theme-sumi .chat-header { border-bottom: 0; padding-top: 22px; }
+.theme-sumi .chat-title { font-size: 15px; font-weight: 600; letter-spacing: 0.35em; }
+.theme-sumi .chat-title::before {
+  content: "";
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: 0.05em;
+}
+.theme-sumi .model { border: 0; padding: 0; font-size: 11px; letter-spacing: 0.15em; }
+.theme-sumi .who { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 10px; }
+.theme-sumi .user .who { color: var(--accent); }
+.theme-sumi .user .who::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 10px;
+  background: var(--accent);
+  vertical-align: 0.1em;
+}
+.theme-sumi .user .body { font-size: 18px; line-height: 1.7; font-weight: 600; }
+.theme-sumi .assistant .body { padding-left: 20px; border-left: 1px solid var(--line); }
+.theme-sumi .body pre { background: transparent; border: 1px solid var(--line); }
+.theme-sumi .composer { border-top: 0; padding-bottom: 22px; }
+.theme-sumi .composer textarea {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  padding-left: 0;
+}
+.theme-sumi .send { width: 42px; padding: 0; font-size: 0; }
+.theme-sumi .send::before { content: "送"; font-family: var(--font-body); font-size: 18px; font-weight: 600; }

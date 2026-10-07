@@ -1,0 +1,76 @@
+/* ============================================================
+   RISO — a two-ink risograph print, slightly off-register
+   ============================================================ */
+
+.theme-riso {
+  --bg: #f4f0e6;
+  --surface: #fbf8f1;
+  --ink: #0b6fb5;
+  --muted: #6f93b4;
+  --line: #0b6fb5;
+  --accent: #ff4fae;
+  --on-accent: #0b6fb5;
+  --dots: radial-gradient(rgba(255, 79, 174, 0.95) 1.35px, transparent 1.75px) 0 0 / 4px 4px;
+  --user-bg: var(--surface);
+  --user-ink: #0a5d99;
+  --bot-bg: transparent;
+  --code-bg: rgba(11, 111, 181, 0.08);
+  --font-body: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-display: var(--font-body);
+  --font-meta: var(--font-body);
+  --text: 15.5px;
+  --leading: 1.55;
+  --bubble-pad: 13px 16px;
+  --bubble-radius: 14px;
+  --gap: 26px;
+  --measure: 84%;
+  --radius: 14px;
+}
+.theme-riso .chat-header { border-bottom: 1.5px solid var(--ink); }
+.theme-riso .chat-title {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  text-shadow: 2.5px 1.5px 0 rgba(255, 79, 174, 0.85);
+}
+.theme-riso .model { border: 1.5px solid var(--ink); color: var(--ink); font-weight: 600; }
+.theme-riso .who { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.theme-riso .user { position: relative; z-index: 0; margin-right: 6px; }
+.theme-riso .user .who { text-align: right; }
+.theme-riso .user .body {
+  position: relative;
+  border: 1.5px solid var(--ink);
+  font-weight: 600;
+}
+.theme-riso .user .body::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  z-index: -1;
+  border-radius: inherit;
+  transform: translate(6px, 6px);
+  background: var(--dots);
+}
+.theme-riso .assistant { max-width: 100%; }
+.theme-riso .assistant .body { padding-left: 0; padding-right: 0; }
+.theme-riso .body li::marker { color: var(--accent); }
+.theme-riso .body pre { border: 1.5px solid var(--ink); background: transparent; box-shadow: 4px 4px 0 rgba(255, 79, 174, 0.55); }
+.theme-riso .body code { background: rgba(255, 79, 174, 0.18); }
+.theme-riso .body pre code { background: none; }
+.theme-riso .composer { border-top: 1.5px solid var(--ink); }
+.theme-riso .composer textarea {
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(255, 79, 174, 0.55);
+}
+.theme-riso .composer textarea:focus { border-color: var(--ink); box-shadow: 4px 4px 0 var(--accent); }
+.theme-riso .send {
+  color: var(--surface);
+  background: var(--ink);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1.5px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--accent);
+}

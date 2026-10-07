@@ -1,0 +1,67 @@
+/* ============================================================
+   SPRINGFIELD — opening-credits sky, cartoon outlines, a donut.
+   Add    ============================================================ */
+
+.theme-springfield {
+  --bg: #70c2ec;
+  --surface: #ffffff;
+  --ink: #26221d;
+  --muted: #2f5d7a;
+  --line: #26221d;
+  --accent: #ffd90f;
+  --on-accent: #26221d;
+  --marge: #2f6fbf;
+  --couch: #8b5a2b;
+  --cloud: url("assets/springfield-cloud.svg");
+  --sprinkles: url("assets/springfield-sprinkles.svg");
+  --user-bg: #ffd90f;
+  --bot-bg: #ffffff;
+  --code-bg: #f3f7fa;
+  --font-body: "Fredoka", system-ui, sans-serif;
+  --font-display: "Fredoka", system-ui, sans-serif;
+  --font-meta: "Fredoka", system-ui, sans-serif;
+  --text: 15.5px;
+  --leading: 1.5;
+  --bubble-pad: 12px 18px;
+  --bubble-radius: 22px;
+  --gap: 20px;
+  --measure: 86%;
+  --radius: 10px;
+  background:
+    var(--cloud) 8% 6% / 210px 84px no-repeat,
+    var(--cloud) 112% 44% / 180px 72px no-repeat,
+    var(--cloud) -50px 84% / 230px 92px no-repeat,
+    linear-gradient(#4aa8de, #70c2ec 45%, #a8dcf5);
+}
+.theme-springfield .chat-header { padding-top: 18px; padding-bottom: 14px; border-bottom: 0; }
+.theme-springfield .chat-title {
+  font-family: var(--font-body);
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  color: var(--accent);
+  -webkit-text-stroke: 2px var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 3px 3px 0 var(--ink);
+}
+.theme-springfield .model { background: #fff; border: 2.5px solid var(--ink); color: var(--ink); font-weight: 600; }
+.theme-springfield .who { display: none; }
+.theme-springfield .body { border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.theme-springfield .user .body { font-weight: 600; border-bottom-right-radius: 6px; }
+.theme-springfield .assistant .body { border-bottom-left-radius: 6px; }
+.theme-springfield .body li::marker { color: #e8443a; }
+.theme-springfield .body pre { border: 2px solid var(--ink); box-shadow: none; }
+.theme-springfield .composer { align-items: center; padding-bottom: 18px; background: var(--accent); border-top: 3px solid var(--ink); }
+.theme-springfield .composer textarea { background: #fff; border: 2.5px solid var(--ink); border-radius: 22px; padding-left: 18px; box-shadow: 3px 3px 0 var(--ink); }
+.theme-springfield .send {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  font-size: 0;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink);
+  background:
+    var(--sprinkles) 50% 50% / 100% 100% no-repeat,
+    radial-gradient(circle, var(--accent) 0 7px, var(--ink) 7.5px 9px, #f59fc6 9.5px 17px, #e2ad63 17.5px);
+  box-shadow: 3px 3px 0 var(--ink);
+}

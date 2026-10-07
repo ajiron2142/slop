@@ -1,0 +1,120 @@
+/* ============================================================
+   CHOMP — 1980 arcade maze: double walls, white pellets, four ghosts
+   ============================================================ */
+
+@property --chomp {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 32deg;
+}
+.theme-chomp {
+  --bg: #000000;
+  --surface: #000000;
+  --ink: #f4f4f4;
+  --muted: #8c8cff;
+  --line: #2121de;
+  --accent: #ffe600;
+  --on-accent: #000000;
+  --wall: #2121de;
+  --pellet: #f7f7f7;
+  --ghost: url("assets/chomp-ghost-blinky.svg");
+  --ghost-ink: #ff4040;
+  --user-bg: transparent;
+  --bot-bg: transparent;
+  --code-bg: #000000;
+  --font-body: "Space Mono", ui-monospace, monospace;
+  --font-display: "Press Start 2P", ui-monospace, monospace;
+  --font-meta: "Press Start 2P", ui-monospace, monospace;
+  --text: 13.5px;
+  --leading: 1.65;
+  --bubble-pad: 14px 17px;
+  --bubble-radius: 10px;
+  --gap: 20px;
+  --measure: 88%;
+  --radius: 8px;
+}
+.theme-chomp .chat-header { flex-wrap: wrap; row-gap: 10px; border-bottom: 0; padding-bottom: 18px; box-shadow: inset 0 -2px 0 var(--wall), inset 0 -6px 0 #000, inset 0 -8px 0 var(--wall); }
+.theme-chomp .chat-header::after {
+  content: "1UP  2340      HIGH SCORE  10000";
+  order: 3;
+  flex-basis: 100%;
+  white-space: pre;
+  font: 8px var(--font-meta);
+  color: #fff;
+  line-height: 16px;
+  min-height: 16px;
+  padding-right: 20px;
+  background: url("assets/chomp-cherry.svg") right center / 16px 16px no-repeat;
+}
+.theme-chomp .chat-title { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 400; color: var(--accent); }
+.theme-chomp .chat-title::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) 0 calc(90deg - var(--chomp)), transparent 0 calc(90deg + var(--chomp)), var(--accent) 0);
+  animation: chomp 0.3s ease-in-out infinite alternate;
+}
+.theme-chomp .chat-title::after {
+  content: "";
+  width: 48px;
+  height: 10px;
+  background:
+    radial-gradient(circle, var(--pellet) 0 4.5px, transparent 5px) 100% 50% / 10px 10px no-repeat,
+    radial-gradient(circle, var(--pellet) 0 1.6px, transparent 2px) 0 50% / 10px 10px repeat-x;
+  -webkit-mask: linear-gradient(90deg, #000 calc(100% - 13px), transparent calc(100% - 13px) calc(100% - 10px), #000 calc(100% - 10px));
+  mask: linear-gradient(90deg, #000 calc(100% - 13px), transparent calc(100% - 13px) calc(100% - 10px), #000 calc(100% - 10px));
+}
+@keyframes chomp { from { --chomp: 2deg; } to { --chomp: 40deg; } }
+@keyframes chomp-blink { 50% { opacity: 0.15; } }
+.theme-chomp .model { color: #fff; background: #000; border: 2px solid var(--wall); border-radius: 8px; font: 7.5px var(--font-meta); padding: 7px 10px; }
+.theme-chomp .messages::before {
+  content: "READY!";
+  align-self: center;
+  margin-bottom: 4px;
+  font: 13px var(--font-meta);
+  color: var(--accent);
+}
+.theme-chomp .who { display: flex; align-items: center; gap: 8px; font: 8px var(--font-meta); letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
+.theme-chomp .user .who { justify-content: flex-end; }
+.theme-chomp .user .who::after {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) 0 60deg, transparent 0 120deg, var(--accent) 0);
+}
+.theme-chomp .assistant .who { color: var(--ghost-ink); }
+.theme-chomp .assistant .who::before { content: ""; width: 14px; height: 14px; background: var(--ghost) 0 0 / 100% 100%; }
+.theme-chomp .assistant:nth-child(8n + 4) { --ghost: url("assets/chomp-ghost-pinky.svg"); --ghost-ink: #ffb8ff; }
+.theme-chomp .assistant:nth-child(8n + 6) { --ghost: url("assets/chomp-ghost-inky.svg"); --ghost-ink: #00ffff; }
+.theme-chomp .assistant:nth-child(8n) { --ghost: url("assets/chomp-ghost-clyde.svg"); --ghost-ink: #ffb852; }
+.theme-chomp .user .body { border: 2px solid var(--wall); box-shadow: inset 0 0 0 5px #000, inset 0 0 0 7px var(--wall); padding: 16px 19px; }
+.theme-chomp .assistant { max-width: 100%; }
+.theme-chomp .assistant .body { padding: 0; }
+.theme-chomp .assistant::after {
+  content: "";
+  display: block;
+  height: 10px;
+  margin-top: 18px;
+  background:
+    radial-gradient(circle, var(--pellet) 0 4.5px, transparent 5px) 100% 50% / 10px 10px no-repeat,
+    radial-gradient(circle, var(--pellet) 0 1.6px, transparent 2px) 0 50% / 14px 10px repeat-x;
+  -webkit-mask: linear-gradient(90deg, #000 calc(100% - 16px), transparent calc(100% - 16px) calc(100% - 10px), #000 calc(100% - 10px));
+  mask: linear-gradient(90deg, #000 calc(100% - 16px), transparent calc(100% - 16px) calc(100% - 10px), #000 calc(100% - 10px));
+}
+.theme-chomp .body li::marker { color: var(--pellet); }
+.theme-chomp .body code { color: var(--accent); background: none; padding: 0; }
+.theme-chomp .body pre { border: 2px solid var(--wall); box-shadow: inset 0 0 0 4px #000, inset 0 0 0 6px var(--wall); padding: 16px 18px; }
+.theme-chomp .body pre code { color: var(--ink); }
+.theme-chomp .composer { align-items: center; border-top: 0; padding-top: 18px; box-shadow: inset 0 2px 0 var(--wall), inset 0 6px 0 #000, inset 0 8px 0 var(--wall); }
+.theme-chomp .composer textarea { background: #000; border: 2px solid var(--wall); border-radius: 10px; }
+.theme-chomp .send {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) 0 calc(90deg - var(--chomp)), transparent 0 calc(90deg + var(--chomp)), var(--accent) 0);
+  animation: chomp 0.3s ease-in-out infinite alternate;
+}

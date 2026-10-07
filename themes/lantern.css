@@ -1,0 +1,82 @@
+/* ============================================================
+   LANTERN — carved, candle-lit, candy-corn striped
+   ============================================================ */
+
+.theme-lantern {
+  --bg: #0f0a07;
+  --surface: #1b130d;
+  --ink: #f3e6cf;
+  --muted: #9a8366;
+  --line: #2d2119;
+  --accent: #f28c28;
+  --on-accent: #1b0e04;
+  --glow: 242, 140, 40;
+  --flame: #ffd36a;
+  --user-bg: #241105;
+  --user-ink: #ffd36a;
+  --bot-bg: transparent;
+  --code-bg: rgba(255, 200, 120, 0.06);
+  --font-body: "Manrope", system-ui, sans-serif;
+  --font-display: "Creepster", "Manrope", cursive;
+  --font-meta: "Manrope", system-ui, sans-serif;
+  --text: 15px;
+  --leading: 1.62;
+  --bubble-pad: 13px 18px;
+  --bubble-radius: 22px;
+  --gap: 24px;
+  --measure: 86%;
+  --radius: 999px;
+  background: radial-gradient(ellipse 70% 45% at 50% 100%, rgba(var(--glow), 0.14), transparent 70%), var(--bg);
+}
+.theme-lantern .chat-header {
+  margin-bottom: 6px;
+  border-bottom: 0;
+  box-shadow: 0 2px 0 #f7f1e3, 0 4px 0 #f28c28, 0 6px 0 #ffcf3f;
+}
+.theme-lantern .chat-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 31px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(var(--glow), 0.6);
+}
+.theme-lantern .chat-title::before {
+  content: "";
+  flex-shrink: 0;
+  width: 36px;
+  height: 34px;
+  background: url("assets/lantern-pumpkin.svg") 0 0 / 100% 100% no-repeat;
+  filter: drop-shadow(0 0 8px rgba(var(--glow), 0.55));
+}
+.theme-lantern .model { border-color: var(--line); }
+.theme-lantern .messages {
+  background:
+    repeating-conic-gradient(from 180deg at 100% 0, rgba(255, 255, 255, 0.09) 0 0.6deg, transparent 0.6deg 15deg) 100% 0 / 150px 150px no-repeat,
+    repeating-radial-gradient(circle at 100% 0, transparent 0 17px, rgba(255, 255, 255, 0.07) 17px 18px) 100% 0 / 150px 150px no-repeat;
+}
+.theme-lantern .who { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+.theme-lantern .user .who { text-align: right; }
+.theme-lantern .user .body {
+  border: 2px solid #e8661a;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 210, 120, 0.75);
+  animation: lantern-breathe 3.2s ease-in-out infinite alternate;
+}
+@keyframes lantern-breathe {
+  from { box-shadow: 0 0 14px rgba(var(--glow), 0.28), inset 0 0 10px rgba(var(--glow), 0.16); }
+  to { box-shadow: 0 0 26px rgba(var(--glow), 0.55), inset 0 0 16px rgba(var(--glow), 0.3); }
+}
+
+.theme-lantern .assistant { max-width: 100%; }
+.theme-lantern .assistant .body { padding-left: 0; padding-right: 0; }
+.theme-lantern .body li::marker { color: var(--accent); }
+.theme-lantern .body code { color: var(--flame); }
+.theme-lantern .body pre { border: 1px solid var(--line); border-radius: 14px; }
+.theme-lantern .composer { border-top: 0; padding-bottom: 18px; align-items: center; }
+.theme-lantern .composer textarea { min-height: 46px; border-radius: 23px; padding-left: 18px; }
+.theme-lantern .composer textarea:focus { box-shadow: 0 0 14px rgba(var(--glow), 0.3); }
+.theme-lantern .send { height: 46px; font-size: 0; padding: 0 22px; border-radius: 23px; }
+.theme-lantern .send::before { content: "Carve"; padding-top: 2px; font-family: var(--font-display); font-size: 19px; letter-spacing: 0.06em; }

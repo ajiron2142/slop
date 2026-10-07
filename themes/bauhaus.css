@@ -1,0 +1,71 @@
+/* ============================================================
+   BAUHAUS — circle, square, triangle
+   ============================================================ */
+
+.theme-bauhaus {
+  --bg: #f1ece1;
+  --surface: #fbf8f1;
+  --ink: #1b1b1b;
+  --muted: #77706a;
+  --line: #1b1b1b;
+  --accent: #d23f2a;
+  --on-accent: #f7f2e7;
+  --blue: #24509e;
+  --yellow: #efb225;
+  --user-bg: #d23f2a;
+  --user-ink: #f7f2e7;
+  --bot-bg: transparent;
+  --code-bg: #e6dfcf;
+  --font-body: "Jost", "Futura", system-ui, sans-serif;
+  --font-display: var(--font-body);
+  --font-meta: var(--font-body);
+  --text: 15.5px;
+  --leading: 1.55;
+  --bubble-pad: 14px 18px;
+  --bubble-radius: 0;
+  --gap: 24px;
+  --measure: 86%;
+  --radius: 0;
+}
+.theme-bauhaus .chat-header { border-bottom: 2px solid var(--ink); }
+.theme-bauhaus .chat-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 23px;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+.theme-bauhaus .chat-title::before {
+  content: "";
+  flex-shrink: 0;
+  width: 52px;
+  height: 14px;
+  background:
+    radial-gradient(circle at 7px 7px, var(--accent) 6.5px, transparent 7.2px),
+    linear-gradient(var(--blue), var(--blue)) 19px 0 / 14px 14px no-repeat,
+    linear-gradient(to top right, transparent 50%, var(--yellow) 50%) 38px 0 / 14px 14px no-repeat;
+}
+.theme-bauhaus .model { border: 2px solid var(--ink); border-radius: 0; color: var(--ink); font-weight: 500; }
+.theme-bauhaus .who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.theme-bauhaus .who::before { content: ""; width: 9px; height: 9px; background: var(--blue); }
+.theme-bauhaus .user .who { justify-content: flex-end; }
+.theme-bauhaus .user .who::before { background: var(--accent); border-radius: 50%; }
+.theme-bauhaus .user .body { border-radius: 0 0 0 32px; font-weight: 500; }
+.theme-bauhaus .assistant .body { padding: 2px 0 2px 16px; border-left: 3px solid var(--blue); }
+.theme-bauhaus .body ul { list-style: square; }
+.theme-bauhaus .body li::marker { color: var(--accent); }
+.theme-bauhaus .body pre { background: var(--ink); color: var(--bg); }
+.theme-bauhaus .composer { border-top: 2px solid var(--ink); }
+.theme-bauhaus .composer textarea { border: 2px solid var(--ink); }
+.theme-bauhaus .send { width: 42px; padding: 0; border-radius: 50%; background: var(--yellow); color: var(--ink); font-size: 0; }
+.theme-bauhaus .send::before { content: "→"; font-size: 19px; font-weight: 600; }

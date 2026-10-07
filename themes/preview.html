@@ -5,7 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chat Theme Keepers</title>
 <link rel="stylesheet" href="fonts.css">
-<link rel="stylesheet" href="themes.css">
+<link rel="stylesheet" href="base.css">
+<!-- One line per theme. Add a theme: add its .css file and a line here. -->
+<link rel="stylesheet" href="folio.css" data-theme="folio" data-name="Folio" data-desc="A literary quarterly. No bubbles; your questions become pull-quotes and the first reply opens with a drop cap.">
+<link rel="stylesheet" href="sumi.css" data-theme="sumi" data-name="Sumi" data-desc="Ink on rice paper. Wide margins, tall leading, and one vermilion seal marking your turn.">
+<link rel="stylesheet" href="grove.css" data-theme="grove" data-name="Grove" data-desc="A thin trunk runs down the page and every reply grows from it as a leaf. Your messages are buds.">
+<link rel="stylesheet" href="raster.css" data-theme="raster" data-name="Raster" data-desc="International Typographic Style. A strict grid, numbered turns, heavy rules and exactly one red.">
+<link rel="stylesheet" href="linen.css" data-theme="linen" data-name="Linen" data-desc="The everyday one. Warm neutrals, soft ink bubbles and a floating composer.">
+<link rel="stylesheet" href="atelier.css" data-theme="atelier" data-name="Atelier" data-desc="An architect&#x27;s drafting sheet: blue grid, numbered turns with dimension lines, crop marks on every message.">
+<link rel="stylesheet" href="tide.css" data-theme="tide" data-name="Tide" data-desc="Sea glass and morning fog. Frosted replies and pale green bubbles worn smooth by water.">
+<link rel="stylesheet" href="draft.css" data-theme="draft" data-name="Draft" data-desc="The conversation as a screenplay, with your lines on the red half of the ribbon.">
+<link rel="stylesheet" href="bauhaus.css" data-theme="bauhaus" data-name="Bauhaus" data-desc="Circle, square, triangle. Primary colours used sparingly and a quarter-round corner on your messages.">
+<link rel="stylesheet" href="basalt.css" data-theme="basalt" data-name="Basalt" data-desc="Neutral graphite, lit in bone white. The quietest dark theme of the set.">
+<link rel="stylesheet" href="airmail.css" data-theme="airmail" data-name="Airmail" data-desc="Par avion. Striped borders, and every message you send arrives as a stamped postcard.">
+<link rel="stylesheet" href="receipt.css" data-theme="receipt" data-name="Receipt" data-desc="Every answer, itemised. Torn edges, order numbers, a barcode and a PRINT button.">
+<link rel="stylesheet" href="lumen.css" data-theme="lumen" data-name="Lumen" data-desc="One neon tube in a dark room. Pink for you, cyan for send, and a sign that hums.">
+<link rel="stylesheet" href="prism.css" data-theme="prism" data-name="Prism" data-desc="Clean white with iridescent edges on your messages, the composer and the title.">
+<link rel="stylesheet" href="sticky.css" data-theme="sticky" data-name="Sticky" data-desc="Office sticky notes. Your messages handwritten on canary yellow, replies on blue, lime, pink and orange pads.">
+<link rel="stylesheet" href="transit.css" data-theme="transit" data-name="Transit" data-desc="The conversation is a subway line: your questions are interchanges, replies are stops, the composer is the platform sign.">
+<link rel="stylesheet" href="boarding.css" data-theme="boarding" data-name="Boarding" data-desc="Boarding passes in a 1970s livery: chocolate header, orange-mustard-brick racing stripes, cream cards with torn-off stubs.">
+<link rel="stylesheet" href="riso.css" data-theme="riso" data-name="Riso" data-desc="A two-ink risograph print: blue ink everywhere, your messages on outlined cards with a pink halftone shadow, a solid blue send.">
+<link rel="stylesheet" href="lantern.css" data-theme="lantern" data-name="Lantern" data-desc="A gradient-built jack-o’-lantern, candy-corn stripes, carved messages that flicker, and a cobweb in the corner.">
+<link rel="stylesheet" href="pocket.css" data-theme="pocket" data-name="Pocket" data-desc="The 1989 handheld: pea-green screen in a slate bezel, dialogue boxes with a blinking arrow, a D-pad and a magenta A button.">
+<link rel="stylesheet" href="tombstone.css" data-theme="tombstone" data-name="Tombstone" data-desc="Moon, stars and drifting fog; your messages are a softly glowing ghost and replies are whispered.">
+<link rel="stylesheet" href="groove.css" data-theme="groove" data-name="Groove" data-desc="A 1970s record sleeve in sunset colours: chocolate, gold, orange and red stripes, and a record spinning out of the header.">
+<link rel="stylesheet" href="taskbar.css" data-theme="taskbar" data-name="Taskbar" data-desc="The early-2000s desktop: blue title bars, balloon tips, a green hill, and a taskbar with a start button and a clock.">
+<link rel="stylesheet" href="springfield.css" data-theme="springfield" data-name="Springfield" data-desc="Opening-credits sky and clouds, cartoon outlines, yellow for you, a yellow composer bar and a sprinkled donut.">
+<link rel="stylesheet" href="sandia.css" data-theme="sandia" data-name="Sandia" data-desc="New Mexico at dusk: the watermelon-pink Sandia ridge stays put while balloons drift past as you scroll.">
+<link rel="stylesheet" href="adobe.css" data-theme="adobe" data-name="Adobe" data-desc="High noon: a stepped adobe parapet against a bright sky, a chile ristra, stucco walls and a turquoise oval send button.">
+<link rel="stylesheet" href="chomp.css" data-theme="chomp" data-name="Chomp" data-desc="The 1980 arcade maze: double blue walls, white pellets, four ghosts, a score line with a pixel cherry, and a chomping send button.">
 <style>
   :root {
     --page: #f5f4f1;
@@ -206,9 +234,9 @@
 <body>
 <div class="page">
   <header class="intro">
-    <p class="eyebrow">Keepers · 27 themes</p>
-    <h1>The keepers</h1>
-    <p class="lede">Every theme you have kept so far, on one base stylesheet. Open this file locally: it loads themes.css and the self-hosted fonts, with no internet needed.</p>
+    <p class="eyebrow">Theme preview</p>
+    <h1>Chat themes</h1>
+    <p class="lede">One base stylesheet plus one file per theme, with self-hosted fonts. Works offline.</p>
   </header>
 
   <nav class="picker" id="picker" role="tablist" aria-label="Themes"></nav>
@@ -283,197 +311,9 @@
 </div>
 
 <script>
-  const THEMES = [
-  {
-    "id": "folio",
-    "cls": "theme-folio",
-    "name": "Folio",
-    "fonts": "Newsreader",
-    "desc": "A literary quarterly. No bubbles; your questions become pull-quotes and the first reply opens with a drop cap."
-  },
-  {
-    "id": "sumi",
-    "cls": "theme-sumi",
-    "name": "Sumi",
-    "fonts": "Shippori Mincho · Zen Kaku Gothic New",
-    "desc": "Ink on rice paper. Wide margins, tall leading, and one vermilion seal marking your turn."
-  },
-  {
-    "id": "grove",
-    "cls": "theme-grove",
-    "name": "Grove",
-    "fonts": "Cormorant Garamond · EB Garamond",
-    "desc": "A thin trunk runs down the page and every reply grows from it as a leaf. Your messages are buds."
-  },
-  {
-    "id": "raster",
-    "cls": "theme-raster",
-    "name": "Raster",
-    "fonts": "Inter Tight",
-    "desc": "International Typographic Style. A strict grid, numbered turns, heavy rules and exactly one red."
-  },
-  {
-    "id": "linen",
-    "cls": "theme-linen",
-    "name": "Linen",
-    "fonts": "Instrument Serif · Instrument Sans",
-    "desc": "The everyday one. Warm neutrals, soft ink bubbles and a floating composer."
-  },
-  {
-    "id": "atelier",
-    "cls": "theme-atelier",
-    "name": "Atelier",
-    "fonts": "IBM Plex Sans · IBM Plex Mono",
-    "desc": "An architect's drafting sheet: blue grid, numbered turns with dimension lines, crop marks on every message."
-  },
-  {
-    "id": "tide",
-    "cls": "theme-tide",
-    "name": "Tide",
-    "fonts": "Fraunces · Figtree",
-    "desc": "Sea glass and morning fog. Frosted replies and pale green bubbles worn smooth by water."
-  },
-  {
-    "id": "draft",
-    "cls": "theme-draft",
-    "name": "Draft",
-    "fonts": "Courier Prime",
-    "desc": "The conversation as a screenplay, with your lines on the red half of the ribbon."
-  },
-  {
-    "id": "bauhaus",
-    "cls": "theme-bauhaus",
-    "name": "Bauhaus",
-    "fonts": "Jost",
-    "desc": "Circle, square, triangle. Primary colours used sparingly and a quarter-round corner on your messages."
-  },
-  {
-    "id": "basalt",
-    "cls": "theme-basalt",
-    "name": "Basalt",
-    "fonts": "Geist · Geist Mono",
-    "desc": "Neutral graphite, lit in bone white. The quietest dark theme of the set."
-  },
-  {
-    "id": "airmail",
-    "cls": "theme-airmail",
-    "name": "Airmail",
-    "fonts": "Playfair Display · Lora · Special Elite",
-    "desc": "Par avion. Striped borders, and every message you send arrives as a stamped postcard."
-  },
-  {
-    "id": "receipt",
-    "cls": "theme-receipt",
-    "name": "Receipt",
-    "fonts": "Martian Mono",
-    "desc": "Every answer, itemised. Torn edges, order numbers, a barcode and a PRINT button."
-  },
-  {
-    "id": "lumen",
-    "cls": "theme-lumen",
-    "name": "Lumen",
-    "fonts": "Tilt Neon · Outfit",
-    "desc": "One neon tube in a dark room. Pink for you, cyan for send, and a sign that hums."
-  },
-  {
-    "id": "prism",
-    "cls": "theme-prism",
-    "name": "Prism",
-    "fonts": "Sora",
-    "desc": "Clean white with iridescent edges on your messages, the composer and the title."
-  },
-  {
-    "id": "sticky",
-    "cls": "theme-sticky",
-    "name": "Sticky",
-    "fonts": "Kalam · Work Sans",
-    "desc": "Office sticky notes. Your messages handwritten on canary yellow, replies on blue, lime, pink and orange pads."
-  },
-  {
-    "id": "transit",
-    "cls": "theme-transit",
-    "name": "Transit",
-    "fonts": "Public Sans",
-    "desc": "The conversation is a subway line: your questions are interchanges, replies are stops, the composer is the platform sign."
-  },
-  {
-    "id": "boarding",
-    "cls": "theme-boarding",
-    "name": "Boarding",
-    "fonts": "Barlow Condensed · Barlow",
-    "desc": "Boarding passes in a 1970s livery: chocolate header, orange-mustard-brick racing stripes, cream cards with torn-off stubs."
-  },
-  {
-    "id": "riso",
-    "cls": "theme-riso",
-    "name": "Riso",
-    "fonts": "Bricolage Grotesque",
-    "desc": "A two-ink risograph print: blue ink everywhere, your messages on outlined cards with a pink halftone shadow, a solid blue send."
-  },
-  {
-    "id": "lantern",
-    "cls": "theme-lantern",
-    "name": "Lantern",
-    "fonts": "Creepster · Manrope",
-    "desc": "A gradient-built jack-o’-lantern, candy-corn stripes, carved messages that flicker, and a cobweb in the corner."
-  },
-  {
-    "id": "pocket",
-    "cls": "theme-pocket",
-    "name": "Pocket",
-    "fonts": "VT323 · Nunito",
-    "desc": "The 1989 handheld: pea-green screen in a slate bezel, dialogue boxes with a blinking arrow, a D-pad and a magenta A button."
-  },
-  {
-    "id": "tombstone",
-    "cls": "theme-tombstone",
-    "name": "Tombstone",
-    "fonts": "Marcellus SC · Spectral",
-    "desc": "Moon, stars and drifting fog; your messages are a softly glowing ghost and replies are whispered."
-  },
-  {
-    "id": "groove",
-    "cls": "theme-groove",
-    "name": "Groove",
-    "fonts": "Righteous · Literata · DM Mono",
-    "desc": "A 1970s record sleeve in sunset colours: chocolate, gold, orange and red stripes, and a record spinning out of the header."
-  },
-  {
-    "id": "taskbar",
-    "cls": "theme-taskbar",
-    "name": "Taskbar",
-    "fonts": "Trebuchet MS · Tahoma",
-    "desc": "The early-2000s desktop: blue title bars, balloon tips, a green hill, and a taskbar with a start button and a clock."
-  },
-  {
-    "id": "springfield",
-    "cls": "theme-springfield",
-    "name": "Springfield",
-    "fonts": "Fredoka",
-    "desc": "Opening-credits sky and clouds, cartoon outlines, yellow for you, a yellow composer bar and a sprinkled donut."
-  },
-  {
-    "id": "sandia",
-    "cls": "theme-sandia",
-    "name": "Sandia",
-    "fonts": "DM Serif Display · Mulish",
-    "desc": "New Mexico at dusk: the watermelon-pink Sandia ridge stays put while balloons drift past as you scroll."
-  },
-  {
-    "id": "adobe",
-    "cls": "theme-adobe",
-    "name": "Adobe",
-    "fonts": "Rye · Mulish",
-    "desc": "High noon: a stepped adobe parapet against a bright sky, a chile ristra, stucco walls and a turquoise oval send button."
-  },
-  {
-    "id": "chomp",
-    "cls": "theme-chomp",
-    "name": "Chomp",
-    "fonts": "Press Start 2P · Space Mono",
-    "desc": "The 1980 arcade maze: double blue walls, white pellets, four ghosts, a score line with a pixel cherry, and a chomping send button."
-  }
-];
+  const THEMES = [...document.querySelectorAll('link[data-theme]')].map((l) => ({
+    cls: 'theme-' + l.dataset.theme, name: l.dataset.name, desc: l.dataset.desc,
+  }));
   const TOKENS = ['--bg', '--surface', '--ink', '--muted', '--line', '--accent', '--on-accent',
     '--user-bg', '--user-ink', '--bot-bg', '--code-bg', '--font-body', '--font-display', '--font-meta',
     '--text', '--leading', '--bubble-pad', '--bubble-radius', '--gap', '--edge', '--measure', '--user-align', '--radius'];
@@ -504,10 +344,7 @@
     $('theme-name').textContent = t.name;
     $('theme-desc').textContent = t.desc;
     $('count').textContent = `${String(current + 1).padStart(2, '0')} / ${String(THEMES.length).padStart(2, '0')}`;
-    $('fonts').innerHTML = '';
-    const strong = document.createElement('strong');
-    strong.textContent = 'Type: ';
-    $('fonts').append(strong, t.fonts);
+    $('fonts').textContent = 'File: ' + t.cls.slice(6) + '.css';
 
     [...picker.children].forEach((c, j) => {
       c.setAttribute('aria-selected', String(j === current));
@@ -545,6 +382,9 @@
       $('copy').textContent = 'Copy failed';
     }
   });
+
+  const warm = () => document.fonts.forEach((f) => f.load().catch(() => {}));
+  ('requestIdleCallback' in window) ? requestIdleCallback(warm) : setTimeout(warm, 1500);
 
   let start = 0;
   try {

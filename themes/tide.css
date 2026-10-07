@@ -1,0 +1,48 @@
+/* ============================================================
+   TIDE — sea glass and morning fog
+   ============================================================ */
+
+.theme-tide {
+  --bg: #eaf1f1;
+  --surface: rgba(255, 255, 255, 0.75);
+  --ink: #1d3237;
+  --muted: #7a9095;
+  --line: #d2e0e1;
+  --accent: #3a7a84;
+  --on-accent: #f3f8f8;
+  --user-bg: #cfe4e1;
+  --user-ink: #1d3237;
+  --bot-bg: rgba(255, 255, 255, 0.72);
+  --code-bg: #e1ebeb;
+  --font-body: "Figtree", system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, serif;
+  --text: 15px;
+  --leading: 1.6;
+  --bubble-pad: 12px 16px;
+  --bubble-radius: 24px;
+  --gap: 16px;
+  --measure: 86%;
+  --radius: 24px;
+  background: linear-gradient(180deg, #f4f8f7 0%, #e6eff0 55%, #d6e5e7 100%);
+}
+.theme-tide .chat-header { border-bottom: 0; padding-top: 18px; }
+.theme-tide .chat-title { font-size: 27px; font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+.theme-tide .model { background: rgba(255, 255, 255, 0.7); border-color: rgba(255, 255, 255, 0.9); }
+.theme-tide .who { display: none; }
+.theme-tide .assistant .body {
+  border-radius: 24px 24px 24px 8px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 28px -18px rgba(29, 50, 55, 0.45);
+}
+.theme-tide .user .body { border-radius: 24px 24px 8px 24px; }
+.theme-tide .body li::marker { color: var(--accent); }
+.theme-tide .body pre { background: rgba(255, 255, 255, 0.6); border: 1px solid var(--line); border-radius: 16px; }
+.theme-tide .composer { border-top: 0; padding-bottom: 18px; }
+.theme-tide .composer textarea {
+  padding-left: 18px;
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 8px 22px -14px rgba(29, 50, 55, 0.35);
+}
+.theme-tide .send { width: 42px; padding: 0; border-radius: 50%; font-size: 0; }
+.theme-tide .send::before { content: "↑"; font-size: 18px; }

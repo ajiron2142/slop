@@ -1,0 +1,95 @@
+/* ============================================================
+   TOMBSTONE — moonlight, fog, and a ghost who asks the questions
+   ============================================================ */
+
+.theme-tombstone {
+  --bg: #11171b;
+  --surface: #1a2226;
+  --ink: #d6dfe1;
+  --muted: #7d8b90;
+  --line: #2a353a;
+  --accent: #c9d6c2;
+  --on-accent: #11171b;
+  --user-bg: rgba(220, 235, 240, 0.07);
+  --user-ink: #e4ecee;
+  --bot-bg: transparent;
+  --code-bg: rgba(255, 255, 255, 0.05);
+  --font-body: "Spectral", Georgia, serif;
+  --font-display: "Marcellus SC", Georgia, serif;
+  --font-meta: "Marcellus SC", Georgia, serif;
+  --text: 15.5px;
+  --leading: 1.66;
+  --bubble-pad: 12px 18px 13px;
+  --bubble-radius: 22px 22px 6px 22px;
+  --gap: 28px;
+  --measure: 80%;
+  --radius: 10px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(#0b1013, #141c20 60%, #1b2427);
+}
+.theme-tombstone::after {
+  content: "";
+  position: absolute;
+  left: -40%;
+  right: -40%;
+  bottom: 50px;
+  height: 170px;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 22% 40% at 20% 60%, rgba(200, 215, 220, 0.13), transparent 70%),
+    radial-gradient(ellipse 28% 45% at 52% 72%, rgba(200, 215, 220, 0.1), transparent 70%),
+    radial-gradient(ellipse 20% 35% at 82% 58%, rgba(200, 215, 220, 0.13), transparent 70%);
+  animation: tombstone-fog 18s ease-in-out infinite alternate;
+}
+@keyframes tombstone-fog { from { transform: translateX(-7%); } to { transform: translateX(7%); } }
+@keyframes tombstone-float { to { transform: translateY(-4px); } }
+.theme-tombstone .chat-header {
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(1px 1px at 22% 30%, #fff 50%, transparent),
+    radial-gradient(1px 1px at 58% 70%, #fff 50%, transparent),
+    radial-gradient(1.5px 1.5px at 44% 22%, #fff 50%, transparent),
+    radial-gradient(1px 1px at 70% 28%, #fff 50%, transparent),
+    radial-gradient(1px 1px at 36% 80%, #fff 50%, transparent);
+}
+.theme-tombstone .chat-title { display: flex; align-items: center; gap: 12px; font-size: 20px; letter-spacing: 0.22em; }
+.theme-tombstone .chat-title::before {
+  content: "";
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 40%, rgba(0, 0, 0, 0.09) 0 3px, transparent 3.5px),
+    radial-gradient(circle at 64% 66%, rgba(0, 0, 0, 0.08) 0 4px, transparent 4.5px),
+    radial-gradient(circle at 60% 28%, rgba(0, 0, 0, 0.06) 0 2px, transparent 2.5px),
+    #efe9d2;
+  box-shadow: 0 0 18px rgba(239, 233, 210, 0.5);
+}
+.theme-tombstone .model { border-color: var(--line); }
+.theme-tombstone .who { font-size: 11px; letter-spacing: 0.16em; }
+.theme-tombstone .user .who { text-align: right; }
+.theme-tombstone .user .body {
+  font-size: 16px;
+  font-style: italic;
+  border: 1px solid rgba(220, 235, 240, 0.2);
+  text-shadow: 0 0 10px rgba(220, 240, 245, 0.35);
+  box-shadow: 0 0 26px rgba(200, 230, 235, 0.12), inset 0 0 18px rgba(200, 230, 235, 0.07);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  animation: tombstone-float 6s ease-in-out infinite alternate-reverse;
+}
+.theme-tombstone .assistant { max-width: 100%; }
+.theme-tombstone .assistant .who::before { content: "Whispered by "; }
+.theme-tombstone .assistant .body {
+  padding: 0;
+  text-shadow: 0 0 14px rgba(200, 230, 235, 0.28);
+  animation: tombstone-float 7s ease-in-out infinite alternate;
+}
+.theme-tombstone .body li::marker { color: var(--muted); }
+.theme-tombstone .body code { color: var(--accent); }
+.theme-tombstone .body pre { border: 1px solid var(--line); text-shadow: none; }
+.theme-tombstone .composer { position: relative; z-index: 1; background: #0b1013; }
+.theme-tombstone .composer textarea { background: rgba(255, 255, 255, 0.04); }
+.theme-tombstone .send { font-size: 0; padding: 0 18px; }
+.theme-tombstone .send::before { content: "Whisper"; font-family: var(--font-display); font-size: 13px; letter-spacing: 0.12em; }

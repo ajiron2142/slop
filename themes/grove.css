@@ -1,0 +1,73 @@
+/* ============================================================
+   GROVE — the conversation as a living branch
+   ============================================================ */
+
+.theme-grove {
+  --bg: #eef0e7;
+  --surface: #f6f7f1;
+  --ink: #2a3227;
+  --muted: #7f8a78;
+  --line: #d2d8c6;
+  --accent: #56704c;
+  --on-accent: #f3f5ee;
+  --bark: #7a6550;
+  --user-bg: #e1e7d4;
+  --bot-bg: transparent;
+  --code-bg: #e3e7d9;
+  --font-body: "EB Garamond", Georgia, serif;
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-meta: "Cormorant Garamond", Georgia, serif;
+  --text: 17px;
+  --leading: 1.55;
+  --bubble-pad: 0;
+  --bubble-radius: 16px;
+  --gap: 0px;
+  --measure: 100%;
+  --user-align: stretch;
+  --radius: 22px;
+}
+.theme-grove .chat-title { font-size: 28px; font-style: italic; font-weight: 500; }
+.theme-grove .model { font-size: 14px; font-style: italic; }
+.theme-grove .messages { padding-left: 12px; }
+.theme-grove .msg { position: relative; padding: 0 0 28px 42px; }
+.theme-grove .msg::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--bark);
+  opacity: 0.5;
+}
+.theme-grove .msg:first-child::before { background: linear-gradient(transparent, var(--bark) 40px); }
+.theme-grove .msg:last-child::before { bottom: auto; height: 12px; }
+.theme-grove .who::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 18px;
+  height: 12px;
+  border-left: 1.5px solid var(--bark);
+  border-bottom: 1.5px solid var(--bark);
+  border-bottom-left-radius: 14px;
+  opacity: 0.5;
+}
+.theme-grove .msg::after {
+  content: "";
+  position: absolute;
+  left: 27px;
+  top: 6px;
+  width: 11px;
+  height: 11px;
+  background: var(--accent);
+  border-radius: 50% 0;
+}
+.theme-grove .user::after { background: var(--bg); border: 1.5px solid var(--accent); }
+.theme-grove .who { font-size: 16px; font-style: italic; color: var(--accent); margin-bottom: 4px; }
+.theme-grove .user .body { padding: 10px 16px; border-radius: 4px 16px 16px 16px; }
+.theme-grove .body li::marker { color: var(--accent); }
+.theme-grove .body pre { border-left: 2px solid var(--accent); border-radius: 0 10px 10px 0; }
+.theme-grove .composer textarea { padding-left: 18px; }
+.theme-grove .send { font-family: var(--font-display); font-size: 17px; font-style: italic; font-weight: 600; padding: 0 20px; }

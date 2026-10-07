@@ -1,0 +1,121 @@
+/* ============================================================
+   ADOBE — New Mexico at high noon: a stepped parapet, a chile
+   ristra, stucco walls and a turquoise door
+   ============================================================ */
+
+.theme-adobe {
+  --bg: #f6e3d3;
+  --surface: #fffaf3;
+  --ink: #33262a;
+  --muted: #8f7470;
+  --line: #ead3c2;
+  --accent: #bf0a30;
+  --on-accent: #fffaf3;
+  --turquoise: #2fa69c;
+  --sun: #ffcf2e;
+  --user-bg: var(--turquoise);
+  --user-ink: #ffffff;
+  --bot-bg: rgba(255, 250, 243, 0.86);
+  --code-bg: #f5e7da;
+  --font-body: "Mulish", system-ui, sans-serif;
+  --font-display: "DM Serif Display", Georgia, serif;
+  --font-meta: "Mulish", system-ui, sans-serif;
+  --text: 15px;
+  --leading: 1.6;
+  --bubble-pad: 12px 16px;
+  --bubble-radius: 18px;
+  --gap: 18px;
+  --measure: 86%;
+  --radius: 999px;
+}
+.theme-adobe .chat-header {
+  margin-bottom: 6px;
+  padding-block: 16px 14px;
+  background: var(--surface);
+  border-bottom: 0;
+  box-shadow: 0 3px 0 var(--sun), 0 6px 0 var(--accent);
+}
+.theme-adobe .chat-title { display: flex; align-items: center; gap: 10px; font-size: 27px; font-weight: 400; color: var(--turquoise); }
+.theme-adobe .chat-title::before {
+  content: "";
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--sun) 0 6px, transparent 6.5px), repeating-conic-gradient(var(--sun) 0 8deg, transparent 8deg 30deg);
+  -webkit-mask: radial-gradient(circle, #000 0 6px, transparent 6.5px 7.5px, #000 8px);
+  mask: radial-gradient(circle, #000 0 6px, transparent 6.5px 7.5px, #000 8px);
+}
+.theme-adobe .model { background: #fff; border-color: var(--line); color: var(--ink); }
+.theme-adobe .who { display: none; }
+.theme-adobe .user .body { font-weight: 600; border-bottom-right-radius: 6px; box-shadow: 0 8px 18px -12px rgba(20, 90, 84, 0.8); }
+.theme-adobe .assistant .body {
+  border: 1px solid rgba(234, 211, 194, 0.9);
+  border-bottom-left-radius: 6px;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 22px -16px rgba(120, 60, 50, 0.5);
+}
+.theme-adobe .body li::marker { color: var(--accent); }
+.theme-adobe .body pre { border-left: 3px solid var(--turquoise); }
+.theme-adobe .composer { border-top: 0; background: var(--surface); box-shadow: 0 -3px 0 var(--sun), 0 -6px 0 var(--accent); }
+.theme-adobe .composer textarea { background: #fff; border-color: var(--line); border-radius: 22px; padding-left: 18px; }
+.theme-adobe .send { padding: 0 22px; font-weight: 800; letter-spacing: 0.04em; }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-aqua .send,
+  .theme-chomp .chat-title::before,
+  .theme-chomp .send { animation: none; }
+}
+.theme-adobe {
+  --parapet: url("assets/adobe-parapet.svg");
+  --ristra: url("assets/adobe-ristra.svg");
+  --bg: #e6c49c;
+  --surface: #f6e4cc;
+  --ink: #3b2416;
+  --muted: #8a654a;
+  --line: #d4ab80;
+  --accent: #b5281d;
+  --turquoise: #1f9c95;
+  --user-bg: var(--turquoise);
+  --bot-bg: #f6e4cc;
+  --code-bg: #ecd4b6;
+  --bubble-radius: 22px;
+  --font-display: "Rye", "DM Serif Display", Georgia, serif;
+}
+.theme-adobe .chat-header {
+  position: relative;
+  min-height: 112px;
+  align-items: flex-start;
+  padding-right: 44px;
+  margin-bottom: 0;
+  background: var(--parapet) 0 100% / 100% 40px no-repeat, linear-gradient(#2f86d1, #7bbbe8);
+  box-shadow: none;
+}
+.theme-adobe .chat-header::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 0;
+  width: 18px;
+  height: 78px;
+  background: var(--ristra) 0 0 / 100% 100% no-repeat;
+}
+.theme-adobe .chat-title { color: #fff8ec; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25); font-size: 26px; }
+.theme-adobe .chat-title::before { filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.2)); }
+.theme-adobe .messages {
+  background:
+    radial-gradient(rgba(120, 70, 30, 0.07) 1px, transparent 1.4px) 0 0 / 5px 5px,
+    radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1.4px) 2px 3px / 7px 7px,
+    var(--bg);
+}
+.theme-adobe .assistant .body {
+  border: 0;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55), inset 0 -4px 0 rgba(120, 70, 30, 0.12), 0 8px 0 -2px #d0a77c, 0 14px 18px -12px rgba(80, 40, 10, 0.45);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.theme-adobe .user .body { box-shadow: 0 6px 0 -1px #157670; }
+.theme-adobe .composer { background: #c9784a; box-shadow: inset 0 4px 0 #a75d33; }
+.theme-adobe .composer textarea { background: var(--surface); border-color: #a75d33; }
+.theme-adobe .send { background: var(--turquoise); color: #fff; border-radius: 999px; }

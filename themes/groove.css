@@ -1,0 +1,93 @@
+/* ============================================================
+   GROOVE — a 1970s record sleeve in sunset colours. Questions are tracks.
+   ============================================================ */
+
+.theme-groove {
+  --bg: #f4e6d0;
+  --surface: #fbf2e4;
+  --ink: #3b2414;
+  --muted: #8c6f52;
+  --line: #e2cba9;
+  --accent: #c2410c;
+  --on-accent: #faf3e3;
+  --sleeve: #4a2a17;
+  --sleeve-ink: #f6d38a;
+  --label: #e9b22b;
+  --stripe-1: #e9b22b;
+  --stripe-2: #e07a1f;
+  --stripe-3: #c2410c;
+  --groove: repeating-radial-gradient(circle, #1a120c 0 1.2px, #2a1f17 1.2px 2.4px);
+  --user-bg: transparent;
+  --bot-bg: transparent;
+  --code-bg: #ecdcc1;
+  --font-body: "Literata", Georgia, serif;
+  --font-display: "Righteous", "Unbounded", system-ui, sans-serif;
+  --font-meta: "Unbounded", system-ui, sans-serif;
+  --font-code: "DM Mono", ui-monospace, monospace;
+  --text: 15px;
+  --leading: 1.62;
+  --bubble-pad: 0;
+  --gap: 0px;
+  --edge: 20px;
+  --measure: 100%;
+  --user-align: stretch;
+  --radius: 8px;
+  counter-reset: track;
+}
+.theme-groove .chat-header {
+  position: relative;
+  overflow: hidden;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  min-height: 108px;
+  margin-bottom: 15px;
+  color: var(--sleeve-ink);
+  background: var(--sleeve);
+  border-bottom: 0;
+  box-shadow: 0 5px 0 var(--stripe-1), 0 10px 0 var(--stripe-2), 0 15px 0 var(--stripe-3);
+}
+.theme-groove .chat-header::after {
+  content: "";
+  position: absolute;
+  right: -48px;
+  top: 50%;
+  width: 150px;
+  height: 150px;
+  margin-top: -75px;
+  border-radius: 50%;
+  background:
+    linear-gradient(var(--surface), var(--surface)) 50% 40% / 9px 2px no-repeat,
+    radial-gradient(circle, var(--surface) 0 2.5px, var(--label) 3px 23px, #1a120c 23.5px 25px, transparent 25.5px),
+    conic-gradient(rgba(255, 240, 210, 0.12), transparent 12%, transparent 38%, rgba(255, 240, 210, 0.12) 50%, transparent 62%, transparent 88%, rgba(255, 240, 210, 0.12)),
+    var(--groove);
+  box-shadow: -8px 0 20px rgba(0, 0, 0, 0.35);
+  animation: groove-spin 4s linear infinite;
+}
+@keyframes groove-spin { to { transform: rotate(360deg); } }
+.theme-groove .chat-title { position: relative; z-index: 1; font-size: 36px; font-weight: 400; letter-spacing: 0.01em; line-height: 0.9; }
+.theme-groove .chat-title::after { content: "Long play · 33⅓ rpm"; display: block; margin-top: 8px; font-family: var(--font-meta); font-size: 9px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; }
+.theme-groove .model { position: relative; z-index: 1; background: var(--sleeve-ink); color: var(--sleeve); border: 0; font-family: var(--font-meta); font-size: 10.5px; letter-spacing: 0.06em; }
+.theme-groove .messages { padding-top: 6px; }
+.theme-groove .user { counter-increment: track; padding: 18px 0 14px; border-bottom: 2px solid var(--ink); }
+.theme-groove .user .who { display: none; }
+.theme-groove .user .body { display: flex; align-items: baseline; gap: 14px; font-family: var(--font-display); font-size: 19px; line-height: 1.25; }
+.theme-groove .user .body::before { content: "A" counter(track); flex-shrink: 0; font-family: var(--font-code); font-size: 12px; font-weight: 500; color: var(--accent); }
+.theme-groove .assistant { padding: 16px 0 24px; }
+.theme-groove .assistant .who { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; }
+.theme-groove .assistant .who::before { content: "Liner notes · "; color: var(--accent); }
+.theme-groove .body li::marker { color: var(--accent); }
+.theme-groove .body pre { border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; }
+.theme-groove .composer { border-top: 2px solid var(--ink); align-items: center; }
+.theme-groove .composer textarea { background: var(--surface); border-radius: 22px; padding-left: 18px; }
+.theme-groove .send {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  font-size: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--surface) 0 2px, var(--label) 2.5px 9px, transparent 9.5px), var(--groove);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+.theme-groove .send:hover { animation: groove-spin 1.8s linear infinite; opacity: 1; }

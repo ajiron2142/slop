@@ -1,0 +1,101 @@
+/* ============================================================
+   TRANSIT — the conversation is a subway line
+   ============================================================ */
+
+.theme-transit {
+  --bg: #f6f6f3;
+  --surface: #ffffff;
+  --ink: #151515;
+  --muted: #7a7a75;
+  --line: #e2e2dc;
+  --accent: #00985f;
+  --on-accent: #ffffff;
+  --route: #00985f;
+  --sign: #141414;
+  --q: #e4002b;
+  --a: #0039a6;
+  --user-bg: transparent;
+  --bot-bg: transparent;
+  --code-bg: #ecece7;
+  --font-body: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-body);
+  --font-meta: var(--font-body);
+  --text: 15px;
+  --leading: 1.55;
+  --bubble-pad: 0;
+  --gap: 0px;
+  --measure: 100%;
+  --user-align: stretch;
+  --radius: 8px;
+}
+.theme-transit .chat-header { background: var(--sign); color: #fff; border-bottom: 0; }
+.theme-transit .chat-title { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+.theme-transit .chat-title::before {
+  content: "T";
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--route);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+.theme-transit .model { color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+.theme-transit .messages { padding-left: 10px; }
+.theme-transit .msg { position: relative; padding: 0 0 30px 46px; }
+.theme-transit .msg::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--route);
+}
+.theme-transit .msg:first-child::before { top: 10px; }
+.theme-transit .msg:last-child::before { bottom: auto; height: 12px; }
+.theme-transit .msg::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid var(--sign);
+}
+.theme-transit .assistant::after { left: 11px; top: 5px; width: 12px; height: 12px; border: 3px solid #fff; background: var(--route); }
+.theme-transit .who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.theme-transit .who::after {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+}
+.theme-transit .user .who::after { content: "Q"; background: var(--q); }
+.theme-transit .assistant .who::after { content: "A"; background: var(--a); }
+.theme-transit .user .body { font-size: 19px; font-weight: 600; line-height: 1.3; }
+.theme-transit .body li::marker { color: var(--route); }
+.theme-transit .body pre { background: var(--surface); border: 1px solid var(--line); }
+.theme-transit .composer { background: var(--sign); border-top: 0; }
+.theme-transit .composer textarea { background: #262626; border-color: #333; color: #fff; }
+.theme-transit .composer textarea:focus { border-color: #ffd200; }
+.theme-transit .send { font-size: 0; padding: 0 18px; background: #ffd200; color: var(--sign); }
+.theme-transit .send::before { content: "Depart →"; font-size: 14px; font-weight: 800; }

@@ -1,0 +1,74 @@
+/* ============================================================
+   RASTER — International Typographic Style
+   ============================================================ */
+
+.theme-raster {
+  --bg: #f1f1ee;
+  --surface: #e6e6e2;
+  --ink: #0f0f0f;
+  --muted: #6d6d68;
+  --line: #0f0f0f;
+  --accent: #e4202a;
+  --on-accent: #ffffff;
+  --user-bg: transparent;
+  --bot-bg: transparent;
+  --code-bg: #e2e2de;
+  --font-body: "Inter Tight", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: var(--font-body);
+  --font-meta: var(--font-body);
+  --text: 15px;
+  --leading: 1.45;
+  --bubble-pad: 0;
+  --bubble-radius: 0;
+  --gap: 0px;
+  --edge: 16px;
+  --measure: 100%;
+  --user-align: stretch;
+  --radius: 0;
+  counter-reset: turn;
+}
+.theme-raster .chat-header { align-items: flex-end; padding-top: 18px; border-bottom: 3px solid var(--ink); }
+.theme-raster .chat-title { font-size: 36px; font-weight: 800; letter-spacing: -0.045em; line-height: 0.85; }
+.theme-raster .model {
+  border: 0;
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+}
+.theme-raster .messages { padding-top: 0; }
+.theme-raster .msg {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  column-gap: 8px;
+  padding: 14px 0 18px;
+  border-bottom: 1px solid var(--ink);
+  counter-increment: turn;
+}
+.theme-raster .msg::before {
+  content: counter(turn, decimal-leading-zero);
+  grid-row: 1 / span 2;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.theme-raster .who, .theme-raster .body { grid-column: 2; }
+.theme-raster .who {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.theme-raster .user::before, .theme-raster .user .who { color: var(--accent); }
+.theme-raster .user .body { font-size: 23px; font-weight: 600; letter-spacing: -0.025em; line-height: 1.12; }
+.theme-raster .body ul { list-style: square; }
+.theme-raster .body li::marker { color: var(--accent); }
+.theme-raster .body pre { background: var(--ink); color: var(--bg); }
+.theme-raster .composer { border-top: 3px solid var(--ink); }
+.theme-raster .composer textarea { background: transparent; border: 0; padding-left: 0; font-weight: 500; }
+.theme-raster .send { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
