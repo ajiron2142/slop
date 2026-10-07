@@ -69,7 +69,7 @@
 .theme-groove .chat-title { position: relative; z-index: 1; font-size: 36px; font-weight: 400; letter-spacing: 0.01em; line-height: 0.9; }
 .theme-groove .chat-title::after { content: "Long play · 33⅓ rpm"; display: block; margin-top: 8px; font-family: var(--font-meta); font-size: 9px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; }
 .theme-groove .model { position: relative; z-index: 1; background: var(--sleeve-ink); color: var(--sleeve); border: 0; font-family: var(--font-meta); font-size: 10.5px; letter-spacing: 0.06em; }
-.theme-groove .messages { padding-top: 6px; }
+.theme-groove .messages { --pad-top: 6px; }
 .theme-groove .user { counter-increment: track; padding: 18px 0 14px; border-bottom: 2px solid var(--ink); }
 .theme-groove .user .who { display: none; }
 .theme-groove .user .body { display: flex; align-items: baseline; gap: 14px; font-family: var(--font-display); font-size: 19px; line-height: 1.25; }

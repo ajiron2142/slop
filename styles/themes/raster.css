@@ -40,7 +40,7 @@
   text-transform: uppercase;
   padding: 5px 8px;
 }
-.theme-raster .messages { padding-top: 0; }
+.theme-raster .messages { --pad-top: 0px; }
 .theme-raster .msg {
   display: grid;
   grid-template-columns: 40px 1fr;

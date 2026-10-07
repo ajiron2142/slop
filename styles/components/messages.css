@@ -17,27 +17,36 @@
 .body th, .body td { padding: 6px 10px; text-align: left; vertical-align: top; border: 1px solid var(--line); }
 .body th { background: var(--surface); }
 
+/* Code block header (language + Copy). Sticky, so Copy is reachable anywhere in a long block. */
 .code-head {
   position: sticky;
-  top: 0;
+  top: calc(-1 * var(--pad-top));
   z-index: 1;
   display: flex;
-  justify-content: flex-end;
-  height: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  font-family: var(--font-meta);
+  font-size: 12px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--ink) 7%, var(--bg));
+  border-radius: min(var(--radius), 10px) min(var(--radius), 10px) 0 0;
 }
 .code .copy {
-  margin: 6px 6px 0 0;
-  height: 24px;
-  padding: 0 9px;
-  font-family: var(--font-meta);
-  font-size: 11px;
-  color: var(--muted);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
   cursor: pointer;
 }
 .code .copy:hover { color: var(--ink); }
+.code .copy .icon { width: 14px; height: 14px; }
+.chat .body .code > pre { border-top-left-radius: 0; border-top-right-radius: 0; }
 
 .streaming .body:empty::before {
   content: "";

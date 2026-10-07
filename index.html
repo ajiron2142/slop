@@ -76,9 +76,10 @@
   </div>
 
   <dialog id="settings" class="settings themed">
+    <button id="close-settings" class="icon-btn settings-close" aria-label="Close settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <h2>Settings</h2>
     <label>LiteLLM base URL
-      <input id="set-base-url" type="url" placeholder="https://litellm.example.com" autocomplete="off" spellcheck="false">
+      <input id="set-base-url" type="url" autofocus placeholder="https://litellm.example.com" autocomplete="off" spellcheck="false">
     </label>
     <label>API key
       <input id="set-api-key" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false">
@@ -91,7 +92,6 @@
     <div class="row">
       <button id="save-settings" class="btn primary">Save</button>
       <button id="test-conn" class="btn">Test connection</button>
-      <button id="close-settings" class="btn">Close</button>
     </div>
     <div class="row">
       <button id="export-btn" class="btn">Export chats</button>

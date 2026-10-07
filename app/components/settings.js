@@ -40,6 +40,12 @@ export function createSettings({ getSettings, onSave, onTest, onForgetKey, onDel
     if (file) run(() => onImport(file));
   });
   $('close-settings').addEventListener('click', () => dialog.close());
+  // Clicking the dimmed backdrop (outside the dialog box) closes it.
+  dialog.addEventListener('click', (e) => {
+    const r = dialog.getBoundingClientRect();
+    const outside = e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+    if (e.target === dialog && outside) dialog.close();
+  });
 
   return {
     open(message = '') {

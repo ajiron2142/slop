@@ -9,6 +9,7 @@ dialog.settings {
   border-radius: min(var(--radius), 14px);
   box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.45);
 }
+.settings-close { position: absolute; top: 14px; right: 14px; }
 .settings::backdrop { background: rgba(0, 0, 0, 0.4); }
 .settings h2 { margin: 0 0 14px; font-family: var(--font-display); font-size: 20px; font-weight: 500; }
 .settings label, .settings .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-size: 13px; color: var(--muted); }

@@ -1,3 +1,8 @@
+// Entry point. Owns the app state and connects the components:
+//   composer (you type) -> send() -> complete() streams the reply via api.js
+//   -> messages (renders it) and storage.js (saves it) -> sidebar (lists chats).
+// Components only handle their own piece of the page and call back here.
+
 import { listModels, streamChat, toApiContent } from './api.js';
 import * as store from './storage.js';
 import { $ } from './dom.js';

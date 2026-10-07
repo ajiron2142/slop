@@ -50,6 +50,30 @@ vendor/               marked, DOMPurify, idb-keyval (never edited)
 
 **Rules that keep it small:** each UI piece is a `.js` + `.css` pair with the same name; components use tokens, never fixed colours; themes only set tokens and overrides, never layout; adding anything means adding a file and one line.
 
+## How it works
+
+1. `index.html` lays out the page and loads the CSS and `app/main.js`.
+2. `main.js` loads your settings and chats from the browser (`storage.js`), applies your theme, and fetches the model list (`api.js`).
+3. When you send, the **composer** hands the text and attachments to `main.js`, which saves the message and streams the reply from LiteLLM.
+4. As the reply streams in, **messages** renders it (markdown via `markdown.js`, always sanitised), and the chat is saved again when it finishes.
+5. The **sidebar** lists saved chats; **settings** edits the connection, system prompt and theme.
+
+Each component only touches its own part of the page and reports back to `main.js` through callbacks like `onSend` or `onOpen`.
+
+## Customising
+
+- **Theme:** add a file in `styles/themes/` and one `<link>` line in `index.html`. See `styles/themes/README.md`.
+- **Component:** add `app/components/x.js` and `styles/components/x.css`, create it in `main.js`, and link the CSS in `index.html`. Use tokens (`var(--ink)`, `var(--line)`, …) for colours so every theme applies.
+- **Look of everything at once:** change the default tokens at the top of `styles/base.css`.
+
+## Security
+
+- A strict Content-Security-Policy in `index.html`: only this site's own scripts, styles, fonts and images, and connections only to `https://` URLs.
+- Model replies are rendered as markdown and always sanitised with DOMPurify; links open in a new tab without access to this page. Remote images in replies are blocked.
+- Everything else (titles, your messages, file names) is inserted as plain text, never as HTML.
+- Your API key and chats live only in this browser's IndexedDB and are sent nowhere except your LiteLLM URL. Settings has **Forget key** and **Delete all local data**.
+- Attachments are read in the browser: images up to 10 MB, text files up to 512 KB. Imported chat files are validated before saving.
+
 ## Features
 
 - Model picker with search and recent models

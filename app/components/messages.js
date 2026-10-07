@@ -2,6 +2,7 @@ import { el } from '../dom.js';
 import { renderMarkdown } from '../markdown.js';
 
 const LABEL = { user: 'You', assistant: 'Assistant', error: 'Error' };
+const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
 
 // The conversation pane: renders messages, follows the bottom while streaming,
 // and handles the Copy and Retry buttons.
@@ -17,13 +18,14 @@ export function createMessages(pane, { onRetry }) {
     if (!btn) return;
     if (btn.dataset.action === 'retry') return onRetry();
     const code = btn.closest('.code').querySelector('code');
+    const label = btn.querySelector('span');
     try {
       await navigator.clipboard.writeText(code.textContent);
-      btn.textContent = 'Copied';
+      label.textContent = 'Copied';
     } catch {
-      btn.textContent = 'Failed';
+      label.textContent = 'Failed';
     }
-    setTimeout(() => { btn.textContent = 'Copy'; }, 1200);
+    setTimeout(() => { label.textContent = 'Copy'; }, 1200);
   });
 
   const follow = () => { if (stick) pane.scrollTop = pane.scrollHeight; };
@@ -70,13 +72,17 @@ function fillBody(body, msg) {
     return;
   }
   body.innerHTML = renderMarkdown(msg.content);
+  // Each code block gets a header bar (language + Copy) that stays visible while scrolling.
   for (const pre of body.querySelectorAll('pre')) {
-    const wrap = el('div', 'code');
-    const copy = el('button', 'copy', 'Copy');
+    const lang = pre.querySelector('code')?.className.match(/language-([\w+#-]+)/)?.[1] ?? '';
+    const copy = el('button', 'copy');
     copy.type = 'button';
     copy.dataset.action = 'copy';
+    copy.innerHTML = COPY_ICON;
+    copy.append(el('span', '', 'Copy'));
     const head = el('div', 'code-head');
-    head.append(copy);
+    head.append(el('span', 'code-lang', lang), copy);
+    const wrap = el('div', 'code');
     pre.replaceWith(wrap);
     wrap.append(head, pre);
   }

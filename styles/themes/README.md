@@ -41,6 +41,7 @@ Set on `.chat` in the base and overridden by each theme:
 | `--text`, `--leading` | Text size and line height |
 | `--bubble-pad`, `--bubble-radius` | Bubble padding and corners |
 | `--gap`, `--edge` | Space between messages and side margins |
+| `--pad-top` | Space above the first message (code headers stick at the very top because of it) |
 | `--measure` | Max bubble width |
 | `--user-align` | Where your bubbles sit (`flex-end`, `stretch`, `center`) |
 | `--radius` | Corners on inputs and buttons |

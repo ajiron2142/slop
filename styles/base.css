@@ -32,6 +32,7 @@
   --bubble-pad: 10px 14px;
   --gap: 22px;
   --edge: 18px;
+  --pad-top: 24px;
   --measure: 88%;
   --user-align: flex-end;
 
@@ -86,7 +87,7 @@
 .messages {
   flex: 1;
   overflow-y: auto;
-  padding: 24px var(--edge);
+  padding: var(--pad-top) var(--edge);
   display: flex;
   flex-direction: column;
   gap: var(--gap);
