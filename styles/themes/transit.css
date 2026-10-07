@@ -99,3 +99,6 @@
 .theme-transit .composer textarea:focus { border-color: #ffd200; }
 .theme-transit .send { font-size: 0; padding: 0 18px; background: #ffd200; color: var(--sign); }
 .theme-transit .send::before { content: "Depart →"; font-size: 14px; font-weight: 800; }
+
+/* Code colours: the subway lines: red, green, orange, blue and purple. */
+.theme-transit { --code-keyword: #cc3128; --code-string: #00784a; --code-number: #9a5200; --code-title: #0b5fc2; --code-attr: #7a3fa0; --code-comment: #75756f; }

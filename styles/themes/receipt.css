@@ -92,3 +92,6 @@
 .theme-receipt .composer textarea { background: transparent; border: 1px dashed var(--ink); }
 .theme-receipt .send { font-size: 0; padding: 0 14px; }
 .theme-receipt .send::before { content: "PRINT"; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; }
+
+/* Code colours: thermal ink with red print. */
+.theme-receipt { --code-keyword: #b3261e; --code-string: #4a4a4a; --code-number: #b3261e; --code-title: #232323; --code-attr: #5a5a5a; --code-comment: #85837e; }

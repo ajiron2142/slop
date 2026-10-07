@@ -119,3 +119,6 @@
 .theme-adobe .composer { background: #c9784a; box-shadow: inset 0 4px 0 #a75d33; }
 .theme-adobe .composer textarea { background: var(--surface); border-color: #a75d33; }
 .theme-adobe .send { background: var(--turquoise); color: #fff; border-radius: 999px; }
+
+/* Code colours: chile red, sage, terracotta and turquoise. */
+.theme-adobe { --code-keyword: #a8092a; --code-string: #355e24; --code-number: #8f3f10; --code-title: #12666a; --code-attr: #74461a; --code-comment: #8f7470; }

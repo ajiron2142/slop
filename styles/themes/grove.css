@@ -71,3 +71,6 @@
 .theme-grove .body pre { border-left: 2px solid var(--accent); border-radius: 0 10px 10px 0; }
 .theme-grove .composer textarea { padding-left: 18px; }
 .theme-grove .send { font-family: var(--font-display); font-size: 17px; font-style: italic; font-weight: 600; padding: 0 20px; }
+
+/* Code colours: leaf, bark, berry and sky. */
+.theme-grove { --code-keyword: #3f6b35; --code-string: #8a5a1a; --code-number: #a0431f; --code-title: #2f5a7a; --code-attr: #6b5a2a; --code-comment: #7a8573; }

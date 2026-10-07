@@ -53,3 +53,6 @@
 .theme-linen .composer textarea { background: transparent; border: 0; padding: 9px 0; min-height: 40px; }
 .theme-linen .send { width: 40px; height: 40px; padding: 0; border-radius: 50%; font-size: 0; }
 .theme-linen .send::before { content: "↑"; font-size: 18px; }
+
+/* Code colours: warm red, denim, ochre and violet. */
+.theme-linen { --code-keyword: #b03a2e; --code-string: #2b5a8a; --code-number: #8a5a00; --code-title: #6b45b0; --code-attr: #2f6f5f; --code-comment: #8f897f; }

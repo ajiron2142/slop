@@ -46,3 +46,6 @@
 }
 .theme-tide .send { width: 42px; padding: 0; border-radius: 50%; font-size: 0; }
 .theme-tide .send::before { content: "↑"; font-size: 18px; }
+
+/* Code colours: sea teal, coral, deep blue and lavender. */
+.theme-tide { --code-keyword: #2b6670; --code-string: #35704a; --code-number: #a8522a; --code-title: #3b5ba8; --code-attr: #7a5aa0; --code-comment: #6f878c; }

@@ -80,3 +80,6 @@
 .theme-lantern .composer textarea:focus { box-shadow: 0 0 14px rgba(var(--glow), 0.3); }
 .theme-lantern .send { height: 46px; font-size: 0; padding: 0 22px; border-radius: 23px; }
 .theme-lantern .send::before { content: "Carve"; padding-top: 2px; font-family: var(--font-display); font-size: 19px; letter-spacing: 0.06em; }
+
+/* Code colours: candle orange, flame, purple and goblin green. */
+.theme-lantern { --code-keyword: #f5913a; --code-string: #ffd36a; --code-number: #c69cf2; --code-title: #a8d672; --code-attr: #ff7a5c; --code-comment: #a08a6c; }

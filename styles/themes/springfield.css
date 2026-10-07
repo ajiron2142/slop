@@ -65,3 +65,6 @@
     radial-gradient(circle, var(--accent) 0 7px, var(--ink) 7.5px 9px, #f59fc6 9.5px 17px, #e2ad63 17.5px);
   box-shadow: 3px 3px 0 var(--ink);
 }
+
+/* Code colours: donut pink, Marge blue, lawn green and orange. */
+.theme-springfield { --code-keyword: #c2185b; --code-string: #2b7a1d; --code-number: #c44600; --code-title: #1f5fbf; --code-attr: #8a5a00; --code-comment: #2f5d7a; }

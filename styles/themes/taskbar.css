@@ -154,3 +154,6 @@
   border-right: 1px solid var(--frame-dark);
   box-shadow: inset -1px 0 0 var(--tray-edge);
 }
+
+/* Code colours: title-bar blue, Start green and close-button red. */
+.theme-taskbar { --code-keyword: #0a3fbf; --code-string: #2a7a2a; --code-number: #b84a00; --code-title: #7a1fa2; --code-attr: #b0262b; --code-comment: #5a6b7a; }

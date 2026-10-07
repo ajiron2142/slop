@@ -71,3 +71,6 @@
 .theme-airmail .composer { border-top: 6px solid; border-image: var(--stripes) 6; }
 .theme-airmail .composer textarea { background: var(--surface); }
 .theme-airmail .send { font-family: var(--font-meta); font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* Code colours: postage-stamp red, blue, green and ochre. */
+.theme-airmail { --code-keyword: #a82a25; --code-string: #2e6b3a; --code-number: #8a5a00; --code-title: #1f55a3; --code-attr: #7a3b6e; --code-comment: #807d70; }

@@ -75,3 +75,6 @@
   padding: 0 2px;
 }
 .theme-folio .send::after { content: " →"; }
+
+/* Code colours: oxblood, olive, ochre and ink blue. */
+.theme-folio { --code-keyword: #8e3b23; --code-string: #4a6a2e; --code-number: #8a5a12; --code-title: #2f4e7a; --code-attr: #6b3f6b; --code-comment: #857d6e; }

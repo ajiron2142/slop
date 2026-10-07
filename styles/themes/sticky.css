@@ -81,3 +81,6 @@
 }
 .theme-sticky .send { font-size: 0; padding: 0 16px; }
 .theme-sticky .send::before { content: "Stick it"; font-size: 13px; }
+
+/* Code colours: the colours of the notes themselves. */
+.theme-sticky { --code-keyword: #a03408; --code-string: #24643c; --code-number: #7a3fb0; --code-title: #1a50a3; --code-attr: #a3127a; --code-comment: #807c74; }

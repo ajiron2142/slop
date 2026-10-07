@@ -19,6 +19,13 @@
   --bot-bg: transparent;
   --bot-ink: var(--ink);
   --code-bg: var(--surface);
+  /* Syntax colours (GitHub's light palette). Every theme sets its own; a dark theme must. */
+  --code-keyword: #cf222e;
+  --code-string: #0a3069;
+  --code-number: #0550ae;
+  --code-title: #8250df;
+  --code-attr: #953800;
+  --code-comment: #6e7781;
 
   --font-body: system-ui, -apple-system, sans-serif;
   --font-display: var(--font-body);

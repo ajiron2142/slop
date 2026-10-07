@@ -91,3 +91,6 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 .theme-groove .send:hover { animation: groove-spin 1.8s linear infinite; opacity: 1; }
+
+/* Code colours: burnt orange, avocado, mustard and plum. */
+.theme-groove { --code-keyword: #a3360a; --code-string: #525e12; --code-number: #7f520c; --code-title: #8a2b5a; --code-attr: #2f6464; --code-comment: #8c6f52; }

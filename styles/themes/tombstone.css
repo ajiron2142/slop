@@ -93,3 +93,6 @@
 .theme-tombstone .composer textarea { background: rgba(255, 255, 255, 0.04); }
 .theme-tombstone .send { font-size: 0; padding: 0 18px; }
 .theme-tombstone .send::before { content: "Whisper"; font-family: var(--font-display); font-size: 13px; letter-spacing: 0.12em; }
+
+/* Code colours: ghost green, old parchment and moonlight. */
+.theme-tombstone { --code-keyword: #9fd6b0; --code-string: #d9c58a; --code-number: #e0a0a0; --code-title: #9fc3e6; --code-attr: #c7b3e6; --code-comment: #8a989d; }

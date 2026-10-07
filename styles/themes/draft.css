@@ -56,3 +56,6 @@
 .theme-draft .composer textarea { background: transparent; border: 0; padding-left: 0; }
 .theme-draft .send { padding: 0 4px; background: transparent; color: var(--ink); font-size: 0; }
 .theme-draft .send::before { content: "CUT TO:"; font-size: 14.5px; font-weight: 700; }
+
+/* Code colours: typewriter ink with a red pen. */
+.theme-draft { --code-keyword: #b2322b; --code-string: #2f5d50; --code-number: #7a4e00; --code-title: #3b4a8a; --code-attr: #6b4a2a; --code-comment: #8c8981; }

@@ -72,3 +72,6 @@
 .theme-raster .composer { border-top: 3px solid var(--ink); }
 .theme-raster .composer textarea { background: transparent; border: 0; padding-left: 0; font-weight: 500; }
 .theme-raster .send { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
+
+/* Code colours: Swiss red on black and white. */
+.theme-raster .body pre { --code-keyword: #ff4d55; --code-string: #c9c9c4; --code-number: #ff8a8f; --code-title: #ffffff; --code-attr: #a5a5a0; --code-comment: #85857f; }

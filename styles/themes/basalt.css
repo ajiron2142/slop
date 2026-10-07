@@ -53,3 +53,6 @@
 .theme-basalt .body li::marker { color: var(--muted); }
 .theme-basalt .composer textarea:focus { box-shadow: 0 0 0 3px rgba(var(--glow), 0.14); }
 .theme-basalt .send { font-weight: 500; }
+
+/* Code colours: warm bone, sage and copper on graphite. */
+.theme-basalt { --code-keyword: #d9b38c; --code-string: #a8c7a0; --code-number: #e0a37c; --code-title: #c9d4e6; --code-attr: #b8aee0; --code-comment: #808584; }

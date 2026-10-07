@@ -69,3 +69,6 @@
 .theme-bauhaus .composer textarea { border: 2px solid var(--ink); }
 .theme-bauhaus .send { width: 42px; padding: 0; border-radius: 50%; background: var(--yellow); color: var(--ink); font-size: 0; }
 .theme-bauhaus .send::before { content: "→"; font-size: 19px; font-weight: 600; }
+
+/* Code colours: red, yellow and blue on black. */
+.theme-bauhaus .body pre { --code-keyword: #ff6a4d; --code-string: #f4c430; --code-number: #ff9e3d; --code-title: #7aaeff; --code-attr: #c9c2b4; --code-comment: #8f8a80; }

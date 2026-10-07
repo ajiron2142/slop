@@ -60,3 +60,6 @@
   background: var(--holo);
 }
 .theme-prism .send::before { content: "↑"; font-size: 18px; font-weight: 600; }
+
+/* Code colours: a spectrum: magenta, teal, orange, violet and blue. */
+.theme-prism { --code-keyword: #c2185b; --code-string: #0b7066; --code-number: #b35500; --code-title: #6a3fd1; --code-attr: #1f5fbf; --code-comment: #85859a; }

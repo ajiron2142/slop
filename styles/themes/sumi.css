@@ -64,3 +64,6 @@
 }
 .theme-sumi .send { width: 42px; padding: 0; font-size: 0; }
 .theme-sumi .send::before { content: "送"; font-family: var(--font-body); font-size: 18px; font-weight: 600; }
+
+/* Code colours: vermilion seal, pine and indigo. */
+.theme-sumi { --code-keyword: #b03d29; --code-string: #3c5a4a; --code-number: #7a5a2a; --code-title: #2a4a6b; --code-attr: #6b4a5a; --code-comment: #878073; }

@@ -76,3 +76,6 @@
 @media (prefers-reduced-motion: reduce) {
   .theme-lumen .chat-title { animation: none; }
 }
+
+/* Code colours: neon pink, cyan, amber and violet. */
+.theme-lumen { --code-keyword: #ff6f9c; --code-string: #aef2ff; --code-number: #ffd479; --code-title: #c7a6ff; --code-attr: #7cf2c4; --code-comment: #8a8592; }

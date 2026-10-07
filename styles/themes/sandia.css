@@ -76,3 +76,6 @@
   .theme-chomp .chat-title::before,
   .theme-chomp .send { animation: none; }
 }
+
+/* Code colours: watermelon, rind green, turquoise and dusk purple. */
+.theme-sandia { --code-keyword: #b0124a; --code-string: #3a6f35; --code-number: #9a4a12; --code-title: #18646d; --code-attr: #6b3d7a; --code-comment: #8f7470; }
