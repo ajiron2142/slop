@@ -3,40 +3,76 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https:; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src https:; base-uri 'none'; form-action 'none'">
   <title>Chat</title>
   <link rel="icon" href="data:,">
-  <link id="theme" rel="stylesheet" href="style.css">
-  <script type="module" src="app.js"></script>
+  <link rel="stylesheet" href="fonts/fonts.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components/sidebar.css">
+  <link rel="stylesheet" href="styles/components/messages.css">
+  <link rel="stylesheet" href="styles/components/composer.css">
+  <link rel="stylesheet" href="styles/components/picker.css">
+  <link rel="stylesheet" href="styles/components/settings.css">
+  <!-- Themes: one line each. Add a theme by adding its file and a line here. -->
+  <link rel="stylesheet" href="styles/themes/folio.css" data-theme="folio" data-name="Folio">
+  <link rel="stylesheet" href="styles/themes/sumi.css" data-theme="sumi" data-name="Sumi">
+  <link rel="stylesheet" href="styles/themes/grove.css" data-theme="grove" data-name="Grove">
+  <link rel="stylesheet" href="styles/themes/raster.css" data-theme="raster" data-name="Raster">
+  <link rel="stylesheet" href="styles/themes/linen.css" data-theme="linen" data-name="Linen">
+  <link rel="stylesheet" href="styles/themes/atelier.css" data-theme="atelier" data-name="Atelier">
+  <link rel="stylesheet" href="styles/themes/tide.css" data-theme="tide" data-name="Tide">
+  <link rel="stylesheet" href="styles/themes/draft.css" data-theme="draft" data-name="Draft">
+  <link rel="stylesheet" href="styles/themes/bauhaus.css" data-theme="bauhaus" data-name="Bauhaus">
+  <link rel="stylesheet" href="styles/themes/basalt.css" data-theme="basalt" data-name="Basalt">
+  <link rel="stylesheet" href="styles/themes/airmail.css" data-theme="airmail" data-name="Airmail">
+  <link rel="stylesheet" href="styles/themes/receipt.css" data-theme="receipt" data-name="Receipt">
+  <link rel="stylesheet" href="styles/themes/lumen.css" data-theme="lumen" data-name="Lumen">
+  <link rel="stylesheet" href="styles/themes/prism.css" data-theme="prism" data-name="Prism">
+  <link rel="stylesheet" href="styles/themes/sticky.css" data-theme="sticky" data-name="Sticky">
+  <link rel="stylesheet" href="styles/themes/transit.css" data-theme="transit" data-name="Transit">
+  <link rel="stylesheet" href="styles/themes/boarding.css" data-theme="boarding" data-name="Boarding">
+  <link rel="stylesheet" href="styles/themes/riso.css" data-theme="riso" data-name="Riso">
+  <link rel="stylesheet" href="styles/themes/lantern.css" data-theme="lantern" data-name="Lantern">
+  <link rel="stylesheet" href="styles/themes/pocket.css" data-theme="pocket" data-name="Pocket">
+  <link rel="stylesheet" href="styles/themes/tombstone.css" data-theme="tombstone" data-name="Tombstone">
+  <link rel="stylesheet" href="styles/themes/groove.css" data-theme="groove" data-name="Groove">
+  <link rel="stylesheet" href="styles/themes/taskbar.css" data-theme="taskbar" data-name="Taskbar">
+  <link rel="stylesheet" href="styles/themes/springfield.css" data-theme="springfield" data-name="Springfield">
+  <link rel="stylesheet" href="styles/themes/sandia.css" data-theme="sandia" data-name="Sandia">
+  <link rel="stylesheet" href="styles/themes/adobe.css" data-theme="adobe" data-name="Adobe">
+  <link rel="stylesheet" href="styles/themes/chomp.css" data-theme="chomp" data-name="Chomp">
+  <script type="module" src="app/main.js"></script>
 </head>
 <body>
   <div class="app" id="app">
-    <aside class="sidebar">
-      <button id="new-chat" class="primary">+ New chat</button>
+    <aside class="sidebar themed" aria-label="Chats">
+      <button id="new-chat" class="btn primary">New chat</button>
+      <input id="search" class="search" type="search" placeholder="Search chats" aria-label="Search chats">
       <ul id="chat-list" class="chat-list"></ul>
-      <div class="sidebar-footer">
-        <button id="export-btn">Export</button>
-        <button id="import-btn">Import</button>
-        <button id="settings-btn">Settings</button>
-        <button id="style-btn">Basic mode</button>
-        <input type="file" id="import-file" accept=".json,application/json" hidden>
-      </div>
+      <button id="settings-btn" class="btn">Settings</button>
     </aside>
-    <main>
-      <header>
-        <button id="menu-btn" class="menu-btn" aria-label="Show chats">☰</button>
-        <select id="model-select" aria-label="Model"></select>
-        <span id="notice" class="notice" role="status"></span>
+    <div class="scrim" id="scrim"></div>
+
+    <section class="chat themed" id="chat">
+      <header class="chat-header">
+        <button id="menu-btn" class="icon-btn menu-btn" aria-label="Show chats"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <h1 class="chat-title">Chat</h1>
+        <div class="picker" id="model-picker"></div>
       </header>
+      <p id="notice" class="notice" role="status" hidden></p>
       <div id="messages" class="messages"></div>
-      <div class="composer">
-        <textarea id="input" rows="1" placeholder="Message (Enter to send, Shift+Enter for a new line)"></textarea>
-        <button id="send-btn" class="primary">Send</button>
-      </div>
-    </main>
+      <div id="tray" class="tray" hidden></div>
+      <form id="composer" class="composer">
+        <button type="button" id="attach-btn" class="icon-btn attach" aria-label="Attach images or text files"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.5-8.5"/></svg></button>
+        <input type="file" id="file-input" multiple hidden>
+        <textarea id="input" rows="1" placeholder="Write a message…" aria-label="Message"></textarea>
+        <button type="submit" id="send-btn" class="send" aria-label="Send">Send</button>
+      </form>
+      <div id="drop" class="drop" hidden>Drop images or text files to attach</div>
+    </section>
   </div>
 
-  <dialog id="settings">
+  <dialog id="settings" class="settings themed">
     <h2>Settings</h2>
     <label>LiteLLM base URL
       <input id="set-base-url" type="url" placeholder="https://litellm.example.com" autocomplete="off" spellcheck="false">
@@ -47,19 +83,23 @@
     <label>System prompt (optional)
       <textarea id="set-system" rows="3"></textarea>
     </label>
+    <div class="field">Theme <div class="picker block" id="theme-picker"></div></div>
     <p id="settings-status" class="settings-status" role="status"></p>
     <div class="row">
-      <button id="save-settings" class="primary">Save</button>
-      <button id="test-conn">Test connection</button>
-      <button id="close-settings">Close</button>
+      <button id="save-settings" class="btn primary">Save</button>
+      <button id="test-conn" class="btn">Test connection</button>
+      <button id="close-settings" class="btn">Close</button>
     </div>
-    <div class="row danger-zone">
-      <button id="forget-key">Forget key</button>
-      <button id="delete-all" class="danger">Delete all local data</button>
+    <div class="row">
+      <button id="export-btn" class="btn">Export chats</button>
+      <button id="import-btn" class="btn">Import chats</button>
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+    </div>
+    <div class="row">
+      <button id="forget-key" class="btn">Forget key</button>
+      <button id="delete-all" class="btn danger">Delete all local data</button>
     </div>
     <p class="hint">Your key and chats are stored only in this browser. Requests go only to the base URL above.</p>
   </dialog>
-
-  <div id="drop-overlay" class="drop-overlay" hidden>Drop a chat export (.json) to import</div>
 </body>
 </html>

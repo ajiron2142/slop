@@ -1,6 +1,6 @@
-import { get, set, setMany, delMany, keys, getMany, clear } from './vendor/idb-keyval.js';
+import { get, set, setMany, delMany, keys, getMany, clear } from '../vendor/idb-keyval.js';
 
-const DEFAULT_SETTINGS = { baseUrl: '', apiKey: '', model: '', systemPrompt: '', basicStyle: false };
+const DEFAULT_SETTINGS = { baseUrl: '', apiKey: '', model: '', systemPrompt: '', theme: '', recentModels: [] };
 
 export async function loadSettings() {
   return { ...DEFAULT_SETTINGS, ...(await get('settings')) };
@@ -28,6 +28,16 @@ export function saveChat(meta, messages) {
   ]);
 }
 
+// Chats whose title or any message contains the query (case-insensitive).
+export async function searchChats(query) {
+  const q = query.toLowerCase();
+  const metas = await listChatMeta();
+  const bodies = await getMany(metas.map((m) => `chat:${m.id}`));
+  return metas.filter((m, i) =>
+    m.title.toLowerCase().includes(q) ||
+    (bodies[i]?.messages ?? []).some((msg) => msg.content.toLowerCase().includes(q)));
+}
+
 export const deleteChat = (id) => delMany([`chatmeta:${id}`, `chat:${id}`]);
 
 export const clearAll = () => clear();
@@ -45,6 +55,15 @@ export async function exportAll() {
 const isMessage = (m) =>
   m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string';
 
+const isFile = (f) =>
+  f && typeof f.name === 'string' &&
+  ((f.kind === 'image' && typeof f.dataUrl === 'string' && f.dataUrl.startsWith('data:image/')) ||
+   (f.kind === 'text' && typeof f.text === 'string'));
+
+const cleanFiles = (files) =>
+  files.filter(isFile).map(({ kind, name, dataUrl, text }) =>
+    kind === 'image' ? { kind, name, dataUrl } : { kind, name, text });
+
 export async function importData(data) {
   if (data?.version !== 1 || !Array.isArray(data.chats)) {
     throw new Error('Not a version 1 chat export.');
@@ -58,10 +77,11 @@ export async function importData(data) {
       skipped++;
       continue;
     }
-    const messages = chat.messages.filter(isMessage).map(({ role, content, ts }) => ({
+    const messages = chat.messages.filter(isMessage).map(({ role, content, ts, files }) => ({
       role,
       content,
       ts: Number(ts) || 0,
+      ...(Array.isArray(files) && { files: cleanFiles(files) }),
     }));
     const meta = {
       id: m.id,

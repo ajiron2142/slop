@@ -1,101 +1,28 @@
-# Chat theme system
+# Themes
 
-A small base stylesheet plus one self-contained file per theme. Fonts are shared and self-hosted; if a font is missing, a theme falls back to the next font it lists. Give this file and the `themes/` folder to an AI along with your app's code, and ask it to adapt the app to this system.
+A theme is one self-contained CSS file in this folder. It sets the tokens from `styles/base.css` under `.theme-<name>`, plus a few overrides where a token isn't enough. The app applies the class to the sidebar, chat and settings (everything marked `.themed`), so switching is instant.
 
-**Download everything:** https://github.com/ajiron2142/slop/archive/refs/heads/ccr-60b590e9-4higd9.zip (unzip and use the `themes/` folder)
+## Add a theme
 
-## Folder
+1. Copy any theme file, e.g. `linen.css` to `mytheme.css`.
+2. Rename every `.theme-linen` to `.theme-mytheme` and change the tokens.
+3. Add one line to `index.html` next to the others:
 
-```
-themes/
-  base.css        layout + default tokens (always loaded)
-  <name>.css      one file per theme, fully self-contained (drawings are inlined)
-  fonts.css       @font-face rules for every theme font
-  fonts/          self-hosted font files (no Google or other outside requests)
-  preview.html    open in a browser to flip through every theme offline
-```
+   ```html
+   <link rel="stylesheet" href="styles/themes/mytheme.css" data-theme="mytheme" data-name="My theme">
+   ```
 
-## How it works
+It shows up in Settings → Theme automatically.
 
-- `base.css` sets the layout. Every color, font and spacing value is a CSS variable (a "token").
-- A theme is one class on the chat container, e.g. `theme-lantern`. Its file sets the tokens and adds a few extra rules.
-- Every theme file is scoped to its own class, so loading all of them at once is safe. Switching is just changing the class: instant, no network.
+## Remove a theme
 
-## Loading (everything up front, then snappy)
+Delete its file and its line in `index.html`.
 
-Load the fonts, the base, then one `<link>` per theme. The `data-` attributes let the app build its theme picker from these lines, so adding a theme is: drop in the file, add one line.
+## Rules
 
-```html
-<link rel="stylesheet" href="themes/fonts.css">
-<link rel="stylesheet" href="themes/base.css">
-<link rel="stylesheet" href="themes/folio.css" data-theme="folio" data-name="Folio">
-<link rel="stylesheet" href="themes/lantern.css" data-theme="lantern" data-name="Lantern">
-<!-- …one line per theme -->
-```
-
-Theme CSS totals about 100 KB and loads once; browsers cache it after that. Fonts only download when a theme uses them, so warm them in the background after the page loads to make every later switch instant:
-
-```js
-const warm = () => document.fonts.forEach((f) => f.load().catch(() => {}));
-('requestIdleCallback' in window) ? requestIdleCallback(warm) : setTimeout(warm, 1500);
-```
-
-Fonts total about 2 MB across 68 files, fetched once in the background and then cached.
-
-## Theme picker
-
-```js
-const themes = [...document.querySelectorAll('link[data-theme]')]
-  .map((l) => ({ id: l.dataset.theme, name: l.dataset.name }));
-
-function setTheme(id) {
-  const chat = document.querySelector('.chat');
-  chat.className = chat.className.replace(/\btheme-\S+/g, '').trim() + ' theme-' + id;
-  settings.theme = id;
-  saveSettings(settings);
-}
-```
-
-Fill a `<select>` from `themes` and call `setTheme` on change; apply the saved theme on start.
-
-## Required HTML
-
-The themes expect this structure and these class names. Rename either side so they match.
-
-```html
-<section class="chat theme-folio">
-  <header class="chat-header">
-    <h2 class="chat-title">App name</h2>
-    <select class="model">…</select>
-  </header>
-  <div class="messages">
-    <article class="msg user">
-      <span class="who">You</span>
-      <div class="body"><p>Question…</p></div>
-    </article>
-    <article class="msg assistant">
-      <span class="who">Assistant</span>
-      <div class="body"><!-- rendered markdown: p, ul, ol, pre>code, code --></div>
-    </article>
-  </div>
-  <form class="composer">
-    <textarea></textarea>
-    <button class="send" type="button">Send</button>
-  </form>
-</section>
-```
-
-Notes:
-- Keep the `.who` label on every message, even where a theme hides it.
-- Add `streaming` to an assistant message while it streams (`msg assistant streaming`) for the blinking caret.
-- Put the theme class on `.chat`, not on `body`.
-- On wide screens the conversation stays a centred column about 760px wide; backgrounds still fill the screen.
-- Fonts cover Latin text only; other scripts fall back to system fonts.
-
-## Adding or removing a theme
-
-- **Add:** copy any theme file, rename it and its `.theme-<name>` class, change the tokens, add its `<link>` line.
-- **Remove:** delete the file and its `<link>` line.
+- Only set tokens and style things inside `.theme-<name>`. Never change layout (widths, positions of the sidebar or composer); that stays in `base.css`.
+- Fonts come from `fonts/`. A theme names a font with fallbacks, e.g. `"Jost", system-ui, sans-serif`; if the font is missing it falls back quietly.
+- Drawings are inlined as `url("data:image/svg+xml,…")` so each theme stays one file.
 
 ## Tokens
 

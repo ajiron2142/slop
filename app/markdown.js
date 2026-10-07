@@ -1,5 +1,5 @@
-import { marked } from './vendor/marked.esm.js';
-import DOMPurify from './vendor/purify.es.js';
+import { marked } from '../vendor/marked.esm.js';
+import DOMPurify from '../vendor/purify.es.js';
 
 marked.setOptions({ gfm: true, breaks: true });
 

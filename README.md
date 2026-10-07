@@ -1,63 +1,59 @@
-# Minimal LiteLLM chat
+# Chat
 
-A tiny static chat UI for a LiteLLM proxy (OpenAI-compatible API). Plain HTML, CSS and ES modules, with no build step and no backend. Your API key and chats stay in your browser (IndexedDB). See `PLAN.md` for the design.
+A small, fast chat app for a LiteLLM proxy (OpenAI-compatible API). Plain HTML, CSS and JavaScript modules: no build step, no framework, no backend. Your API key and chats stay in your browser.
 
-## Quick local test
+## Run it locally
 
-Nothing to install or build. You only need a browser and something that can serve files.
+Any static file server works. From this folder:
 
-1. **Get the code:** `git clone https://github.com/ajiron2142/slop.git`, or on GitHub click **Code → Download ZIP** and unzip it.
-2. **Start a local server in that folder:**
-   ```sh
-   python3 -m http.server 8000
-   ```
-   On Windows this may be `py -m http.server 8000`. No Python? `npx serve` or the VS Code "Live Server" extension work too.
-3. **Open http://localhost:8000.** Don't double-click `index.html`: browsers won't load the app's scripts from a file opened directly.
-4. **Open Settings**, enter your LiteLLM base URL and your own API key, click **Test connection**, then **Save**.
-5. Pick a model from the dropdown at the top and start chatting. The dropdown lists every model your key can use.
-
-### Check first: will your LiteLLM allow it?
-
-Before downloading anything, open your browser's dev console on any page and run:
-
-```js
-fetch("https://YOUR-LITELLM-HOST/v1/models",{headers:{Authorization:"Bearer YOUR-KEY"}}).then(r=>r.json()).then(console.log)
+```sh
+python3 -m http.server 8000
 ```
 
-- **Prints a model list:** the app will work.
-- **CORS error:** the LiteLLM admin needs to allow requests from your page's origin (for this local test, `http://localhost:8000`). Nothing in the app can work around this.
+Open http://localhost:8000 (not the file directly; browsers won't load the scripts that way), then enter your LiteLLM URL and API key in Settings.
 
-### If your LiteLLM URL is `http://` instead of `https://`
-
-The page only allows connections to `https://` URLs. For a local test, edit the `Content-Security-Policy` line in `index.html` and change `connect-src https:` to `connect-src https: http:`.
-
-### Where your data goes
-
-Your API key and chats are stored only in your browser. The page only talks to the LiteLLM URL you enter. **Delete all local data** in Settings wipes everything.
-
-## Basic mode
-
-The **Basic mode** button in the sidebar swaps the stylesheet from `style.css` to `basic.css`, which is styled like a first-ever website: Times New Roman, gray boxes and underlined blue links. **Fancy mode** switches back, and the choice is remembered.
+Your LiteLLM must allow requests from the page's origin (CORS). The page only connects to `https://` URLs; for an `http://` LiteLLM, change `connect-src https:` to `connect-src https: http:` in `index.html`.
 
 ## Deploy
 
 ```sh
-docker build -t litellm-chat .
-docker run -p 8080:8080 litellm-chat
+docker build -t chat .
+docker run -p 8080:8080 chat
 ```
 
 The image is `nginx-unprivileged`, so it runs under OpenShift's arbitrary UIDs.
 
-## Files
+## How it's organised
 
-| File | Purpose |
-|---|---|
-| `index.html` | Page and Content-Security-Policy |
-| `style.css` | Default styling, with light and dark themes |
-| `basic.css` | Beginner-website styling for Basic mode |
-| `app.js` | State, event handling, chat flow |
-| `api.js` | `/v1/models` and streaming `/v1/chat/completions` |
-| `storage.js` | Settings, chats, export/import in IndexedDB |
-| `ui.js` | DOM rendering |
-| `markdown.js` | Markdown via `marked`, always sanitized with DOMPurify |
-| `vendor/` | Vendored libraries (versions in `vendor/README.md`) |
+```
+index.html            the page; loads every stylesheet and app/main.js
+app/                  behaviour
+  main.js             state and wiring: sending, streaming, chats, models
+  api.js              LiteLLM calls (/v1/models, streaming /v1/chat/completions)
+  storage.js          settings and chats in IndexedDB, search, export/import
+  markdown.js         markdown to sanitised HTML
+  theme.js            theme list, switching, font warm-up
+  dom.js              two tiny DOM helpers
+  components/         one file per piece of UI
+    sidebar.js        chat list, search, mobile menu
+    messages.js       message rendering, code copy, retry
+    composer.js       text box, send/stop, attachments (button, paste, drop)
+    picker.js         searchable dropdown (used for models and themes)
+    settings.js       settings dialog
+styles/
+  base.css            tokens, chat structure, app shell
+  components/         one file per component, same names as app/components
+  themes/             one self-contained file per theme (see its README)
+fonts/                self-hosted fonts; fonts.css declares them
+vendor/               marked, DOMPurify, idb-keyval (never edited)
+```
+
+**Rules that keep it small:** each UI piece is a `.js` + `.css` pair with the same name; components use tokens, never fixed colours; themes only set tokens and overrides, never layout; adding anything means adding a file and one line.
+
+## Features
+
+- Model picker with search and recent models
+- Attach images (sent to vision models) and text files (inlined) with the button, paste or drag-and-drop
+- Markdown replies with copyable code blocks, tables and nested lists
+- Chat history with search, export/import, and Stop / Retry
+- Themes, switchable in Settings

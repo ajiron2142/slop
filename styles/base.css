@@ -1,10 +1,12 @@
 /* ============================================================
-   BASE — structure only. Every visual decision is a token.
-   A theme is a class on .chat that redefines tokens, plus
-   a handful of overrides where a token can't express it.
+   BASE — tokens, chat structure and the app shell.
+   Every visual decision is a token. Anything with the class
+   .themed (sidebar, chat, settings) gets the active theme:
+   a theme is one class, .theme-<name>, that redefines tokens
+   plus a few overrides where a token can't express it.
    ============================================================ */
 
-.chat {
+.themed {
   --bg: #ffffff;
   --surface: #f5f5f4;
   --ink: #18181b;
@@ -33,9 +35,6 @@
   --measure: 88%;
   --user-align: flex-end;
 
-  display: flex;
-  flex-direction: column;
-  height: 100%;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
@@ -43,6 +42,14 @@
   line-height: var(--leading);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+.chat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
 }
 
 .chat-header {
@@ -118,8 +125,9 @@
   padding: 0.12em 0.38em;
   border-radius: 4px;
 }
+.body .code { position: relative; margin: 0.9em 0; }
 .body pre {
-  margin: 0.9em 0;
+  margin: 0;
   padding: 12px 14px;
   background: var(--code-bg);
   border-radius: min(var(--radius), 10px);
@@ -201,5 +209,68 @@
 @container (min-width: 820px) {
   .chat.chat .chat-header,
   .chat.chat .messages,
+  .chat.chat .tray,
+  .chat.chat .notice,
   .chat.chat .composer { padding-inline: max(var(--edge), calc((100% - 760px) / 2)); }
+}
+
+/* ============================================================
+   APP SHELL — sidebar beside the chat, shared controls
+   ============================================================ */
+
+html, body { height: 100%; margin: 0; }
+body { overflow: hidden; }
+button, input, textarea, select { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+.app { display: grid; grid-template-columns: 260px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: 100vh; height: 100dvh; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.btn:hover { background: var(--surface); }
+.btn.primary { color: var(--on-accent); background: var(--accent); border-color: var(--accent); }
+.btn.primary:hover { opacity: 0.9; }
+.btn.danger { color: #c0392b; border-color: currentColor; }
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.icon-btn:hover { color: var(--ink); background: var(--surface); }
+.icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.notice { margin: 0; padding: 8px var(--edge); font-size: 13px; color: var(--ink); background: var(--surface); border-bottom: 1px solid var(--line); }
+
+.menu-btn { display: none; }
+.scrim { display: none; }
+
+/* Narrow screens: the sidebar slides over the chat. */
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { position: fixed; inset: 0 auto 0 0; z-index: 20; width: min(300px, 85vw); transform: translateX(-100%); transition: transform 0.2s; }
+  .app.sidebar-open .sidebar { transform: none; }
+  .app.sidebar-open .scrim { display: block; position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, 0.35); }
+  .menu-btn { display: inline-grid; }
+  .chat-header { justify-content: flex-start; }
+  .chat-header .picker { margin-left: auto; }
 }

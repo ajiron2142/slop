@@ -1,0 +1,143 @@
+import { el } from '../dom.js';
+
+// A searchable dropdown: a button that opens a filterable list.
+// Used for the model picker and the theme picker.
+let count = 0;
+
+export function createPicker(root, { label, empty = 'Nothing to pick', onSelect }) {
+  const id = `picker-${++count}`;
+  const button = el('button', 'model');
+  button.type = 'button';
+  button.setAttribute('aria-haspopup', 'listbox');
+  button.setAttribute('aria-expanded', 'false');
+  button.setAttribute('aria-label', label);
+
+  const pop = el('div', 'picker-pop');
+  pop.hidden = true;
+  const search = el('input', 'picker-search');
+  search.type = 'text';
+  search.placeholder = `Search ${label.toLowerCase()}…`;
+  search.setAttribute('role', 'combobox');
+  search.setAttribute('aria-controls', `${id}-list`);
+  search.setAttribute('aria-expanded', 'true');
+  search.setAttribute('autocomplete', 'off');
+  const list = el('ul', 'picker-list');
+  list.id = `${id}-list`;
+  list.setAttribute('role', 'listbox');
+  pop.append(search, list);
+  root.append(button, pop);
+
+  let items = [];
+  let recent = [];
+  let value = '';
+  let visible = [];
+  let active = 0;
+
+  const nameOf = (itemId) => items.find((i) => i.id === itemId)?.name ?? itemId;
+
+  function renderButton() {
+    button.disabled = !items.length;
+    button.textContent = items.length ? nameOf(value) : empty;
+  }
+
+  function renderList() {
+    const q = search.value.trim().toLowerCase();
+    const match = (i) => !q || i.name.toLowerCase().includes(q) || i.id.toLowerCase().includes(q);
+    const groups = [];
+    const recentItems = q ? [] : recent.map((r) => items.find((i) => i.id === r)).filter(Boolean);
+    if (recentItems.length) groups.push(['Recent', recentItems]);
+    groups.push([recentItems.length ? 'All' : '', items.filter(match)]);
+
+    visible = [];
+    const nodes = [];
+    for (const [title, group] of groups) {
+      if (title && group.length) nodes.push(el('li', 'picker-group', title));
+      for (const item of group) {
+        const li = el('li', 'picker-option', item.name);
+        li.id = `${id}-opt-${visible.length}`;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', String(item.id === value));
+        li.dataset.index = visible.length;
+        visible.push(item);
+        nodes.push(li);
+      }
+    }
+    if (!visible.length) nodes.push(el('li', 'picker-empty', 'No matches'));
+    list.replaceChildren(...nodes);
+    setActive(Math.max(0, visible.findIndex((i) => i.id === value)));
+  }
+
+  function setActive(i) {
+    active = Math.min(Math.max(i, 0), visible.length - 1);
+    list.querySelectorAll('.picker-option').forEach((li) => li.classList.toggle('active', +li.dataset.index === active));
+    const node = list.querySelector(`#${id}-opt-${active}`);
+    if (node) {
+      search.setAttribute('aria-activedescendant', node.id);
+      node.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  function place() {
+    const r = button.getBoundingClientRect();
+    pop.style.top = `${r.bottom + 6}px`;
+    if (root.classList.contains('block')) {
+      pop.style.left = `${r.left}px`;
+      pop.style.width = `${r.width}px`;
+    } else {
+      pop.style.right = `${Math.max(12, innerWidth - r.right)}px`;
+    }
+  }
+
+  function open() {
+    place();
+    pop.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    search.value = '';
+    renderList();
+    search.focus();
+  }
+
+  function close(focusButton = true) {
+    if (pop.hidden) return;
+    pop.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+    if (focusButton) button.focus();
+  }
+
+  function choose(item) {
+    if (!item) return;
+    value = item.id;
+    renderButton();
+    close();
+    onSelect(item.id);
+  }
+
+  button.addEventListener('click', () => (pop.hidden ? open() : close()));
+  search.addEventListener('input', renderList);
+  search.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActive(active + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active - 1); }
+    else if (e.key === 'Enter') { e.preventDefault(); choose(visible[active]); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+    else if (e.key === 'Tab') close(false);
+  });
+  list.addEventListener('mousedown', (e) => e.preventDefault());
+  list.addEventListener('click', (e) => {
+    const li = e.target.closest('.picker-option');
+    if (li) choose(visible[+li.dataset.index]);
+  });
+  addEventListener('resize', () => close(false));
+  document.addEventListener('pointerdown', (e) => {
+    if (!root.contains(e.target)) close(false);
+  });
+
+  return {
+    set(newItems, newValue, newRecent = []) {
+      items = newItems;
+      recent = newRecent;
+      value = newValue;
+      renderButton();
+      if (!pop.hidden) renderList();
+    },
+  };
+}

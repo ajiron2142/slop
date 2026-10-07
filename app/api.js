@@ -36,6 +36,18 @@ async function request(settings, path, init = {}) {
   return res;
 }
 
+// A stored message becomes API content: text files are inlined, images become image parts.
+export function toApiContent(msg) {
+  const files = msg.files ?? [];
+  let text = msg.content;
+  for (const f of files) {
+    if (f.kind === 'text') text += `\n\n<file name="${f.name.replace(/"/g, '')}">\n${f.text}\n</file>`;
+  }
+  const images = files.filter((f) => f.kind === 'image');
+  if (!images.length) return text;
+  return [{ type: 'text', text }, ...images.map((f) => ({ type: 'image_url', image_url: { url: f.dataUrl } }))];
+}
+
 export async function listModels(settings) {
   const res = await request(settings, '/v1/models');
   const body = await res.json();
