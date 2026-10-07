@@ -33,6 +33,7 @@ app/                  behaviour
   storage.js          settings and chats in IndexedDB, search, export/import
   folder.js           read-only folder tools for the model (list_files, read_file)
   markdown.js         markdown to sanitised HTML
+  highlight.js        syntax colours for code blocks (which languages are included)
   theme.js            theme list, switching, font warm-up
   dom.js              two tiny DOM helpers
   components/         one file per piece of UI
@@ -46,7 +47,7 @@ styles/
   components/         one file per component, same names as app/components
   themes/             one self-contained file per theme (see its README)
 fonts/                self-hosted fonts; fonts.css declares them
-vendor/               marked, DOMPurify, idb-keyval (never edited)
+vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
 ```
 
 **Rules that keep it small:** each UI piece is a `.js` + `.css` pair with the same name; components use tokens, never fixed colours; themes only set tokens and overrides, never layout; adding anything means adding a file and one line.
@@ -83,6 +84,6 @@ Each component only touches its own part of the page and reports back to `main.j
 - Model picker with search and recent models
 - Attach images (sent to vision models) and text files (inlined) with the button, paste or drag-and-drop
 - Connect a folder to a chat, read-only, so the model can look through it (Chrome and Edge, models with tool support)
-- Markdown replies with copyable code blocks, tables and nested lists
+- Markdown replies with syntax-coloured, copyable code blocks, tables and nested lists
 - Chat history with search, export/import, and Stop / Retry
 - Themes, switchable in Settings

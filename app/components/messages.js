@@ -1,5 +1,6 @@
 import { el } from '../dom.js';
 import { renderMarkdown } from '../markdown.js';
+import { highlight } from '../highlight.js';
 
 const LABEL = { user: 'You', assistant: 'Assistant', error: 'Error' };
 const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
@@ -73,9 +74,11 @@ function fillBody(body, msg) {
     return;
   }
   body.innerHTML = renderMarkdown(msg.content);
-  // Each code block gets a header bar (language + Copy) that stays visible while scrolling.
+  // Each code block gets syntax colours and a header bar (language + Copy) that stays visible while scrolling.
   for (const pre of body.querySelectorAll('pre')) {
-    const lang = pre.querySelector('code')?.className.match(/language-([\w+#-]+)/)?.[1] ?? '';
+    const code = pre.querySelector('code');
+    const lang = code?.className.match(/language-([\w+#-]+)/)?.[1] ?? '';
+    highlight(code, lang);
     const copy = el('button', 'copy');
     copy.type = 'button';
     copy.dataset.action = 'copy';

@@ -26,6 +26,8 @@
   --measure: 84%;
   --radius: 14px;
 }
+/* Code in the same two inks: deep pink for keywords and names, darker blue for values. */
+.theme-riso { --code-keyword: #c0177a; --code-title: #c0177a; --code-deletion: #c0177a; --code-string: #084a7a; --code-number: #084a7a; --code-attr: #0a5d99; }
 .theme-riso .chat-header { border-bottom: 1.5px solid var(--ink); }
 .theme-riso .chat-title {
   font-size: 34px;

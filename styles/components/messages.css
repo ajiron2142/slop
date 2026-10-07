@@ -48,6 +48,19 @@
 .code .copy .icon { width: 14px; height: 14px; }
 .chat .body .code > pre { border-top-left-radius: 0; border-top-right-radius: 0; }
 
+/* Syntax colours (highlight.js classes). Each is a fixed hue blended with the code's own
+   text colour, so it reads on light, dark and inverted code blocks. A theme can set any
+   --code-* token to replace one. */
+.body pre :is(.hljs-keyword, .hljs-selector-tag, .hljs-name, .hljs-meta, .hljs-doctag) { color: var(--code-keyword, color-mix(in oklab, #a626a4 62%, currentColor)); }
+.body pre :is(.hljs-string, .hljs-regexp, .hljs-symbol, .hljs-addition, .hljs-selector-attr, .hljs-char) { color: var(--code-string, color-mix(in oklab, #3f8f3e 62%, currentColor)); }
+.body pre :is(.hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-bullet, .hljs-link) { color: var(--code-number, color-mix(in oklab, #b76b01 62%, currentColor)); }
+.body pre :is(.hljs-title, .hljs-section) { color: var(--code-title, color-mix(in oklab, #3a6fe0 62%, currentColor)); }
+.body pre :is(.hljs-attr, .hljs-attribute, .hljs-property, .hljs-built_in, .hljs-type, .hljs-selector-class, .hljs-selector-id) { color: var(--code-attr, color-mix(in oklab, #0a8193 62%, currentColor)); }
+.body pre :is(.hljs-comment, .hljs-quote) { color: var(--code-comment, color-mix(in oklab, currentColor 60%, transparent)); font-style: italic; }
+.body pre .hljs-deletion { color: var(--code-deletion, color-mix(in oklab, #c4302b 62%, currentColor)); }
+.body pre .hljs-emphasis { font-style: italic; }
+.body pre .hljs-strong { font-weight: 600; }
+
 .streaming .body:empty::before {
   content: "";
   display: inline-block;

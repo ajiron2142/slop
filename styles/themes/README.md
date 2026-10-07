@@ -37,6 +37,7 @@ Set on `.chat` in the base and overridden by each theme:
 | `--user-bg`, `--user-ink` | Your message bubble |
 | `--bot-bg`, `--bot-ink` | Reply bubble |
 | `--code-bg` | Code background |
+| `--code-keyword`, `--code-string`, `--code-number`, `--code-title`, `--code-attr`, `--code-comment`, `--code-deletion` | Syntax colours in code blocks. Optional: by default each is a fixed hue blended with the code's text colour, so it suits any theme |
 | `--font-body`, `--font-display`, `--font-meta`, `--font-code` | Fonts for text, titles, labels, code |
 | `--text`, `--leading` | Text size and line height |
 | `--bubble-pad`, `--bubble-radius` | Bubble padding and corners |

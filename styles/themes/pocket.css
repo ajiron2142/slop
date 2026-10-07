@@ -70,6 +70,7 @@
 .theme-pocket .body code { background: none; text-decoration: underline; }
 .theme-pocket .body pre { font-size: 17px; line-height: 1.2; border: 2px dashed var(--lcd-3); border-radius: 0; }
 .theme-pocket .body pre code { text-decoration: none; }
+.theme-pocket .body pre [class^="hljs-"] { color: inherit; } /* one-colour LCD: no syntax colours */
 .theme-pocket .composer { border-top: 0; align-items: center; gap: 14px; padding-top: 16px; padding-bottom: 20px; }
 .theme-pocket .composer::before {
   content: "";
