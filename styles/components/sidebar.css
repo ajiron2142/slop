@@ -7,6 +7,22 @@
   padding: 14px 12px;
   border-right: 1px solid var(--line);
 }
+.sidebar-top { display: flex; gap: 8px; }
+.sidebar-top .btn { flex: 1; }
+.sidebar .btn .icon { width: 16px; height: 16px; }
+.settings-btn { margin-top: auto; }
+
+/* Collapsed (wide screens): a slim rail with just the toggle, new chat and settings. */
+@media (min-width: 761px) {
+  .app.collapsed { grid-template-columns: 56px minmax(0, 1fr); }
+  .app.collapsed .sidebar { padding-inline: 8px; }
+  .app.collapsed .sidebar-top { flex-direction: column; }
+  .app.collapsed .search,
+  .app.collapsed .chat-list,
+  .app.collapsed .sidebar .label { display: none; }
+  .app.collapsed .sidebar .btn { padding: 8px 0; }
+}
+
 .search {
   box-sizing: border-box;
   width: 100%;
@@ -54,4 +70,5 @@
 
 @media (max-width: 760px) {
   aside.sidebar { position: fixed; }
+  .collapse-btn { display: none; }
 }

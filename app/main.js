@@ -27,10 +27,12 @@ const sidebar = createSidebar({
   list: $('chat-list'),
   search: $('search'),
   menuButton: $('menu-btn'),
+  collapseButton: $('collapse-btn'),
   scrim: $('scrim'),
   onOpen: openChat,
   onDelete: removeChat,
   onSearch: reloadChatList,
+  onCollapse: (collapsed) => { state.settings.sidebarCollapsed = collapsed; store.saveSettings(state.settings); },
 });
 
 const messages = createMessages($('messages'), { onRetry: retry });
@@ -259,6 +261,7 @@ async function init() {
   navigator.storage?.persist?.().catch(() => {});
   state.settings = await store.loadSettings();
   applyTheme(state.settings.theme);
+  sidebar.setCollapsed(state.settings.sidebarCollapsed);
   await reloadChatList();
   modelPicker.set([], state.settings.model);
   render();

@@ -75,8 +75,10 @@ function fillBody(body, msg) {
     const copy = el('button', 'copy', 'Copy');
     copy.type = 'button';
     copy.dataset.action = 'copy';
+    const head = el('div', 'code-head');
+    head.append(copy);
     pre.replaceWith(wrap);
-    wrap.append(pre, copy);
+    wrap.append(head, pre);
   }
 }
 

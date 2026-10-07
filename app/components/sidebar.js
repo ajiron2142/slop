@@ -1,7 +1,7 @@
 import { el } from '../dom.js';
 
-// The chat list: open, delete, search, and the slide-over menu on narrow screens.
-export function createSidebar({ app, list, search, menuButton, scrim, onOpen, onDelete, onSearch }) {
+// The chat list: open, delete, search, collapse to a rail, and the slide-over menu on narrow screens.
+export function createSidebar({ app, list, search, menuButton, collapseButton, scrim, onOpen, onDelete, onSearch, onCollapse }) {
   let timer = 0;
 
   list.addEventListener('click', (e) => {
@@ -17,11 +17,22 @@ export function createSidebar({ app, list, search, menuButton, scrim, onOpen, on
   });
   menuButton.addEventListener('click', () => app.classList.toggle('sidebar-open'));
   scrim.addEventListener('click', close);
+  collapseButton.addEventListener('click', () => {
+    setCollapsed(!app.classList.contains('collapsed'));
+    onCollapse(app.classList.contains('collapsed'));
+  });
+
+  function setCollapsed(collapsed) {
+    app.classList.toggle('collapsed', collapsed);
+    collapseButton.setAttribute('aria-expanded', String(!collapsed));
+    collapseButton.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+  }
 
   function close() { app.classList.remove('sidebar-open'); }
 
   return {
     close,
+    setCollapsed,
     query: () => search.value.trim(),
     render(chats, activeId) {
       if (!chats.length) {

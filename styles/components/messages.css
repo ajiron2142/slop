@@ -17,11 +17,18 @@
 .body th, .body td { padding: 6px 10px; text-align: left; vertical-align: top; border: 1px solid var(--line); }
 .body th { background: var(--surface); }
 
+.code-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  height: 0;
+}
 .code .copy {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  padding: 3px 8px;
+  margin: 6px 6px 0 0;
+  height: 24px;
+  padding: 0 9px;
   font-family: var(--font-meta);
   font-size: 11px;
   color: var(--muted);
@@ -29,12 +36,8 @@
   border: 1px solid var(--line);
   border-radius: 6px;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.15s;
 }
-.code:hover .copy, .code .copy:focus-visible { opacity: 1; }
 .code .copy:hover { color: var(--ink); }
-@media (hover: none) { .code .copy { opacity: 1; } }
 
 .streaming .body:empty::before {
   content: "";
