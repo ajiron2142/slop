@@ -210,6 +210,8 @@ Set on `.chat` in the base and overridden by each theme:
 
 .msg { max-width: var(--measure); align-self: flex-start; }
 .msg.user { align-self: var(--user-align); }
+.msg:has(pre) { width: var(--measure); }
+.body pre { white-space: pre; }
 
 .who {
   display: block;
