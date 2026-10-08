@@ -101,6 +101,7 @@ export async function startMock() {
       const text = parts[0].text;
       requests.push({
         model: body.model,
+        text,
         hasTools: Boolean(body.tools),
         system: body.messages[0].role === 'system' ? body.messages[0].content : '',
         images: parts.filter((p) => p.type === 'image_url').length,

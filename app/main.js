@@ -32,6 +32,15 @@ const notify = (text = '') => { notice.textContent = text; notice.hidden = !text
 const withoutErrors = (messages) => messages.filter((m) => m.role !== 'error');
 const MAX_TOOL_ROUNDS = 10;
 
+// The current date, time and time zone from this computer, e.g. "Thursday, October 8, 2026 at
+// 2:32 PM MDT (America/Denver, UTC-06:00)". Models don't know the date otherwise.
+function now(d = new Date()) {
+  const when = d.toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' }) + ' ' + d.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop();
+  const off = -d.getTimezoneOffset();
+  const hhmm = `${String(Math.floor(Math.abs(off) / 60)).padStart(2, '0')}:${String(Math.abs(off) % 60).padStart(2, '0')}`;
+  return `${when} (${Intl.DateTimeFormat().resolvedOptions().timeZone}, UTC${off < 0 ? '-' : '+'}${hhmm})`;
+}
+
 // ---- components ----
 
 const sidebar = createSidebar({
@@ -214,6 +223,12 @@ async function complete(chat) {
   const folder = chat.folder;
   const tools = folder ? FOLDER_TOOLS : undefined;
   const history = withoutErrors(chat.messages).map((m) => ({ role: m.role, content: toApiContent(m) }));
+  // The time goes on the newest message, not the system prompt, so the rest of the request stays
+  // the same between messages and providers can keep caching it.
+  const last = history.findLast((m) => m.role === 'user');
+  const stamp = `\n\n[Current date and time: ${now()}]`;
+  if (typeof last.content === 'string') last.content += stamp;
+  else last.content[0].text += stamp;
   const system = [s.systemPrompt.trim(), folder && folderPrompt(folder)].filter(Boolean).join('\n\n');
   if (system) history.unshift({ role: 'system', content: system });
 

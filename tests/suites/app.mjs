@@ -112,6 +112,8 @@ export default async function ({ browser, site, mock, check }) {
   await send(p, 'echo files');
   const sent = mock.requests.at(-1);
   check('API gets the image and the inlined text files', sent.images === 1 && sent.hasFile && sent.model.includes('mini'));
+  check('the newest message tells the model the date, time and time zone', /\[Current date and time: \w+day, .+ \d{4} at \d{1,2}:\d\d [AP]M \S+ \(.+, UTC[+-]\d\d:\d\d\)\]$/.test(sent.text));
+  check('the time is not saved or shown in the chat', !(await p.textContent('#messages')).includes('Current date'));
   check('sent message shows thumbnail and file chips', (await p.$$('.msg.user .file-thumb')).length === 1 && (await p.$$('.msg.user .file-chip')).length === 2);
 
   // Stop, chat list, search.
