@@ -53,8 +53,8 @@ Set on `.chat` in the base and overridden by each theme:
 
 | File | Name | Look |
 |---|---|---|
+| `monokai.css` | Monokai | One Monokai's dark palette and code colours, with steel-blue buttons and heading bars, shaded quotes and plain blue links. |
 | `linen.css` | Linen | The everyday one. Warm neutrals, soft ink bubbles and a floating composer. |
 | `bauhaus.css` | Bauhaus | Circle, square, triangle. Primary colours used sparingly and a quarter-round corner on your messages. |
-| `monokai.css` | Monokai | One Monokai's dark palette and code colours, with steel-blue buttons, headings and highlights. |
 
 More themes (Springfield, Sandia, Basalt and 21 others) are parked on the `themes-archive` branch while the core features settle. To bring one back, copy its file (and any fonts it uses) from that branch and add its `<link>` line.

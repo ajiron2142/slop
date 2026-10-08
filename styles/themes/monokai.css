@@ -31,13 +31,17 @@
 .theme-monokai .chat-title { font-size: 19px; font-weight: 400; }
 .theme-monokai .chat-title::before { content: "❯ "; color: var(--highlight); }
 .theme-monokai .who { color: var(--muted); }
-.theme-monokai .user .body { border-right: 3px solid var(--highlight); }
-.theme-monokai .body a { color: #56b6c2; }
-.theme-monokai .body code { color: #e5c07b; }
+.theme-monokai .user .body { border-right: 3px solid var(--muted); }
+.theme-monokai .body a { color: var(--accent); text-decoration: none; }
+.theme-monokai .body a:hover { text-decoration: underline; }
+.theme-monokai .body code { color: #d7dae0; }
 .theme-monokai .body pre code { color: var(--ink); }
 .theme-monokai .body pre { border: 1px solid var(--line); }
-.theme-monokai .body h1, .theme-monokai .body h2, .theme-monokai .body h3 { color: var(--accent); font-weight: 400; }
-.theme-monokai .body li::marker { color: var(--highlight); }
+.theme-monokai .body :is(h1, h2, h3, h4) { padding-left: 10px; font-weight: 500; color: #d7dae0; border-left: 3px solid var(--accent); }
+.theme-monokai .body blockquote { padding: 10px 14px; color: var(--ink); background: var(--surface); border: 0; border-radius: 8px; }
+.theme-monokai .body blockquote > :first-child { margin-top: 0; }
+.theme-monokai .body blockquote > :last-child { margin-bottom: 0; }
+.theme-monokai .body li::marker { color: var(--muted); }
 .theme-monokai .composer textarea:focus { border-color: var(--accent); }
 
 /* Code colours: One Monokai's. */
