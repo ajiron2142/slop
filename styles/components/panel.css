@@ -1,0 +1,16 @@
+/* Side panel: a column on the right while something is open in it; over the chat on narrow screens. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: min(460px, 40vw);
+  min-height: 0;
+  border-left: 1px solid var(--line);
+}
+.panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 16px; border-bottom: 1px solid var(--line); }
+.panel-title { flex: 1; min-width: 0; margin: 0; overflow: hidden; font-family: var(--font-meta); font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.panel-body { flex: 1; min-height: 0; overflow: auto; }
+.panel-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--line); }
+
+@media (max-width: 760px) {
+  .panel { position: fixed; inset: 0 0 0 auto; z-index: 25; width: min(460px, 100vw); box-shadow: -16px 0 40px -16px rgba(0, 0, 0, 0.4); }
+}

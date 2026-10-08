@@ -19,6 +19,7 @@ const readAs = (file, how) => new Promise((resolve, reject) => {
 export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onSend, onStop, notify }) {
   let files = [];
   let folderName = null;
+  let folderEditable = false; // write mode
   let busy = false;
 
   function autosize() {
@@ -36,9 +37,11 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
 
   function folderChip() {
     const chip = el('span', 'tray-chip folder');
-    chip.title = 'Connected folder (read-only)';
+    chip.title = folderEditable ? 'Connected folder (can edit, with your approval)' : 'Connected folder (read-only)';
     chip.innerHTML = FOLDER_ICON;
-    chip.append(el('span', 'tray-name', folderName), removeButton(`Disconnect folder ${folderName}`, onDisconnectFolder));
+    chip.append(el('span', 'tray-name', folderName));
+    if (folderEditable) { chip.classList.add('can-edit'); chip.append(el('span', 'folder-mode', 'can edit')); } // write mode
+    chip.append(removeButton(`Disconnect folder ${folderName}`, onDisconnectFolder));
     return chip;
   }
 
@@ -126,7 +129,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       if (!item) return;
       closeMenu();
       if (item.dataset.action === 'files') fileInput.click();
-      else onConnectFolder();
+      else onConnectFolder(item.dataset.action === 'folder-edit');
     });
     menu.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closeMenu(); attach.focus(); }
@@ -158,8 +161,9 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       send.setAttribute('aria-label', busy ? 'Stop' : 'Send');
     },
     focus: () => input.focus(),
-    setFolder(name) {
+    setFolder(name, editable = false) {
       folderName = name || null;
+      folderEditable = Boolean(name && editable);
       renderTray();
     },
   };

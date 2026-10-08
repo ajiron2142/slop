@@ -68,7 +68,7 @@ export async function runTool(root, name, argsJson) {
   }
 }
 
-const cleanPath = (path) => String(path ?? '').split('/').filter((p) => p && p !== '.').join('/');
+export const cleanPath = (path) => String(path ?? '').split('/').filter((p) => p && p !== '.').join('/');
 
 async function resolve(root, path, kind) {
   const parts = path.split('/').filter(Boolean);

@@ -7,8 +7,9 @@ const LABEL = { user: 'You', assistant: 'Assistant', error: 'Error' };
 const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
 
 // The conversation pane: renders messages, follows the bottom while streaming,
-// and handles the Copy, Retry and Stats buttons.
-export function createMessages(pane, { onRetry }) {
+// and handles the Copy, Retry and Stats buttons. `extra(msg)` lets an add-on put a line of its own
+// under a reply, as { key, node }; the key says when it needs redrawing.
+export function createMessages(pane, { onRetry, extra = () => null }) {
   let stick = true;
   const openStats = new Set(); // replies whose Stats card is open, by timestamp
   // Rendered messages, reused while nothing about them has changed. Re-rendering markdown
@@ -16,11 +17,12 @@ export function createMessages(pane, { onRetry }) {
   // settings and finishing a reply quick even in long chats.
   const built = new WeakMap();
   const nodeFor = (m, streaming, showStats) => {
-    if (streaming) return messageNode(m, true, false);
-    const key = `${m.content.length}|${m.tools?.length ?? 0}|${m.stats ? 1 : 0}|${showStats}`;
+    const more = extra(m);
+    if (streaming) return messageNode(m, true, false, more);
+    const key = `${m.content.length}|${m.tools?.length ?? 0}|${m.stats ? 1 : 0}|${showStats}|${more?.key ?? ''}`;
     const hit = built.get(m);
     if (hit?.key === key) return hit.node;
-    const node = messageNode(m, false, showStats && openStats);
+    const node = messageNode(m, false, showStats && openStats, more);
     built.set(m, { key, node });
     return node;
   };
@@ -74,12 +76,13 @@ export function createMessages(pane, { onRetry }) {
   };
 }
 
-function messageNode(msg, streaming, openStats) {
+function messageNode(msg, streaming, openStats, more) {
   const node = el('article', `msg ${msg.role}${streaming ? ' streaming' : ''}`);
   node.dataset.ts = msg.ts;
   node.append(el('span', 'who', LABEL[msg.role]));
   if (msg.files?.length) node.append(filesNode(msg.files));
   if (msg.tools?.length) node.append(el('div', 'tool-log', msg.tools.join(' · ')));
+  if (more) node.append(more.node);
   const body = el('div', 'body');
   fillBody(body, msg);
   node.append(body);

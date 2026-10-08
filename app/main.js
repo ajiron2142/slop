@@ -15,6 +15,8 @@ import { createComposer } from './components/composer.js';
 import { createPicker } from './components/picker.js';
 import { createSettings } from './components/settings.js';
 import { createMeter } from './components/meter.js';
+import { createPanel } from './components/panel.js';
+import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
 
 const state = {
   settings: null,
@@ -24,13 +26,14 @@ const state = {
   chats: [], // chat metadata, newest first (filtered by search)
   active: null, // { meta, messages, folder }, or null for a new unsaved chat
   draftFolder: null, // folder connected before a new chat's first message
+  draftEditable: false, // write mode: that folder may be edited (never saved; reloads come back read-only)
   streaming: null, // { chat, msg, controller }
 };
 
 const notice = $('notice');
 const notify = (text = '') => { notice.textContent = text; notice.hidden = !text; };
 const withoutErrors = (messages) => messages.filter((m) => m.role !== 'error');
-const MAX_TOOL_ROUNDS = 10;
+const MAX_TOOL_ROUNDS = 20;
 
 // The current date, time and time zone from this computer, e.g. "Thursday, October 8, 2026 at
 // 2:32 PM MDT (America/Denver, UTC-06:00)". Models don't know the date otherwise.
@@ -60,7 +63,10 @@ const sidebar = createSidebar({
   },
 });
 
-const messages = createMessages($('messages'), { onRetry: retry });
+const panel = createPanel({ app: $('app'), root: $('panel') });
+const writer = createWriter({ panel, onChange: () => render(), canShow: () => state.active === state.streaming?.chat }); // write mode
+
+const messages = createMessages($('messages'), { onRetry: retry, extra: (m) => writer.decoration(m) }); // write mode: the line under a reply
 
 const meter = createMeter({ row: $('meter-row'), button: $('meter-btn'), pop: $('meter-pop') });
 
@@ -123,6 +129,7 @@ const settings = createSettings({
     state.settings = await store.loadSettings();
     state.active = null;
     state.draftFolder = null;
+    panel.close();
     applyTheme('');
     sidebar.setCollapsed(false);
     rememberForBoot({ collapsed: false });
@@ -161,7 +168,8 @@ function render(options) {
     model: state.settings.model,
   });
   composer.setBusy(Boolean(state.streaming));
-  composer.setFolder((state.active ? state.active.folder : state.draftFolder)?.name);
+  const folder = state.active ? state.active.folder : state.draftFolder;
+  composer.setFolder(folder?.name, state.active ? state.active.canEdit : state.draftEditable);
 }
 
 async function reloadChatList() {
@@ -205,9 +213,10 @@ function send({ text, files }) {
   if (!state.active) {
     const now = Date.now();
     const title = (text || files[0].name).replace(/\s+/g, ' ').slice(0, 40);
-    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now }, messages: [], folder: state.draftFolder };
+    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now }, messages: [], folder: state.draftFolder, canEdit: state.draftEditable };
     if (state.draftFolder) store.saveFolder(state.active.meta.id, state.draftFolder);
     state.draftFolder = null;
+    state.draftEditable = false;
   }
   notify('');
   const chat = state.active;
@@ -221,7 +230,8 @@ function send({ text, files }) {
 async function complete(chat) {
   const s = state.settings;
   const folder = chat.folder;
-  const tools = folder ? FOLDER_TOOLS : undefined;
+  const editable = Boolean(folder && chat.canEdit); // write mode
+  const tools = folder ? [...FOLDER_TOOLS, ...(editable ? WRITE_TOOLS : [])] : undefined; // write mode
   const history = withoutErrors(chat.messages).map((m) => ({ role: m.role, content: toApiContent(m) }));
   // The time goes on the newest message, not the system prompt, so the rest of the request stays
   // the same between messages and providers can keep caching it.
@@ -229,13 +239,14 @@ async function complete(chat) {
   const stamp = `\n\n[Current date and time: ${now()}]`;
   if (typeof last.content === 'string') last.content += stamp;
   else last.content[0].text += stamp;
-  const system = [s.systemPrompt.trim(), folder && folderPrompt(folder)].filter(Boolean).join('\n\n');
+  const system = [s.systemPrompt.trim(), folder && folderPrompt(folder), editable && writePrompt].filter(Boolean).join('\n\n'); // write mode
   if (system) history.unshift({ role: 'system', content: system });
 
   const msg = { role: 'assistant', content: '', ts: Date.now() };
   chat.messages.push(msg);
   const controller = new AbortController();
   state.streaming = { chat, msg, controller };
+  writer.startReply(msg); // write mode
   render({ toBottom: true });
 
   // What this reply used: summed over every round, with timing from the first visible word.
@@ -277,10 +288,12 @@ async function complete(chat) {
         used.context = usage.input + usage.output;
       }
       if (!toolCalls.length) break;
-      if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of reading files.`);
+      if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of tool calls.`);
       history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
       for (const call of toolCalls) {
-        const { label, result } = await runTool(folder, call.function.name, call.function.arguments);
+        const { label, result } = writer.handles(call.function.name) // write mode
+          ? await writer.run(folder, call, controller.signal)
+          : await runTool(folder, call.function.name, call.function.arguments);
         if (call.function.name === 'read_file' && !result.startsWith('Error:')) used.files++;
         (msg.tools ??= []).push(label);
         history.push({ role: 'tool', tool_call_id: call.id, content: result });
@@ -299,6 +312,7 @@ async function complete(chat) {
   }
   cancelAnimationFrame(frame);
   clearTimeout(frame);
+  writer.endReply(); // write mode
 
   msg.content = msg.content.trimEnd();
   if (!msg.content && !msg.tools) chat.messages.splice(chat.messages.indexOf(msg), 1);
@@ -340,6 +354,8 @@ function retry() {
 function newChat() {
   state.active = null;
   state.draftFolder = null;
+  state.draftEditable = false;
+  panel.close();
   sidebar.close();
   render();
   composer.focus();
@@ -353,6 +369,7 @@ async function openChat(id) {
     if (!meta) return;
     state.active = { meta, messages: await store.loadMessages(id), folder: folderSupported ? await store.loadFolder(id) : null };
   }
+  panel.close();
   render({ toBottom: true });
   composer.focus();
 }
@@ -370,24 +387,26 @@ async function removeChat(id) {
   render();
 }
 
-// ---- connected folder (per chat, read-only) ----
+// ---- connected folder (per chat; read-only unless connected for editing) ----
 
-async function connectFolder() {
+async function connectFolder(editable = false) {
   try {
-    await setFolder(await pickFolder());
+    await setFolder(await (editable ? pickEditableFolder() : pickFolder()), editable); // write mode
   } catch (e) {
     if (e.name !== 'AbortError') notify(`Couldn't open the folder: ${e.message}`);
   }
 }
 
-async function setFolder(handle) {
+async function setFolder(handle, editable = false) {
   if (state.active) {
     state.active.folder = handle;
+    state.active.canEdit = editable;
     await store.saveFolder(state.active.meta.id, handle);
   } else {
     state.draftFolder = handle;
+    state.draftEditable = editable;
   }
-  composer.setFolder(handle?.name);
+  composer.setFolder(handle?.name, editable);
   composer.focus();
 }
 

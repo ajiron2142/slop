@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="styles/components/picker.css">
   <link rel="stylesheet" href="styles/components/settings.css">
   <link rel="stylesheet" href="styles/components/meter.css">
+  <link rel="stylesheet" href="styles/components/panel.css">
+  <link rel="stylesheet" href="styles/components/folder-write.css">
   <!-- Themes: one line each. Add a theme by adding its file and a line here.
        media="not all" lets them download without delaying the first paint; the chosen one is switched on. -->
   <link rel="stylesheet" href="styles/themes/monokai.css" media="not all" data-theme="monokai" data-name="Monokai">
@@ -36,6 +38,8 @@
   <link rel="modulepreload" href="app/components/picker.js">
   <link rel="modulepreload" href="app/components/settings.js">
   <link rel="modulepreload" href="app/components/meter.js">
+  <link rel="modulepreload" href="app/components/panel.js">
+  <link rel="modulepreload" href="app/folder-write.js">
   <link rel="modulepreload" href="vendor/marked.esm.js">
   <link rel="modulepreload" href="vendor/purify.es.js">
   <link rel="modulepreload" href="vendor/idb-keyval.js">
@@ -78,8 +82,10 @@
       <div id="attach-menu" class="attach-menu" role="menu" hidden>
         <button type="button" role="menuitem" data-action="files">Attach files</button>
         <button type="button" role="menuitem" data-action="folder">Connect folder (read-only)</button>
+        <button type="button" role="menuitem" data-action="folder-edit">Connect folder (can edit)</button>
       </div>
     </section>
+    <aside id="panel" class="panel themed" aria-label="Side panel" hidden></aside>
   </div>
 
   <dialog id="settings" class="settings themed">

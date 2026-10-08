@@ -69,6 +69,8 @@ Done.`;
 //   "huge …"     reports 40,000 input tokens, more than some models can take
 //   "folder …"   (with tools) lists the folder, reads two files, then reports what it saw
 //   "notools …"  (with tools) the error LiteLLM gives for a model without tool support
+//   "edit …"     (with write tools) edits src/app.js and creates notes/new.txt in one round, then
+//                tries an edit that can't match, then reports the three results
 //   anything else: the long reply
 export async function startMock() {
   const requests = []; // every chat request received, newest last
@@ -103,6 +105,7 @@ export async function startMock() {
         model: body.model,
         text,
         hasTools: Boolean(body.tools),
+        toolNames: (body.tools ?? []).map((t) => t.function.name),
         system: body.messages[0].role === 'system' ? body.messages[0].content : '',
         images: parts.filter((p) => p.type === 'image_url').length,
         hasFile: parts.some((p) => p.type === 'text' && p.text.includes('<file name=')),
@@ -112,6 +115,24 @@ export async function startMock() {
         return res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { message: 'litellm.UnsupportedParamsError: tools is not supported' } }));
       }
       res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+
+      if (body.tools && text.startsWith('edit')) {
+        const results = body.messages.filter((m) => m.role === 'tool');
+        const call = (id, name, args) => ({ index: Number(id.slice(1)), id, type: 'function', function: { name, arguments: JSON.stringify(args) } });
+        if (results.length === 0) {
+          sse(res, { choices: [{ delta: { content: 'Making two changes.', tool_calls: [
+            call('e0', 'edit_file', { path: 'src/app.js', old_text: '"hi"', new_text: '"hello"' }),
+            call('e1', 'write_file', { path: 'notes/new.txt', content: 'fresh\n' }),
+          ] } }] });
+        } else if (results.length === 2) {
+          sse(res, { choices: [{ delta: { tool_calls: [call('e0', 'edit_file', { path: 'src/app.js', old_text: 'nope', new_text: 'x' })] } }] });
+        } else {
+          sse(res, { choices: [{ delta: { content: `EDIT[${results[0].content}] CREATE[${results[1].content}] BAD[${results[2].content}]` } }] });
+        }
+        sse(res, { choices: [{ delta: {}, finish_reason: results.length < 3 ? 'tool_calls' : 'stop' }] });
+        if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
+        return res.end('data: [DONE]\n\n');
+      }
 
       if (body.tools && text.startsWith('folder')) {
         const results = body.messages.filter((m) => m.role === 'tool');

@@ -34,6 +34,7 @@ app/                  behaviour
   api.js              LiteLLM calls (/v1/models, streaming /v1/chat/completions)
   storage.js          settings and chats in IndexedDB, search, export/import
   folder.js           read-only folder tools for the model (list_files, search_files, read_file)
+  folder-write.js     optional write mode: edit_file / write_file, review in the side panel, Undo (removable add-on)
   stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)
   markdown.js         markdown to sanitised HTML
   highlight.js        syntax colours for code blocks; loads highlight.js on first use (lists the languages)
@@ -44,18 +45,19 @@ app/                  behaviour
     messages.js       message rendering, code copy, retry, per-reply Stats card
     meter.js          usage meter above the message box (context and cost)
     composer.js       text box, send/stop, attachments (button, paste, drop), folder chip
+    panel.js          side panel on the right; any feature can open it with its own content
     picker.js         searchable dropdown (used for models and themes)
     settings.js       settings dialog
 styles/
-  base.css            tokens, chat structure, app shell
-  components/         one file per component, same names as app/components
+  base.css            tokens, the chat column's layout, app shell, shared buttons
+  components/         one file per component, same names as app/components (plus folder-write.css)
   themes/             one self-contained file per theme (see its README)
 fonts/                self-hosted fonts; fonts.css declares them
 vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
 tests/                browser tests; not part of the deployed app (see tests/README.md)
 ```
 
-**Rules that keep it small:** each UI piece is a `.js` + `.css` pair with the same name; components use tokens, never fixed colours; themes only set tokens and overrides, never layout; adding anything means adding a file and one line.
+**Rules that keep it small:** each UI piece is a `.js` + `.css` pair with the same name; components use tokens, never fixed colours; themes only set tokens and overrides, never layout; adding anything means adding a file and one line. Features that come and go (like write mode) live in their own files and plug in through small hooks, so removing one never touches the rest. Nothing UI-related is remembered unless it has to be: the side panel, review state and Undo exist only while you need them.
 
 ## How it works
 
@@ -99,12 +101,14 @@ Or with Node.js: `npm ci`, `npx playwright install chromium`, then `npm test`. P
 - Your API key and chats live only in this browser's IndexedDB and are sent nowhere except your LiteLLM URL. Settings has **Forget key** and **Delete all local data**.
 - Attachments are read in the browser: images up to 10 MB, text files up to 512 KB. Imported chat files are validated before saving.
 - A connected folder is read-only: the browser grants read access only, and nothing in the app can write. The model can only reach files inside the folder you picked, and the browser asks for permission again after a reload. Files the model reads are sent to your LiteLLM URL like any message. `.git`, `node_modules` and similar folders are skipped. Searches also skip lockfiles, minified files and binaries, and stop at 100 matching lines. Long files come back 1,000 lines at a time, and files over 4 MB aren't read. Disconnect with the × on the folder chip.
+- **Write mode is opt-in per chat.** Only **Connect folder (can edit)** grants write access (the browser asks), and the chip says *can edit*. Every change is shown as a diff in the side panel and written only after you click Apply (or Apply all remaining, for the rest of that reply). The model can create and edit files but never delete or rename. Edit access lasts until you reload: after that the chat's folder is read-only again. **Undo this reply** puts back every file the latest reply changed and removes files it created; it asks first if you've edited one of them since. Undo is only kept until your next message, so for anything older use Git.
 
 ## Features
 
 - Model picker with search and recent models
 - Attach images (sent to vision models) and text files (inlined) with the button, paste or drag-and-drop
 - Connect a folder to a chat, read-only, so the model can look through it (Chrome and Edge, models with tool support)
+- Optional write mode: the model proposes file edits, you review each diff in a side panel, and can undo the latest reply
 - Markdown replies with syntax-coloured, copyable code blocks, tables and nested lists
 - Chat history with search, export/import, and Stop / Retry
 - Themes, switchable in Settings, each with its own code colours

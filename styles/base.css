@@ -104,7 +104,8 @@ body { overflow: hidden; }
 button, input, textarea, select { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 
-.app { display: grid; grid-template-columns: 260px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: 100vh; height: 100dvh; }
+/* Sidebar, chat, and the side panel (an empty column until something opens it). */
+.app { display: grid; grid-template-columns: 260px minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); height: 100vh; height: 100dvh; }
 
 .btn {
   display: inline-flex;

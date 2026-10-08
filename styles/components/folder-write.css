@@ -1,0 +1,37 @@
+/* Write mode (optional add-on): the review list and diffs in the side panel, and the status line under a reply. */
+.changes { display: grid; gap: 2px; padding: 8px; border-bottom: 1px solid var(--line); }
+.change {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 8px;
+  font-family: var(--font-code);
+  font-size: 12.5px;
+  color: var(--ink);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.change:hover, .change.on { background: var(--surface); }
+.change-path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.change-counts, .change-status { font-size: 11.5px; white-space: nowrap; }
+.change-status { color: var(--muted); }
+.change-status.waiting { font-weight: 600; color: var(--accent); }
+.add { color: #2e9a4f; }
+.del { color: #d1403a; }
+.change-title { padding: 10px 16px 0; font-family: var(--font-code); font-size: 12.5px; font-weight: 600; }
+.diff { margin: 8px 0 0; padding: 4px 0 12px; overflow-x: auto; font-family: var(--font-code); font-size: 12.5px; line-height: 1.6; }
+.diff span { display: block; padding: 0 16px; white-space: pre; }
+.diff .add { background: color-mix(in srgb, #2e9a4f 14%, transparent); }
+.diff .del { background: color-mix(in srgb, #d1403a 14%, transparent); }
+.diff .gap { color: var(--muted); }
+.changes-note { margin-right: auto; font-size: 13px; color: var(--muted); }
+
+.write-log { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-bottom: 6px; font-family: var(--font-meta); font-size: 12px; color: var(--muted); }
+.write-log .waiting { color: var(--accent); font-weight: 600; }
+.write-log .link { padding: 0; font: inherit; color: var(--accent); background: none; border: 0; cursor: pointer; }
+.write-log .link:hover { text-decoration: underline; }
+.tray-chip.folder.can-edit { border-color: var(--accent); }
+.tray-chip .folder-mode { font-size: 11px; color: var(--accent); }
