@@ -19,7 +19,7 @@ export default async function ({ browser, site, mock, check }) {
   await p.keyboard.press('Enter');
   await p.waitForTimeout(200);
   check('picking a theme switches on only its stylesheet', await p.evaluate(() => [...document.querySelectorAll('link[data-theme]')].filter((l) => l.media === 'all').map((l) => l.dataset.theme).join() === 'monokai'));
-  check('the theme actually styles the page', await p.evaluate(() => getComputedStyle(document.getElementById('chat')).backgroundColor === 'rgb(39, 40, 34)'));
+  check('the theme actually styles the page', await p.evaluate(() => getComputedStyle(document.getElementById('chat')).backgroundColor === 'rgb(40, 44, 52)'));
   await p.click('#close-settings');
 
   await send(p, 'show me code');
