@@ -1,5 +1,6 @@
-/* Usage meter above the message box, and its summary that opens upward. */
-.meter-row { position: relative; display: flex; justify-content: flex-end; padding: 0 var(--edge) 6px; }
+/* Usage meter above the message box, and its summary, which opens right above the button. */
+.meter-row { --meter-bad: #c4302b; --meter-warn: #b7791f; display: flex; justify-content: flex-end; padding: 0 var(--edge) 6px; }
+.meter-anchor { position: relative; }
 .meter {
   display: inline-flex;
   align-items: center;
@@ -15,6 +16,7 @@
   cursor: pointer;
 }
 .meter:hover, .meter[aria-expanded="true"] { color: var(--ink); border-color: var(--muted); }
+.meter.too-long { color: var(--meter-bad); border-color: var(--meter-bad); }
 .meter-ring {
   width: 15px;
   height: 15px;
@@ -23,17 +25,19 @@
   -webkit-mask: radial-gradient(circle, transparent 4px, #000 4.5px);
   mask: radial-gradient(circle, transparent 4px, #000 4.5px);
 }
+.meter.too-long .meter-ring { background: var(--meter-bad); }
+
 .meter-pop {
   position: absolute;
-  right: var(--edge);
-  bottom: calc(100% + 2px);
+  right: 0;
+  bottom: calc(100% + 8px);
   z-index: 20;
   display: grid;
   gap: 8px;
-  width: min(340px, calc(100% - 2 * var(--edge)));
+  width: min(340px, calc(100vw - 2 * var(--edge)));
   max-height: 70vh;
   overflow-y: auto;
-  padding: 12px 14px;
+  padding: 14px;
   font-family: var(--font-body);
   font-size: 13px;
   color: var(--ink);
@@ -42,18 +46,28 @@
   border-radius: min(var(--radius), 12px);
   box-shadow: 0 -12px 36px -14px rgba(0, 0, 0, 0.35);
 }
-.meter-sec { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.meter-big { font-size: 15px; letter-spacing: 0; color: var(--ink); }
+.meter-line { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.meter-detail { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meter-detail b { margin-left: 4px; font-weight: 600; color: var(--ink); }
 .meter-bar { height: 6px; overflow: hidden; background: var(--line); border-radius: 99px; }
-.meter-bar::before { content: ""; display: block; width: var(--p); height: 100%; background: var(--accent); }
-.meter-cap { margin-top: -3px; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.meter-rows { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; font-variant-numeric: tabular-nums; }
-.meter-rows .k { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
-.meter-rows .v { text-align: right; }
-.meter-rows .total { padding-top: 4px; font-weight: 600; color: var(--ink); border-top: 1px solid var(--line); }
-.meter-details { display: grid; gap: 8px; padding-top: 9px; border-top: 1px dashed var(--line); }
+.meter-bar::before { content: ""; display: block; width: var(--p); height: 100%; background: var(--accent); border-radius: 99px; }
+.meter-bar.warn::before { background: var(--meter-warn); }
+.meter-bar.bad::before { background: var(--meter-bad); }
+.meter-cap { margin-top: -3px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meter-cap.bad, .meter-cap .bad { color: var(--meter-bad); }
+.meter-cap .warn { color: var(--meter-warn); }
+.meter-rule { width: 100%; margin: 2px 0; border: 0; border-top: 1px solid var(--line); }
+.meter-sec { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.meter-pairs { display: flex; gap: 22px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meter-pair b { margin-left: 6px; font-weight: 500; color: var(--ink); }
+.meter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.meter-chip { max-width: 100%; padding: 2px 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; background: var(--surface); border-radius: 999px; }
+.meter-table-wrap { overflow-x: auto; }
 .meter-table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
-.meter-table th { padding: 0 0 4px 10px; font-size: 11.5px; font-weight: 500; text-align: right; white-space: nowrap; color: var(--muted); }
-.meter-table td { padding: 3px 0 3px 10px; text-align: right; white-space: nowrap; border-top: 1px solid var(--line); }
-.meter-table :is(th, td):first-child { padding-left: 0; text-align: left; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
-.meter-table .total td { font-weight: 600; }
+.meter-table th, .meter-table td { padding: 4px 0 4px 12px; text-align: right; white-space: nowrap; border-top: 1px solid var(--line); }
+.meter-table tr:first-child th { padding-top: 0; font-weight: 500; color: var(--muted); border-top: 0; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+.meter-table th:first-child { padding-left: 0; text-align: left; font-weight: 400; color: var(--muted); }
+.meter-table tr.total td, .meter-table tr.total th { font-weight: 600; color: var(--ink); }
+.meter-rows { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; font-variant-numeric: tabular-nums; }
+.meter-rows .k { color: var(--muted); }
+.meter-rows .v { text-align: right; }

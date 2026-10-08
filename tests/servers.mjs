@@ -66,6 +66,7 @@ Done.`;
 // What the fake LiteLLM answers, by how the last user message starts:
 //   "echo …"     a one-line summary of what it received (images, inlined files)
 //   "cut …"      the long reply, marked as cut off at the length limit
+//   "huge …"     reports 40,000 input tokens, more than some models can take
 //   "folder …"   (with tools) lists the folder, reads two files, then reports what it saw
 //   "notools …"  (with tools) the error LiteLLM gives for a model without tool support
 //   anything else: the long reply
@@ -73,7 +74,8 @@ export async function startMock() {
   const requests = []; // every chat request received, newest last
   const sse = (res, data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
   const usage = (body, text) => {
-    const prompt = Math.ceil(JSON.stringify(body.messages).length / 4);
+    const huge = String(body.messages.at(-1).content).startsWith('huge');
+    const prompt = huge ? 40000 : Math.ceil(JSON.stringify(body.messages).length / 4);
     return { choices: [], usage: { prompt_tokens: prompt, completion_tokens: Math.ceil(text.length / 4), prompt_tokens_details: { cached_tokens: body.messages.length > 2 ? Math.floor(prompt / 2) : 0 } } };
   };
 
@@ -83,6 +85,11 @@ export async function startMock() {
     if (req.method === 'OPTIONS') return res.end();
     if (req.url === '/v1/models') return res.end(JSON.stringify({ data: Array.from({ length: 40 }, (_, i) => ({ id: MODELS[i % 8] + (i >= 8 ? `-v${Math.floor(i / 8)}` : '') })) }));
     if (req.url === '/model/info') return res.end(JSON.stringify({ data: INFO }));
+    // A key with a $50 monthly budget, $12.40 spent, expiring in 10 days.
+    if (req.url === '/key/info') {
+      const day = 86400000;
+      return res.end(JSON.stringify({ info: { spend: 12.4, max_budget: 50, budget_reset_at: new Date(Date.now() + 20 * day).toISOString(), expires: new Date(Date.now() + 10 * day).toISOString() } }));
+    }
     if (req.url !== '/v1/chat/completions') return res.writeHead(404).end();
 
     let raw = '';

@@ -12,8 +12,15 @@ export default async function ({ browser, site, mock, check }) {
   check('meter shows context % and cost', /^(<1|\d+)% · (<\$0\.01|\$\d)/.test(await label()));
   await p.click('#meter-btn');
   const pop = await p.textContent('#meter-pop');
-  check('summary shows context and cost', pop.includes('Context') && pop.includes('of 200,000 tokens') && pop.includes('Total'));
-  check('no details while detailed stats are off', !pop.includes('This chat in detail'));
+  check('summary shows the context window and this chat', pop.includes('Context window') && pop.includes('/ 200k') && pop.includes('This chat') && pop.includes('Cost') && pop.includes('Cache'));
+  check('key budget shows spend, reset date and expiry', pop.includes('Key budget') && pop.includes('resets') && pop.includes('$12.40 of $50.00 spent') && pop.includes('Key expires'));
+  check('an expiry within two weeks is highlighted', await p.$eval('#meter-pop .meter-cap .warn', (n) => n.textContent.startsWith('Key expires')).catch(() => false));
+  check('the summary opens right above its button', await p.evaluate(() => {
+    const pop = document.getElementById('meter-pop').getBoundingClientRect();
+    const btn = document.getElementById('meter-btn').getBoundingClientRect();
+    return Math.abs(pop.right - btn.right) < 2 && pop.bottom <= btn.top && btn.top - pop.bottom < 16;
+  }));
+  check('no breakdown while detailed stats are off', !pop.includes('Breakdown'));
   await p.keyboard.press('Escape');
   check('Escape closes the summary', await p.isHidden('#meter-pop'));
   check('no Stats button while detailed stats are off', (await p.$$('.stats-btn')).length === 0);
@@ -31,13 +38,13 @@ export default async function ({ browser, site, mock, check }) {
   await send(p, 'echo second');
   await p.click('#meter-btn');
   const pop2 = await p.textContent('#meter-pop');
-  check('per-model table with a total row', pop2.includes('This chat in detail') && pop2.includes('llama-3.1-70b') && pop2.includes('claude-haiku') && pop2.includes('Avg speed') && /Total2/.test(pop2.replace(/\s/g, '')));
+  check('breakdown has a column per model and a Total', pop2.includes('Breakdown') && pop2.includes('llama-3.1-70b') && pop2.includes('claude-haiku') && pop2.includes('Avg speed') && pop2.includes('Total'));
+  check('share of replies by model', pop2.includes('claude-haiku 50%') && pop2.includes('llama-3.1-70b 50%'));
   check('a model with no price counts as free', pop2.includes('Free') && pop2.includes('Next reply costs aboutFree'));
-  check('growth per reply and next message size shown', pop2.includes('Grows per reply') && pop2.includes('Next message sends'));
-  check('context is measured against the newly picked model', pop2.includes('of 32,768 tokens'));
-  const rows = await p.$$eval('.meter-table tr:not(.total) td:nth-child(3)', (tds) => tds.map((td) => td.textContent));
-  const total = numbers(await p.textContent('.meter-table .total td:nth-child(3)'));
-  check('model rows add up to the total', rows.map(numbers).reduce((a, r) => [a[0] + r[0], a[1] + r[1]], [0, 0]).join() === total.join());
+  check('growth per reply shown', pop2.includes('Grows per reply'));
+  check('context is measured against the newly picked model', pop2.includes('/ 32.8k'));
+  const sums = await p.$$eval('.meter-table tr', (trs) => trs.slice(1, 4).map((tr) => [...tr.querySelectorAll('td')].map((td) => +td.textContent.replace(/,/g, ''))));
+  check('Input, Output and Cached add up to their totals', sums.every((r) => r.slice(0, -1).reduce((a, b) => a + b, 0) === r.at(-1)));
   await p.keyboard.press('Escape');
 
   await send(p, 'cut this reply short');
@@ -66,6 +73,15 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('.msg.assistant:last-of-type .stats-btn');
   const stopped = await p.textContent('.msg.assistant:last-of-type .stats-card');
   check('a stopped reply says so, without token counts', stopped.includes('Stopped by you') && !stopped.includes(' in + '));
+
+  // A chat bigger than the picked model can take: red meter and a hint.
+  await p.click('#new-chat');
+  await pickModel(p, 'llama-3.1-70b');
+  await send(p, 'huge question');
+  await p.click('#meter-btn');
+  const huge = await p.textContent('#meter-pop');
+  check('a chat too long for the model shows a warning', huge.includes('Too long for llama-3.1-70b') && await p.evaluate(() => document.getElementById('meter-btn').classList.contains('too-long')));
+  await p.keyboard.press('Escape');
 
   await p.click('#new-chat');
   check('a new chat hides the meter', await p.isHidden('#meter-row'));

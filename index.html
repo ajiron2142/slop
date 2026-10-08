@@ -86,8 +86,10 @@
       <p id="notice" class="notice" role="status" hidden></p>
       <div id="messages" class="messages"></div>
       <div id="meter-row" class="meter-row" hidden>
-        <div id="meter-pop" class="meter-pop" role="dialog" aria-label="Usage for this chat" hidden></div>
-        <button type="button" id="meter-btn" class="meter" aria-expanded="false" aria-controls="meter-pop" aria-label="Usage for this chat"></button>
+        <div class="meter-anchor">
+          <div id="meter-pop" class="meter-pop" role="dialog" aria-label="Usage for this chat" hidden></div>
+          <button type="button" id="meter-btn" class="meter" aria-expanded="false" aria-controls="meter-pop" aria-label="Usage for this chat"></button>
+        </div>
       </div>
       <div id="tray" class="tray" hidden></div>
       <form id="composer" class="composer">

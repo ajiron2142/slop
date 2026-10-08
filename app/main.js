@@ -3,7 +3,7 @@
 //   -> messages (renders it) and storage.js (saves it) -> sidebar (lists chats).
 // Components only handle their own piece of the page and call back here.
 
-import { listModels, getModelInfo, streamChat, toApiContent } from './api.js';
+import { listModels, getModelInfo, getKeyInfo, streamChat, toApiContent } from './api.js';
 import * as store from './storage.js';
 import { $ } from './dom.js';
 import { applyTheme, rememberForBoot } from './theme.js';
@@ -20,6 +20,7 @@ const state = {
   settings: null,
   models: [],
   modelInfo: {}, // context limits and prices by model name, from LiteLLM
+  keyInfo: null, // your key's budget and expiry, when LiteLLM reports them
   chats: [], // chat metadata, newest first (filtered by search)
   active: null, // { meta, messages, folder }, or null for a new unsaved chat
   draftFolder: null, // folder connected before a new chat's first message
@@ -145,7 +146,11 @@ function render(options) {
   sidebar.render(state.chats, state.active?.meta.id);
   const streamingMsg = state.streaming?.chat === state.active ? state.streaming.msg : null;
   messages.render(state.active?.messages ?? [], streamingMsg, { ...options, showStats: state.settings.showStats });
-  meter.render(summarize(state.active?.messages ?? [], state.modelInfo, state.settings.model), state.settings.showStats);
+  meter.render(summarize(state.active?.messages ?? [], state.modelInfo, state.settings.model), {
+    detailed: state.settings.showStats,
+    key: state.keyInfo,
+    model: state.settings.model,
+  });
   composer.setBusy(Boolean(state.streaming));
   composer.setFolder((state.active ? state.active.folder : state.draftFolder)?.name);
 }
@@ -161,7 +166,7 @@ async function refreshModels() {
   state.models = [];
   if (s.baseUrl && s.apiKey) {
     try {
-      [state.models, state.modelInfo] = await Promise.all([listModels(s), getModelInfo(s)]);
+      [state.models, state.modelInfo, state.keyInfo] = await Promise.all([listModels(s), getModelInfo(s), getKeyInfo(s)]);
       notify('');
     } catch (e) {
       notify(`Could not load models: ${e.message}`);
@@ -296,6 +301,8 @@ async function complete(chat) {
     };
   }
   state.streaming = null;
+  // Spend changed, so refresh the budget in the background.
+  getKeyInfo(s).then((key) => { state.keyInfo = key; render(); });
   if (!chat.deleted) {
     chat.meta.updated = Date.now();
     await store.saveChat(chat.meta, withoutErrors(chat.messages));

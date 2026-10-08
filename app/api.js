@@ -67,6 +67,17 @@ export async function getModelInfo(settings) {
   }
 }
 
+// Your key's budget and expiry from LiteLLM's /key/info: spend, max_budget, budget_reset_at,
+// expires. Optional: null when the proxy doesn't allow it or the key has neither.
+export async function getKeyInfo(settings) {
+  try {
+    const info = (await (await request(settings, '/key/info')).json())?.info;
+    return info && (info.max_budget != null || info.expires) ? info : null;
+  } catch {
+    return null;
+  }
+}
+
 // Streams a reply, calling onDelta with each piece of text. Resolves with any tool calls
 // the model made (only possible when tools are sent), the token usage the server reports
 // at the end, and why the reply finished ("stop", "length", "tool_calls").
