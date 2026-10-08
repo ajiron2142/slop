@@ -50,7 +50,7 @@
 .theme-sandia .chat-header .model { background: #fff; border-color: var(--line); color: var(--ink); }
 .theme-sandia .messages {
   background:
-    var(--balloons) 0 0 / 360px 760px repeat,
+    var(--balloons) 0 0 / 560px 1182px repeat,
     var(--sandias) 0 100% / 100% 120px no-repeat,
     linear-gradient(#cfdfee, #f4e2d6 52%, #f6c5b4);
   background-attachment: local, scroll, scroll;

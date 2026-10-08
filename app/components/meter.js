@@ -64,27 +64,15 @@ function context(sum, model) {
   return nodes;
 }
 
-// Only when LiteLLM reports a budget or an expiry date for your key.
+// Only when LiteLLM reports a budget for your key.
 function budget(key) {
   if (!key) return [];
-  const nodes = [];
-  if (key.max_budget != null) {
-    const percent = key.max_budget > 0 ? Math.round((key.spend / key.max_budget) * 100) : 100;
-    nodes.push(
-      line('Key budget', key.budget_reset_at ? `resets ${date(key.budget_reset_at)} ` : '', `${percent}%`),
-      bar(percent, percent >= 90 ? 'bad' : percent >= 75 ? 'warn' : ''),
-    );
-  }
-  const caption = [];
-  if (key.max_budget != null) caption.push(el('span', '', `${fmt.usd2(key.spend)} of ${fmt.usd2(key.max_budget)} spent`));
-  if (key.expires) {
-    const days = (new Date(key.expires) - Date.now()) / 86400000;
-    if (caption.length) caption.push(el('span', '', ' · '));
-    caption.push(el('span', days < 14 ? 'warn' : '', days < 0 ? `Key expired ${date(key.expires)}` : `Key expires ${date(key.expires)}`));
-  }
-  const cap = el('div', 'meter-cap');
-  cap.append(...caption);
-  return [...nodes, cap];
+  const percent = key.max_budget > 0 ? Math.round((key.spend / key.max_budget) * 100) : 100;
+  return [
+    line('Key budget', key.budget_reset_at ? `resets ${date(key.budget_reset_at)} ` : '', `${percent}%`),
+    bar(percent, percent >= 90 ? 'bad' : percent >= 75 ? 'warn' : ''),
+    el('div', 'meter-cap', `${fmt.usd2(key.spend)} of ${fmt.usd2(key.max_budget)} spent`),
+  ];
 }
 
 function thisChat(sum) {

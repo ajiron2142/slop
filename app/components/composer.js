@@ -23,7 +23,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
 
   function autosize() {
     input.style.height = 'auto';
-    input.style.height = `${Math.min(input.scrollHeight + 2, 140)}px`;
+    input.style.height = `${Math.min(input.scrollHeight + 2, 200)}px`;
   }
 
   function removeButton(label, onClick) {

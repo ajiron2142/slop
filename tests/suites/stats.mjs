@@ -13,8 +13,7 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('#meter-btn');
   const pop = await p.textContent('#meter-pop');
   check('summary shows the context window and this chat', pop.includes('Context window') && pop.includes('/ 200k') && pop.includes('This chat') && pop.includes('Cost') && pop.includes('Cache'));
-  check('key budget shows spend, reset date and expiry', pop.includes('Key budget') && pop.includes('resets') && pop.includes('$12.40 of $50.00 spent') && pop.includes('Key expires'));
-  check('an expiry within two weeks is highlighted', await p.$eval('#meter-pop .meter-cap .warn', (n) => n.textContent.startsWith('Key expires')).catch(() => false));
+  check('key budget shows spend and reset date', pop.includes('Key budget') && pop.includes('resets') && pop.includes('$12.40 of $50.00 spent'));
   check('the summary opens right above its button', await p.evaluate(() => {
     const pop = document.getElementById('meter-pop').getBoundingClientRect();
     const btn = document.getElementById('meter-btn').getBoundingClientRect();

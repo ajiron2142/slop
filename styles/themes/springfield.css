@@ -29,8 +29,8 @@
   --radius: 10px;
   background:
     var(--cloud) 8% 6% / 210px 84px no-repeat,
-    var(--cloud) 112% 44% / 180px 72px no-repeat,
-    var(--cloud) -50px 84% / 230px 92px no-repeat,
+    var(--cloud) 94% 44% / 180px 72px no-repeat,
+    var(--cloud) 6% 84% / 230px 92px no-repeat,
     linear-gradient(#4aa8de, #70c2ec 45%, #a8dcf5);
 }
 .theme-springfield .chat-header { padding-top: 18px; padding-bottom: 14px; border-bottom: 0; }

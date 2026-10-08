@@ -175,11 +175,11 @@
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 10px 12px;
+  padding: 14px 16px;
   box-sizing: border-box;
-  height: 44px;
-  min-height: 44px;
-  max-height: 140px;
+  height: 52px;
+  min-height: 52px;
+  max-height: 200px;
   line-height: 22px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -224,10 +224,11 @@
 @container (min-width: 820px) {
   .chat.chat .chat-header,
   .chat.chat .messages,
+  .chat.chat .notice { padding-inline: max(var(--edge), calc((100% - 760px) / 2)); }
+  /* The message box, its attachments and the usage meter sit a little wider than the conversation. */
   .chat.chat .tray,
   .chat.chat .meter-row,
-  .chat.chat .notice,
-  .chat.chat .composer { padding-inline: max(var(--edge), calc((100% - 760px) / 2)); }
+  .chat.chat .composer { padding-inline: max(var(--edge), calc((100% - 840px) / 2)); }
 }
 
 /* ============================================================

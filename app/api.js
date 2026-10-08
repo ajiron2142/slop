@@ -67,12 +67,12 @@ export async function getModelInfo(settings) {
   }
 }
 
-// Your key's budget and expiry from LiteLLM's /key/info: spend, max_budget, budget_reset_at,
-// expires. Optional: null when the proxy doesn't allow it or the key has neither.
+// Your key's budget from LiteLLM's /key/info: spend, max_budget and budget_reset_at.
+// Optional: null when the proxy doesn't allow it or the key has no budget.
 export async function getKeyInfo(settings) {
   try {
     const info = (await (await request(settings, '/key/info')).json())?.info;
-    return info && (info.max_budget != null || info.expires) ? info : null;
+    return info?.max_budget != null ? info : null;
   } catch {
     return null;
   }
