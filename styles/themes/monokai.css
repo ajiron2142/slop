@@ -36,7 +36,7 @@
 .theme-monokai .body a:hover { text-decoration: underline; }
 .theme-monokai .body code { color: #d7dae0; }
 .theme-monokai .body pre code { color: var(--ink); }
-.theme-monokai .body pre { border: 1px solid var(--line); }
+.theme-monokai .body .code { border: 1px solid var(--line); }
 .theme-monokai .body :is(h1, h2, h3, h4) { padding-left: 10px; font-weight: 500; color: #d7dae0; border-left: 3px solid var(--accent); }
 .theme-monokai .body blockquote { padding: 10px 14px; color: var(--ink); background: var(--surface); border: 0; border-radius: 8px; }
 .theme-monokai .body blockquote > :first-child { margin-top: 0; }
