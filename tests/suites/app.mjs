@@ -58,6 +58,21 @@ export default async function ({ browser, site, mock, check }) {
     return btn.top >= box.top && btn.bottom <= box.bottom && code.getBoundingClientRect().top < box.top;
   }));
 
+  // Long code lines scroll inside their block in every theme; the conversation never scrolls sideways.
+  const wide = await p.evaluate(async () => {
+    const { listThemes, applyTheme } = await import('./app/theme.js');
+    const pane = document.getElementById('messages');
+    const bad = [];
+    for (const { id } of listThemes()) {
+      applyTheme(id);
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (pane.scrollWidth > pane.clientWidth + 1) bad.push(id || 'default');
+    }
+    applyTheme('');
+    return bad;
+  });
+  check(`no theme makes the conversation scroll sideways${wide.length ? ` (${wide.join(', ')})` : ''}`, wide.length === 0);
+
   // Sidebar collapse.
   await p.click('#collapse-btn');
   await p.waitForTimeout(200);

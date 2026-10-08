@@ -41,7 +41,7 @@
   background: var(--canary);
   box-shadow: -5px 5px 0 var(--pink);
 }
-.theme-sticky .model { background: #fff; }
+.theme-sticky .chat-header .model { background: #fff; }
 .theme-sticky .who { display: none; }
 .theme-sticky .msg { position: relative; z-index: 0; }
 .theme-sticky .body {

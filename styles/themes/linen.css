@@ -26,7 +26,7 @@
 }
 .theme-linen .chat-header { border-bottom: 0; padding-top: 18px; }
 .theme-linen .chat-title { font-size: 27px; font-weight: 400; letter-spacing: -0.01em; }
-.theme-linen .model { background: var(--surface); }
+.theme-linen .chat-header .model { background: var(--surface); }
 .theme-linen .user .who { display: none; }
 .theme-linen .assistant { max-width: 100%; }
 .theme-linen .assistant .who::before {

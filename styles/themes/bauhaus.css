@@ -46,7 +46,7 @@
     linear-gradient(var(--blue), var(--blue)) 19px 0 / 14px 14px no-repeat,
     linear-gradient(to top right, transparent 50%, var(--yellow) 50%) 38px 0 / 14px 14px no-repeat;
 }
-.theme-bauhaus .model { border: 2px solid var(--ink); border-radius: 0; color: var(--ink); font-weight: 500; }
+.theme-bauhaus .chat-header .model { border: 2px solid var(--ink); border-radius: 0; color: var(--ink); font-weight: 500; }
 .theme-bauhaus .who {
   display: flex;
   align-items: center;
@@ -67,7 +67,7 @@
 .theme-bauhaus .body pre { background: var(--ink); color: var(--bg); }
 .theme-bauhaus .composer { border-top: 2px solid var(--ink); }
 .theme-bauhaus .composer textarea { border: 2px solid var(--ink); }
-.theme-bauhaus .send { width: 42px; padding: 0; border-radius: 50%; background: var(--yellow); color: var(--ink); font-size: 0; }
+.theme-bauhaus .send { width: 44px; height: 44px; padding: 0; border-radius: 50%; background: var(--yellow); color: var(--ink); font-size: 0; }
 .theme-bauhaus .send::before { content: "→"; font-size: 19px; font-weight: 600; }
 
 /* Code colours: red, yellow and blue on black. */

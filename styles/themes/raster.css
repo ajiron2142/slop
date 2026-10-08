@@ -29,7 +29,7 @@
 }
 .theme-raster .chat-header { align-items: flex-end; padding-top: 18px; border-bottom: 3px solid var(--ink); }
 .theme-raster .chat-title { font-size: 36px; font-weight: 800; letter-spacing: -0.045em; line-height: 0.85; }
-.theme-raster .model {
+.theme-raster .chat-header .model {
   border: 0;
   border-radius: 0;
   background: var(--ink);
@@ -43,7 +43,7 @@
 .theme-raster .messages { --pad-top: 0px; }
 .theme-raster .msg {
   display: grid;
-  grid-template-columns: 40px 1fr;
+  grid-template-columns: 40px minmax(0, 1fr);
   column-gap: 8px;
   padding: 14px 0 18px;
   border-bottom: 1px solid var(--ink);
@@ -56,7 +56,7 @@
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
-.theme-raster .who, .theme-raster .body { grid-column: 2; }
+.theme-raster .msg > * { grid-column: 2; }
 .theme-raster .who {
   font-size: 10px;
   font-weight: 700;

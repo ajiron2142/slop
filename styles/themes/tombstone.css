@@ -66,7 +66,7 @@
     #efe9d2;
   box-shadow: 0 0 18px rgba(239, 233, 210, 0.5);
 }
-.theme-tombstone .model { border-color: var(--line); }
+.theme-tombstone .chat-header .model { border-color: var(--line); }
 .theme-tombstone .who { font-size: 11px; letter-spacing: 0.16em; }
 .theme-tombstone .user .who { text-align: right; }
 .theme-tombstone .user .body {

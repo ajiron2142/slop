@@ -27,7 +27,7 @@
 }
 .theme-tide .chat-header { border-bottom: 0; padding-top: 18px; }
 .theme-tide .chat-title { font-size: 27px; font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
-.theme-tide .model { background: rgba(255, 255, 255, 0.7); border-color: rgba(255, 255, 255, 0.9); }
+.theme-tide .chat-header .model { background: rgba(255, 255, 255, 0.7); border-color: rgba(255, 255, 255, 0.9); }
 .theme-tide .who { display: none; }
 .theme-tide .assistant .body {
   border-radius: 24px 24px 24px 8px;

@@ -52,7 +52,7 @@
 .theme-boarding .chat-title { font-size: 21px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
 .theme-boarding .chat-title { font-family: var(--font-display); font-size: 25px; font-style: italic; letter-spacing: 0.04em; }
 .theme-boarding .chat-title::after { content: "  \2708\FE0E"; color: var(--plane); }
-.theme-boarding .model { color: var(--header-ink); border-color: var(--header-line); letter-spacing: 0.08em; text-transform: uppercase; font-size: 12.5px; }
+.theme-boarding .chat-header .model { color: var(--header-ink); border-color: var(--header-line); letter-spacing: 0.08em; text-transform: uppercase; font-size: 12.5px; }
 .theme-boarding .msg { counter-increment: seq; }
 .theme-boarding .who {
   padding-left: 4px;

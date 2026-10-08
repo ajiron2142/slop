@@ -45,7 +45,7 @@
   -webkit-mask: radial-gradient(circle, #000 0 6px, transparent 6.5px 7.5px, #000 8px);
   mask: radial-gradient(circle, #000 0 6px, transparent 6.5px 7.5px, #000 8px);
 }
-.theme-adobe .model { background: #fff; border-color: var(--line); color: var(--ink); }
+.theme-adobe .chat-header .model { background: #fff; border-color: var(--line); color: var(--ink); }
 .theme-adobe .who { display: none; }
 .theme-adobe .user .body { font-weight: 600; border-bottom-right-radius: 6px; box-shadow: 0 8px 18px -12px rgba(20, 90, 84, 0.8); }
 .theme-adobe .assistant .body {

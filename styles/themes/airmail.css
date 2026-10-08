@@ -41,7 +41,7 @@
   border: 1.5px solid var(--navy);
   vertical-align: 0.4em;
 }
-.theme-airmail .model { font-size: 11px; border-radius: 2px; }
+.theme-airmail .chat-header .model { font-size: 11px; border-radius: 2px; }
 .theme-airmail .who { font-size: 12px; letter-spacing: 0.04em; }
 .theme-airmail .user .who { text-align: right; }
 .theme-airmail .user .body {

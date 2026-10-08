@@ -40,7 +40,7 @@
   background: var(--accent);
   vertical-align: 0.05em;
 }
-.theme-sumi .model { border: 0; padding: 0; font-size: 11px; letter-spacing: 0.15em; }
+.theme-sumi .chat-header .model { border: 0; padding: 0; font-size: 11px; letter-spacing: 0.15em; }
 .theme-sumi .who { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 10px; }
 .theme-sumi .user .who { color: var(--accent); }
 .theme-sumi .user .who::before {

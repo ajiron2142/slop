@@ -44,7 +44,7 @@
   paint-order: stroke fill;
   text-shadow: 3px 3px 0 var(--ink);
 }
-.theme-springfield .model { background: #fff; border: 2.5px solid var(--ink); color: var(--ink); font-weight: 600; }
+.theme-springfield .chat-header .model { background: #fff; border: 2.5px solid var(--ink); color: var(--ink); font-weight: 600; }
 .theme-springfield .who { display: none; }
 .theme-springfield .body { border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
 .theme-springfield .user .body { font-weight: 600; border-bottom-right-radius: 6px; }

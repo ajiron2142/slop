@@ -67,7 +67,7 @@
 }
 @keyframes chomp { from { --chomp: 2deg; } to { --chomp: 40deg; } }
 @keyframes chomp-blink { 50% { opacity: 0.15; } }
-.theme-chomp .model { color: #fff; background: #000; border: 2px solid var(--wall); border-radius: 8px; font: 7.5px var(--font-meta); padding: 7px 10px; }
+.theme-chomp .chat-header .model { color: #fff; background: #000; border: 2px solid var(--wall); border-radius: 8px; font: 7.5px var(--font-meta); padding: 7px 10px; }
 .theme-chomp .messages::before {
   content: "READY!";
   align-self: center;

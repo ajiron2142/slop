@@ -47,7 +47,7 @@
   -webkit-mask: radial-gradient(circle, #000 0 6px, transparent 6.5px 7.5px, #000 8px);
   mask: radial-gradient(circle, #000 0 6px, transparent 6.5px 7.5px, #000 8px);
 }
-.theme-sandia .model { background: #fff; border-color: var(--line); color: var(--ink); }
+.theme-sandia .chat-header .model { background: #fff; border-color: var(--line); color: var(--ink); }
 .theme-sandia .messages {
   background:
     var(--balloons) 0 0 / 360px 760px repeat,

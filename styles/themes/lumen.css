@@ -42,7 +42,7 @@
   0%, 91%, 95%, 100% { opacity: 1; }
   93% { opacity: 0.55; }
 }
-.theme-lumen .model { border-color: var(--line); }
+.theme-lumen .chat-header .model { border-color: var(--line); }
 .theme-lumen .who { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; }
 .theme-lumen .assistant .who { color: rgb(var(--cyan)); text-shadow: 0 0 10px rgba(var(--cyan), 0.6); }
 .theme-lumen .user .who { text-align: right; color: rgb(var(--pink)); text-shadow: 0 0 10px rgba(var(--pink), 0.6); }

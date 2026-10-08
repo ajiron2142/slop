@@ -51,7 +51,7 @@
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 38'%3E%3Cpath d='M20 10V3' stroke='%234b6a26' stroke-width='3.5' stroke-linecap='round'/%3E%3Cellipse cx='12' cy='23' rx='10' ry='13' fill='%23e8661a'/%3E%3Cellipse cx='28' cy='23' rx='10' ry='13' fill='%23e8661a'/%3E%3Cellipse cx='20' cy='23' rx='10' ry='14' fill='%23f58a2a'/%3E%3Cpath d='M20 10v26M12 11c-3 6-3 18 0 24M28 11c3 6 3 18 0 24' fill='none' stroke='%23c9530f' stroke-width='1' opacity='.6'/%3E%3Cpath d='M10 20l4-6 4 6zM22 20l4-6 4 6z' fill='%23ffd36a'/%3E%3Cpath d='M18 23l2-3 2 3z' fill='%23ffd36a'/%3E%3Cpath d='M9 26l3 3 3-2 3 3 2-2 2 2 3-3 3 2 3-3-2 6-4 2-4-1-4 1-4-2z' fill='%23ffd36a'/%3E%3C/svg%3E") 0 0 / 100% 100% no-repeat;
   filter: drop-shadow(0 0 8px rgba(var(--glow), 0.55));
 }
-.theme-lantern .model { border-color: var(--line); }
+.theme-lantern .chat-header .model { border-color: var(--line); }
 .theme-lantern .messages {
   background:
     repeating-conic-gradient(from 180deg at 100% 0, rgba(255, 255, 255, 0.09) 0 0.6deg, transparent 0.6deg 15deg) 100% 0 / 150px 150px no-repeat,

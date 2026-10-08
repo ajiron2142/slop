@@ -100,9 +100,12 @@
   gap: var(--gap);
 }
 
-.msg { max-width: var(--measure); align-self: flex-start; }
+.msg { box-sizing: border-box; min-width: 0; max-width: var(--measure); align-self: flex-start; }
 .msg.user { align-self: var(--user-align); }
 .msg:has(pre) { width: 100%; max-width: 100%; }
+.body { min-width: 0; }
+/* Code never widens the page: long lines scroll inside the block, even in a list, flex row or grid. */
+.body .code { min-width: 0; max-width: 100%; }
 .body pre { white-space: pre; }
 
 .who {
@@ -213,6 +216,10 @@
 }
 
 /* Wide screens: the conversation stays a readable centred column while backgrounds stay full width. */
+/* Scrollbars in the theme's colours instead of the browser's default grey or white. */
+.themed { scrollbar-color: color-mix(in srgb, var(--ink) 28%, transparent) transparent; }
+.body pre { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, currentColor 35%, transparent) transparent; }
+
 .chat { container-type: inline-size; }
 @container (min-width: 820px) {
   .chat.chat .chat-header,

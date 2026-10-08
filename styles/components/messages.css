@@ -79,7 +79,7 @@
 .msg .retry { margin-top: 8px; }
 
 /* Per-reply Stats card (Settings → Show detailed stats). */
-.stats-btn { display: block; margin-top: 6px; padding: 0; font-size: 12px; color: var(--muted); background: none; border: 0; cursor: pointer; }
+.stats-btn { display: block; justify-self: start; margin-top: 6px; padding: 0; font-size: 12px; color: var(--muted); background: none; border: 0; cursor: pointer; }
 .stats-btn:hover, .stats-btn[aria-expanded="true"] { color: var(--ink); }
 .stats-card {
   display: grid;

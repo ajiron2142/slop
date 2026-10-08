@@ -44,7 +44,7 @@ aside.sidebar.theme-transit { --bg: var(--sign); --surface: #262626; --ink: #f2f
   font-size: 15px;
   font-weight: 800;
 }
-.theme-transit .model { color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+.theme-transit .chat-header .model { color: #fff; border-color: rgba(255, 255, 255, 0.3); }
 .theme-transit .messages { padding-left: 10px; }
 .theme-transit .msg { position: relative; padding: 0 0 30px 46px; }
 .theme-transit .msg::before {

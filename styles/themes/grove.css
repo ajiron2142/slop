@@ -27,7 +27,7 @@
   --radius: 22px;
 }
 .theme-grove .chat-title { font-size: 28px; font-style: italic; font-weight: 500; }
-.theme-grove .model { font-size: 14px; font-style: italic; }
+.theme-grove .chat-header .model { font-size: 14px; font-style: italic; }
 .theme-grove .messages { padding-left: 12px; }
 .theme-grove .msg { position: relative; padding: 0 0 28px 42px; }
 .theme-grove .msg::before {
