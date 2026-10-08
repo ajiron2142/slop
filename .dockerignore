@@ -1,0 +1,7 @@
+# Only the app's files go into the image (see Dockerfile); skip the rest of the build context.
+.git
+node_modules
+tests
+package.json
+package-lock.json
+README.md

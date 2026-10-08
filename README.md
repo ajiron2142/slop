@@ -52,6 +52,7 @@ styles/
   themes/             one self-contained file per theme (see its README)
 fonts/                self-hosted fonts; fonts.css declares them
 vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
+tests/                browser tests; not part of the deployed app (see tests/README.md)
 ```
 
 **Rules that keep it small:** each UI piece is a `.js` + `.css` pair with the same name; components use tokens, never fixed colours; themes only set tokens and overrides, never layout; adding anything means adding a file and one line.
@@ -71,6 +72,16 @@ vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
 **Kept fast on purpose.** Theme stylesheets download in the background and only the chosen one is switched on, so 27 themes don't slow the first paint. `boot.js` applies the saved theme before anything shows, so there's no flash of the default. Code colouring loads on first use, already-rendered messages are reused instead of rebuilt, a streaming reply only repaints what's needed, and chat search keeps a small in-memory index instead of reloading every chat.
 
 Each component only touches its own part of the page and reports back to `main.js` through callbacks like `onSend` or `onOpen`.
+
+## Testing
+
+`tests/` has about 90 browser checks that run against a fake LiteLLM in roughly 30 seconds. With only Docker:
+
+```sh
+docker run --rm -v "$PWD":/app -w /app mcr.microsoft.com/playwright:v1.56.1-noble sh -c "npm ci && npm test"
+```
+
+Or with Node.js: `npm ci`, `npx playwright install chromium`, then `npm test`. Playwright is the only dependency and is used for testing only; the app itself still has none. See `tests/README.md`.
 
 ## Customising
 
