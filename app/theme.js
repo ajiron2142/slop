@@ -6,6 +6,8 @@ export function listThemes() {
 }
 
 export function applyTheme(id) {
+  if (id && !document.querySelector(`link[data-theme="${id}"]`)) id = ''; // a theme that's since been removed
+
   // Only the chosen theme's stylesheet is switched on; the rest stay downloaded but idle.
   for (const link of document.querySelectorAll('link[data-theme]')) link.media = link.dataset.theme === id ? 'all' : 'not all';
   for (const node of document.querySelectorAll('.themed')) {

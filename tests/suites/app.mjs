@@ -135,17 +135,17 @@ export default async function ({ browser, site, mock, check }) {
   // Themes and persistence.
   await p.click('#settings-btn');
   await p.click('#theme-picker .model');
-  await p.keyboard.type('lant');
+  await p.keyboard.type('mono');
   await p.keyboard.press('Enter');
   await p.waitForTimeout(200);
-  check('theme applies to sidebar, chat and settings', await p.evaluate(() => [...document.querySelectorAll('.themed')].every((n) => n.classList.contains('theme-lantern'))));
+  check('theme applies to sidebar, chat and settings', await p.evaluate(() => [...document.querySelectorAll('.themed')].every((n) => n.classList.contains('theme-monokai'))));
   await p.click('#close-settings');
   await p.click('#collapse-btn');
   await p.waitForTimeout(300);
   await p.reload();
   await p.waitForSelector('#chat-list li[data-id]', { state: 'attached' });
   check('collapsed sidebar is remembered', await p.evaluate(() => document.getElementById('app').classList.contains('collapsed')));
-  check('theme and chats are remembered', await p.evaluate(() => document.getElementById('chat').classList.contains('theme-lantern')) && (await p.$$('#chat-list li[data-id]')).length === 2);
+  check('theme and chats are remembered', await p.evaluate(() => document.getElementById('chat').classList.contains('theme-monokai')) && (await p.$$('#chat-list li[data-id]')).length === 2);
 
   // Phone layout.
   await p.setViewportSize({ width: 390, height: 844 });

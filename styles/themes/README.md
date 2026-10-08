@@ -53,30 +53,8 @@ Set on `.chat` in the base and overridden by each theme:
 
 | File | Name | Look |
 |---|---|---|
-| `folio.css` | Folio | A literary quarterly. No bubbles; your questions become pull-quotes and the first reply opens with a drop cap. |
-| `sumi.css` | Sumi | Ink on rice paper. Wide margins, tall leading, and one vermilion seal marking your turn. |
-| `grove.css` | Grove | A thin trunk runs down the page and every reply grows from it as a leaf. Your messages are buds. |
-| `raster.css` | Raster | International Typographic Style. A strict grid, numbered turns, heavy rules and exactly one red. |
 | `linen.css` | Linen | The everyday one. Warm neutrals, soft ink bubbles and a floating composer. |
-| `atelier.css` | Atelier | An architect's drafting sheet: blue grid, numbered turns with dimension lines, crop marks on every message. |
-| `tide.css` | Tide | Sea glass and morning fog. Frosted replies and pale green bubbles worn smooth by water. |
-| `draft.css` | Draft | The conversation as a screenplay, with your lines on the red half of the ribbon. |
 | `bauhaus.css` | Bauhaus | Circle, square, triangle. Primary colours used sparingly and a quarter-round corner on your messages. |
-| `basalt.css` | Basalt | Neutral graphite, lit in bone white. The quietest dark theme of the set. |
-| `airmail.css` | Airmail | Par avion. Striped borders, and every message you send arrives as a stamped postcard. |
-| `receipt.css` | Receipt | Every answer, itemised. Torn edges, order numbers, a barcode and a PRINT button. |
-| `lumen.css` | Lumen | One neon tube in a dark room. Pink for you, cyan for send, and a sign that hums. |
-| `prism.css` | Prism | Clean white with iridescent edges on your messages, the composer and the title. |
-| `sticky.css` | Sticky | Office sticky notes. Your messages handwritten on canary yellow, replies on blue, lime, pink and orange pads. |
-| `transit.css` | Transit | The conversation is a subway line: your questions are interchanges, replies are stops, the composer is the platform sign. |
-| `boarding.css` | Boarding | Boarding passes in a 1970s livery: chocolate header, orange-mustard-brick racing stripes, cream cards with torn-off stubs. |
-| `riso.css` | Riso | A two-ink risograph print: blue ink everywhere, your messages on outlined cards with a pink halftone shadow, a solid blue send. |
-| `lantern.css` | Lantern | A gradient-built jack-o’-lantern, candy-corn stripes, carved messages that flicker, and a cobweb in the corner. |
-| `pocket.css` | Pocket | The 1989 handheld: pea-green screen in a slate bezel, dialogue boxes with a blinking arrow, a D-pad and a magenta A button. |
-| `tombstone.css` | Tombstone | Moon, stars and drifting fog; your messages are a softly glowing ghost and replies are whispered. |
-| `groove.css` | Groove | A 1970s record sleeve in sunset colours: chocolate, gold, orange and red stripes, and a record spinning out of the header. |
-| `taskbar.css` | Taskbar | The early-2000s desktop: blue title bars, balloon tips, a green hill, and a taskbar with a start button and a clock. |
-| `springfield.css` | Springfield | Opening-credits sky and clouds, cartoon outlines, yellow for you, a yellow composer bar and a sprinkled donut. |
-| `sandia.css` | Sandia | New Mexico at dusk: the watermelon-pink Sandia ridge stays put while balloons drift past as you scroll. |
-| `adobe.css` | Adobe | High noon: a stepped adobe parapet against a bright sky, a chile ristra, stucco walls and a turquoise oval send button. |
-| `chomp.css` | Chomp | The 1980 arcade maze: double blue walls, white pellets, four ghosts, a score line with a pixel cherry, and a chomping send button. |
+| `monokai.css` | Monokai | The classic editor palette, dark: green send, pink accents and Monokai's own code colours. |
+
+More themes (Springfield, Sandia, Basalt and 21 others) are parked on the `themes-archive` branch while the core features settle. To bring one back, copy its file (and any fonts it uses) from that branch and add its `<link>` line.

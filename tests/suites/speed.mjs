@@ -15,11 +15,11 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('#save-settings');
   await p.waitForSelector('#model-picker .model:not([disabled])');
   await p.click('#theme-picker .model');
-  await p.keyboard.type('transit');
+  await p.keyboard.type('monokai');
   await p.keyboard.press('Enter');
   await p.waitForTimeout(200);
-  check('picking a theme switches on only its stylesheet', await p.evaluate(() => [...document.querySelectorAll('link[data-theme]')].filter((l) => l.media === 'all').map((l) => l.dataset.theme).join() === 'transit'));
-  check('the theme actually styles the page', await p.evaluate(() => getComputedStyle(document.querySelector('.chat-header')).backgroundColor === 'rgb(20, 20, 20)'));
+  check('picking a theme switches on only its stylesheet', await p.evaluate(() => [...document.querySelectorAll('link[data-theme]')].filter((l) => l.media === 'all').map((l) => l.dataset.theme).join() === 'monokai'));
+  check('the theme actually styles the page', await p.evaluate(() => getComputedStyle(document.getElementById('chat')).backgroundColor === 'rgb(39, 40, 34)'));
   await p.click('#close-settings');
 
   await send(p, 'show me code');
@@ -43,8 +43,8 @@ export default async function ({ browser, site, mock, check }) {
   await p.route('**/app/main.js', async (route) => { await new Promise((r) => setTimeout(r, 1500)); await route.continue(); });
   await p.reload({ waitUntil: 'domcontentloaded' });
   const early = await p.evaluate(() => ({
-    theme: document.getElementById('chat').classList.contains('theme-transit'),
-    sheet: document.querySelector('link[data-theme="transit"]').media,
+    theme: document.getElementById('chat').classList.contains('theme-monokai'),
+    sheet: document.querySelector('link[data-theme="monokai"]').media,
     collapsed: document.getElementById('app').classList.contains('collapsed'),
   }));
   check('the saved theme shows before the app script runs', early.theme && early.sheet === 'all');

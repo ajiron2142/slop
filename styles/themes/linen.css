@@ -42,8 +42,11 @@
 .theme-linen .user .body { border-bottom-right-radius: 6px; }
 .theme-linen .assistant .body { padding-left: 0; padding-right: 0; }
 .theme-linen .body pre { background: var(--surface); border: 1px solid var(--line); }
-.theme-linen .composer {
-  margin: 0 12px 14px;
+/* A floating box as wide as the usage meter above it, not the whole screen. */
+.chat.theme-linen .composer {
+  box-sizing: border-box;
+  width: min(840px, calc(100% - 2 * var(--edge)));
+  margin: 0 auto 14px;
   padding: 7px 7px 7px 16px;
   background: var(--surface);
   border: 1px solid var(--line);
