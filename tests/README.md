@@ -1,6 +1,6 @@
 # Tests
 
-Browser tests for the whole app: about 90 checks covering chatting, markdown and code blocks, attachments, the model picker, chats and search, themes, folder access, the usage meter and stats, and the speed work. They run against a fake LiteLLM, so no real server or API key is needed, and take about 30 seconds.
+Browser tests for the whole app: about 100 checks covering chatting, markdown and code blocks, attachments, the model picker, chats and search, themes, folder access, the usage meter and stats, and the speed work. They run against a fake LiteLLM, so no real server or API key is needed, and take about 30 seconds.
 
 Nothing here is part of the deployed app: the Dockerfile only copies the app's own files.
 
