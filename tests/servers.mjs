@@ -72,6 +72,7 @@ Done.`;
 //   "paste …"    (with paste tools) searches the pasted text for ERROR, reads lines 600–602, reports both
 //   "edit …"     (with write tools) edits src/app.js and creates notes/new.txt in one round, then
 //                tries an edit that can't match, then reports the three results
+//   "git …"      (with git tools) reads the log and the uncommitted changes, then reports both
 //   anything else: the long reply
 export async function startMock() {
   const requests = []; // every chat request received, newest last
@@ -144,6 +145,21 @@ export async function startMock() {
           sse(res, { choices: [{ delta: { content: `EDIT[${results[0].content}] CREATE[${results[1].content}] BAD[${results[2].content}]` } }] });
         }
         sse(res, { choices: [{ delta: {}, finish_reason: results.length < 3 ? 'tool_calls' : 'stop' }] });
+        if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
+        return res.end('data: [DONE]\n\n');
+      }
+
+      if (body.tools && text.startsWith('git')) {
+        const results = body.messages.filter((m) => m.role === 'tool');
+        if (results.length === 0) {
+          sse(res, { choices: [{ delta: { tool_calls: [
+            { index: 0, id: 'g1', type: 'function', function: { name: 'git_log', arguments: '{}' } },
+            { index: 1, id: 'g2', type: 'function', function: { name: 'git_diff', arguments: '{}' } },
+          ] } }] });
+        } else {
+          sse(res, { choices: [{ delta: { content: `LOG[${results[0].content.split('\n')[0]}] DIFF[${results[1].content.split('\n')[0]}]` } }] });
+        }
+        sse(res, { choices: [{ delta: {}, finish_reason: results.length ? 'stop' : 'tool_calls' }] });
         if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
         return res.end('data: [DONE]\n\n');
       }

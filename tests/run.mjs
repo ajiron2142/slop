@@ -13,8 +13,9 @@ import speed from './suites/speed.mjs';
 import write from './suites/write.mjs';
 import paste from './suites/paste.mjs';
 import mini from './suites/mini.mjs';
+import git from './suites/git.mjs';
 
-const SUITES = { app, folder, write, paste, mini, stats, speed };
+const SUITES = { app, folder, write, git, paste, mini, stats, speed };
 const only = process.argv.slice(2); // e.g. `npm test -- stats` runs one suite
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));

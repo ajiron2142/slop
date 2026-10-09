@@ -1,0 +1,6 @@
+/* Git (optional add-on): the branch on the folder chip, "slop · main ⇡2". */
+.tray-chip.folder.git { max-width: 340px; }
+.tray-chip .git-sep { color: var(--muted); }
+.tray-chip .git-branch { min-width: 3ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tray-chip .git-sync { font-family: var(--font-code); font-size: 11.5px; color: var(--accent); white-space: nowrap; }
+.tray-chip.git .tray-name { flex-shrink: 0; max-width: 160px; font-weight: 500; }

@@ -7,6 +7,7 @@ const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|jsonl|yaml|yml|toml|ini|xml|ht
 
 const DOC_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>'; // smart paste
 const FOLDER_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+const BRANCH_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="7" r="2"/><path d="M6 7v10"/><path d="M18 9c0 5-6 4-11.2 8.2"/></svg>'; // git
 
 const readAs = (file, how) => new Promise((resolve, reject) => {
   const r = new FileReader();
@@ -22,6 +23,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   let files = [];
   let folderName = null;
   let folderEditable = false; // write mode
+  let folderGit = null; // git: { branch, ahead, behind }
   let busy = false;
 
   function autosize() {
@@ -40,8 +42,9 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   function folderChip() {
     const chip = el('span', 'tray-chip folder');
     chip.title = folderEditable ? 'Connected folder (can edit, with your approval)' : 'Connected folder (read-only)';
-    chip.innerHTML = FOLDER_ICON;
+    chip.innerHTML = folderGit ? BRANCH_ICON : FOLDER_ICON; // git
     chip.append(el('span', 'tray-name', folderName));
+    if (folderGit) gitParts(chip); // git
     if (folderEditable) { chip.classList.add('can-edit'); chip.append(el('span', 'folder-mode', 'can edit')); } // write mode
     chip.append(removeButton(`Disconnect folder ${folderName}`, onDisconnectFolder));
     return chip;
@@ -61,6 +64,17 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       chip.append(el('span', 'tray-name', f.name), removeButton(`Remove ${f.name}`, () => { files.splice(i, 1); renderTray(); input.focus(); }));
       return chip;
     }));
+  }
+
+  // git: "slop · main ⇡2⇣1": the branch, and commits to push and to pull (as of the last fetch).
+  function gitParts(chip) {
+    const { branch, ahead, behind } = folderGit;
+    chip.classList.add('git');
+    chip.append(el('span', 'git-sep', '·'), el('span', 'git-branch', branch));
+    const sync = `${ahead ? `⇡${ahead}` : ''}${behind ? `⇣${behind}` : ''}`;
+    if (sync) chip.append(el('span', 'git-sync', sync));
+    const counts = [ahead && `${ahead} to push`, behind && `${behind} to pull`].filter(Boolean).join(', ');
+    chip.title += `\nGit branch ${branch}${counts ? `: ${counts} (as of your last fetch)` : ''}`;
   }
 
   // smart paste: a big paste shows as a chip; the model searches and reads it as needed.
@@ -182,9 +196,10 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       send.setAttribute('aria-label', busy ? 'Stop' : 'Send');
     },
     focus: () => input.focus(),
-    setFolder(name, editable = false) {
+    setFolder(name, editable = false, git = null) {
       folderName = name || null;
       folderEditable = Boolean(name && editable);
+      folderGit = name ? git : null; // git
       renderTray();
     },
   };

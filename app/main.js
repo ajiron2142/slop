@@ -19,6 +19,7 @@ import { createPanel } from './components/panel.js';
 import { PASTE_TOOLS, hasPastes, isPasteTool, runPasteTool } from './paste.js'; // smart paste
 import { miniSupported, createMini } from './mini.js'; // mini window
 import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
+import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 
 const state = {
   settings: null,
@@ -173,7 +174,7 @@ function render(options) {
   });
   composer.setBusy(Boolean(state.streaming));
   const folder = state.active ? state.active.folder : state.draftFolder;
-  composer.setFolder(folder?.name, state.active ? state.active.canEdit : state.draftEditable);
+  composer.setFolder(folder?.name, state.active ? state.active.canEdit : state.draftEditable, folder && gitStatusOf(folder)); // git
 }
 
 async function reloadChatList() {
@@ -235,9 +236,7 @@ async function complete(chat) {
   const s = state.settings;
   const folder = chat.folder;
   const editable = Boolean(folder && chat.canEdit); // write mode
-  // Tools only for what this chat has: a folder, edit access, a paste still in memory.
-  const offered = [...(folder ? FOLDER_TOOLS : []), ...(editable ? WRITE_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : [])]; // write mode, smart paste
-  const tools = offered.length ? offered : undefined;
+  let tools;
   const history = withoutErrors(chat.messages).map((m) => ({ role: m.role, content: toApiContent(m) }));
   // The time goes on the newest message, not the system prompt, so the rest of the request stays
   // the same between messages and providers can keep caching it.
@@ -245,8 +244,6 @@ async function complete(chat) {
   const stamp = `\n\n[Current date and time: ${now()}]`;
   if (typeof last.content === 'string') last.content += stamp;
   else last.content[0].text += stamp;
-  const system = [s.systemPrompt.trim(), folder && folderPrompt(folder), editable && writePrompt].filter(Boolean).join('\n\n'); // write mode
-  if (system) history.unshift({ role: 'system', content: system });
 
   const msg = { role: 'assistant', content: '', ts: Date.now() };
   chat.messages.push(msg);
@@ -266,6 +263,12 @@ async function complete(chat) {
     if (folder && !(await allowRead(folder))) {
       throw new Error(`Access to the folder "${folder.name}" wasn't allowed. Retry and allow it, or disconnect the folder.`);
     }
+    const repo = Boolean(folder) && await isRepo(folder); // git
+    // Tools only for what this chat has: a folder, a git repo, edit access, a paste still in memory.
+    const offered = [...(folder ? FOLDER_TOOLS : []), ...(repo ? GIT_TOOLS : []), ...(editable ? WRITE_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : [])]; // git, write mode, smart paste
+    tools = offered.length ? offered : undefined;
+    const system = [s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, editable && writePrompt].filter(Boolean).join('\n\n'); // git, write mode
+    if (system) history.unshift({ role: 'system', content: system });
     // With a folder connected the model may ask to read files first: run those and ask again.
     for (let round = 1; ; round++) {
       let text = '';
@@ -300,6 +303,7 @@ async function complete(chat) {
         const name = call.function.name;
         const { label, result } = writer.handles(name) ? await writer.run(folder, call, controller.signal) // write mode
           : isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
+          : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
           : await runTool(folder, name, call.function.arguments);
         if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
         (msg.tools ??= []).push(label);
@@ -320,6 +324,7 @@ async function complete(chat) {
   cancelAnimationFrame(frame);
   clearTimeout(frame);
   writer.endReply(); // write mode
+  if (folder) refreshGit(folder).then(() => render()); // git: commits or a fetch may have happened meanwhile
 
   msg.content = msg.content.trimEnd();
   if (!msg.content && !msg.tools) chat.messages.splice(chat.messages.indexOf(msg), 1);
@@ -379,6 +384,7 @@ async function openChat(id) {
   panel.close();
   render({ toBottom: true });
   composer.focus();
+  if (state.active.folder) refreshGit(state.active.folder).then(() => render()); // git
 }
 
 async function removeChat(id) {
@@ -415,6 +421,7 @@ async function setFolder(handle, editable = false) {
   }
   composer.setFolder(handle?.name, editable);
   composer.focus();
+  if (handle) refreshGit(handle).then(() => render()); // git
 }
 
 // ---- start ----

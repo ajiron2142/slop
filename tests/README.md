@@ -1,6 +1,6 @@
 # Tests
 
-Browser tests for the whole app: about 160 checks covering chatting, markdown and code blocks, attachments, the model picker, chats and search, themes, folder access, write mode, smart paste, the mini window, the usage meter and stats, and the speed work. They run against a fake LiteLLM, so no real server or API key is needed, and take about 30 seconds.
+Browser tests for the whole app: about 190 checks covering chatting, markdown and code blocks, attachments, the model picker, chats and search, themes, folder access, write mode, git, smart paste, the mini window, the usage meter and stats, and the speed work. They run against a fake LiteLLM, so no real server or API key is needed, and take about 30 seconds.
 
 Nothing here is part of the deployed app: the Dockerfile only copies the app's own files.
 
@@ -20,7 +20,9 @@ npx playwright install chromium
 npm test
 ```
 
-Run one suite with `npm test -- stats` (suites: `app`, `folder`, `write`, `paste`, `mini`, `stats`, `speed`).
+Run one suite with `npm test -- stats` (suites: `app`, `folder`, `write`, `git`, `paste`, `mini`, `stats`, `speed`).
+
+The `git` suite builds a small sample repository with the `git` command, so git needs to be installed (it fails with a clear message otherwise).
 
 Each check prints `PASS` or `FAIL`; the command exits with an error if anything failed.
 
@@ -30,7 +32,7 @@ Each check prints `PASS` or `FAIL`; the command exits with an error if anything 
 run.mjs        starts the servers, runs every suite, prints the results
 servers.mjs    a small web server for the app and the fake LiteLLM (Node built-ins only)
 helpers.mjs    shared steps: open the app connected to the fake LiteLLM, send a message, pick a model
-suites/        app.mjs, folder.mjs, write.mjs, paste.mjs, mini.mjs, stats.mjs, speed.mjs
+suites/        app.mjs, folder.mjs, write.mjs, git.mjs, paste.mjs, mini.mjs, stats.mjs, speed.mjs
 ```
 
 The only dependency is Playwright (it drives a real Chromium), pinned to one exact version in `package.json`. It never needs updating unless you want to. If you change the version, change the Docker image tag above to match.

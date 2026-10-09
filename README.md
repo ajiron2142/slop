@@ -35,6 +35,8 @@ app/                  behaviour
   storage.js          settings and chats in IndexedDB, search, export/import
   folder.js           read-only folder tools for the model (list_files, search_files, read_file)
   folder-write.js     optional write mode: edit_file / write_file, review in the side panel, Undo (removable add-on)
+  folder-git.js       git, read-only: git_log / git_diff and the branch on the folder chip; reads .git itself (removable add-on)
+  diff.js             line diffs, shared by write mode and git
   paste.js            smart paste: long pastes stay in the tab and the model searches them (removable add-on)
   lines.js            line search and numbered ranges, shared by the folder tools and smart paste
   copy.js             Copy reply: formatted HTML for Teams/Outlook plus markdown, in one click
@@ -54,7 +56,7 @@ app/                  behaviour
     settings.js       settings dialog
 styles/
   base.css            tokens, the chat column's layout, app shell, shared buttons
-  components/         one file per component, same names as app/components (plus folder-write.css)
+  components/         one file per component, same names as app/components (plus folder-write.css and folder-git.css)
   themes/             one self-contained file per theme (see its README)
 fonts/                self-hosted fonts; fonts.css declares them
 vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
@@ -107,12 +109,14 @@ Or with Node.js: `npm ci`, `npx playwright install chromium`, then `npm test`. P
 - A connected folder is read-only: the browser grants read access only, and nothing in the app can write. The model can only reach files inside the folder you picked, and the browser asks for permission again after a reload. Files the model reads are sent to your LiteLLM URL like any message. `.git`, `node_modules` and similar folders are skipped. Searches also skip lockfiles, minified files and binaries, and stop at 100 matching lines. Long files come back 1,000 lines at a time, and files over 4 MB aren't read. Disconnect with the × on the folder chip.
 - **Smart paste keeps long pastes in this tab only.** A paste over 500 lines (or about 40,000 characters) becomes a chip instead of text. The model gets the first and last 10 lines and two tools, `search_paste` and `read_paste`, to look at the rest, so it only sends what it needs. The text is never saved: a reload forgets it, and the chat keeps just the chip.
 - **Write mode is opt-in per chat.** Only **Connect folder (can edit)** grants write access (the browser asks), and the chip says *can edit*. Every change is shown as a diff in the side panel and written only after you click Apply (or Apply all remaining, for the rest of that reply). The model can create and edit files but never delete or rename. Edit access lasts until you reload: after that the chat's folder is read-only again. **Undo this reply** puts back every file the latest reply changed and removes files it created; it asks first if you've edited one of them since. Undo is only kept until your next message, so for anything older use Git.
+- **Git is read-only.** When the connected folder is a git repository, the model also gets `git_log` (commits, filtered by range, path or text) and `git_diff` (uncommitted changes, one commit, or two compared). They read the `.git` folder directly in the browser, with no library and no network: nothing can be committed, fetched or pushed. The folder chip shows the branch and how many commits are waiting to push (⇡) or pull (⇣) as of your last fetch, refreshed when you connect, open the chat and after each reply. Only the top-level `.gitignore` is used to hide untracked files.
 
 ## Features
 
 - Model picker with search and recent models
 - Attach images (sent to vision models) and text files (inlined) with the button, paste or drag-and-drop
 - Connect a folder to a chat, read-only, so the model can look through it (Chrome and Edge, models with tool support)
+- Git, read-only: when the folder is a repo, the model can read its history and diffs, and the chip shows the branch (e.g. `slop · main ⇡2`)
 - Optional write mode: the model proposes file edits, you review each diff in a side panel, and can undo the latest reply
 - Copy any reply in one click: pastes formatted into Teams, Outlook and Word, and as markdown everywhere else
 - Mini window (Chrome and Edge): pop the chat out into a small floating window that stays on top of your terminal; close it to bring the chat back
