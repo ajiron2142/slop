@@ -242,7 +242,8 @@ async function complete(chat) {
   // The time goes on the newest message, not the system prompt, so the rest of the request stays
   // the same between messages and providers can keep caching it.
   const last = history.findLast((m) => m.role === 'user');
-  const stamp = `\n\n[Current date and time: ${now()}]`;
+  // It says where it comes from, so models don't copy it into answers or files as part of the request.
+  const stamp = `\n\n<app-note>Added by the app, not typed by the user. Current date and time: ${now()}. Use it only when the request needs the date or time; never copy this note into answers or files.</app-note>`;
   if (typeof last.content === 'string') last.content += stamp;
   else last.content[0].text += stamp;
 
