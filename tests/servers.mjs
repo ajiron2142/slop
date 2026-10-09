@@ -31,7 +31,7 @@ const MODELS = ['claude-sonnet-4', 'claude-haiku', 'gpt-4o', 'gpt-4o-mini', 'lla
 // Context limits and prices, as LiteLLM's /v2/model/info reports them. llama is free (prices of 0);
 // models not listed here have no price, so their cost is unknown.
 const INFO = [
-  { model_name: 'claude-haiku', model_info: { max_input_tokens: 200000, input_cost_per_token: 0.8e-6, output_cost_per_token: 4e-6, cache_read_input_token_cost: 0.08e-6 } },
+  { model_name: 'claude-haiku', model_info: { max_input_tokens: 200000, max_output_tokens: 8192, input_cost_per_token: 0.8e-6, output_cost_per_token: 4e-6, cache_read_input_token_cost: 0.08e-6 } },
   { model_name: 'gpt-4o-mini', model_info: { max_input_tokens: 128000, input_cost_per_token: 0.15e-6, output_cost_per_token: 0.6e-6 } },
   { model_name: 'llama-3.1-70b', model_info: { max_input_tokens: 32768, input_cost_per_token: 0, output_cost_per_token: 0 } },
   { model_name: 'mistral-large', model_info: { max_input_tokens: 128000 } }, // known, but no price given
@@ -71,6 +71,7 @@ Done.`;
 //   "huge …"     reports 40,000 input tokens, more than some models can take
 //   "folder …"   (with tools) lists the folder, reads two files, then reports what it saw
 //   "notools …"  (with tools) the error LiteLLM gives for a model without tool support
+//   "cuttool …"  (with tools) starts a tool call and is cut off at the length limit
 //   "paste …"    (with paste tools) searches the pasted text for ERROR, reads lines 600–602, reports both
 //   "edit …"     (with write tools) edits src/app.js and creates notes/new.txt in one round, then
 //                tries an edit that can't match, then reports the three results
@@ -111,6 +112,7 @@ export async function startMock() {
         model: body.model,
         text,
         hasTools: Boolean(body.tools),
+        maxTokens: body.max_tokens,
         toolNames: (body.tools ?? []).map((t) => t.function.name),
         sent: JSON.stringify(body.messages),
         system: body.messages[0].role === 'system' ? body.messages[0].content : '',
@@ -122,6 +124,13 @@ export async function startMock() {
         return res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { message: 'litellm.UnsupportedParamsError: tools is not supported' } }));
       }
       res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+
+      if (body.tools && text.startsWith('cuttool')) {
+        sse(res, { choices: [{ delta: { content: 'I\'ll check the settings.', tool_calls: [{ index: 0, id: 'x1', type: 'function', function: { name: 'read_file', arguments: '{"path":"proj' } }] } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: 'length' }] });
+        if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
+        return res.end('data: [DONE]'); // no line break after the last line
+      }
 
       if (body.tools && text.startsWith('paste')) {
         const results = body.messages.filter((m) => m.role === 'tool');

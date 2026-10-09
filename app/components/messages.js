@@ -88,6 +88,9 @@ function messageNode(msg, streaming, openStats, more) {
   fillBody(body, msg);
   node.append(body);
   if (more) node.append(more.node);
+  if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'length') {
+    node.append(el('div', 'reply-note', 'Cut off: the model reached the most it can write in one reply. Say "continue" to get the rest.'));
+  }
   // Under a finished reply, on the right so they don't read as part of it: Stats (when detailed
   // stats are on), then Copy.
   if (msg.role === 'assistant' && !streaming && msg.content) {

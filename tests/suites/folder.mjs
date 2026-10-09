@@ -119,6 +119,9 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('#attach-btn');
   await p.click('#attach-menu [data-action="folder"]');
   await p.waitForTimeout(300);
+  const before = mock.requests.length;
+  await send(p, 'cuttool please');
+  check('a reply cut off mid tool call stops there, and says so', mock.requests.length === before + 1 && (await p.textContent('.msg.assistant:last-of-type .reply-note')).startsWith('Cut off') && !(await p.$('.msg.error')));
   await send(p, 'notools please');
   const err = await p.textContent('.msg.error:last-of-type');
   check('a model without tool support gets a clear error', err.includes('UnsupportedParamsError') && err.includes('disconnect the folder'));

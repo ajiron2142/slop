@@ -8,7 +8,7 @@ import * as store from './storage.js';
 import { $ } from './dom.js';
 import { applyTheme, rememberForBoot } from './theme.js';
 import { folderSupported, pickFolder, allowRead, folderPrompt, FOLDER_TOOLS, runTool } from './folder.js';
-import { summarize, costOf, limitOf } from './stats.js';
+import { summarize, costOf, limitOf, maxOutputOf } from './stats.js';
 import { createSidebar } from './components/sidebar.js';
 import { createMessages } from './components/messages.js';
 import { createComposer } from './components/composer.js';
@@ -273,6 +273,7 @@ async function complete(chat) {
         settings: s,
         messages: history,
         tools,
+        maxTokens: maxOutputOf(state.modelInfo[model]),
         signal: controller.signal,
         onDelta: (delta) => {
           firstAt ??= performance.now();
@@ -293,7 +294,8 @@ async function complete(chat) {
         used.cached += usage.cached;
         used.context = usage.input + usage.output;
       }
-      if (!toolCalls.length) break;
+      // A cut-off reply may end in a half-written tool call, so nothing more runs after one.
+      if (!toolCalls.length || finish === 'length') break;
       if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of tool calls.`);
       history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
       for (const call of toolCalls) {

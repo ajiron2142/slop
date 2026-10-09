@@ -85,8 +85,9 @@ export async function getKeyInfo(settings) {
 
 // Streams a reply, calling onDelta with each piece of text. Resolves with any tool calls
 // the model made (only possible when tools are sent), the token usage the server reports
-// at the end, and why the reply finished ("stop", "length", "tool_calls").
-export async function streamChat({ settings, messages, tools, signal, onDelta }) {
+// at the end, and why the reply finished ("stop", "length", "tool_calls"). `maxTokens` caps how
+// much the model may write; without it the provider's own default applies.
+export async function streamChat({ settings, messages, tools, maxTokens, signal, onDelta }) {
   const res = await request(settings, '/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -96,6 +97,7 @@ export async function streamChat({ settings, messages, tools, signal, onDelta })
       stream: true,
       stream_options: { include_usage: true },
       ...(tools && { tools }),
+      ...(maxTokens && { max_tokens: maxTokens }),
     }),
     signal,
   });
@@ -107,10 +109,9 @@ export async function streamChat({ settings, messages, tools, signal, onDelta })
   let buffer = '';
   read: for (;;) {
     const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+    buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
-    buffer = lines.pop();
+    buffer = done ? '' : lines.pop(); // at the end, the last line counts even without a line break
     for (const raw of lines) {
       const line = raw.trim();
       if (!line.startsWith('data:')) continue;
@@ -131,6 +132,7 @@ export async function streamChat({ settings, messages, tools, signal, onDelta })
         if (part.function?.arguments) call.function.arguments += part.function.arguments;
       }
     }
+    if (done) break;
   }
   return { toolCalls: calls.filter(Boolean).map((c, i) => ({ ...c, id: c.id || `call_${i}` })), usage, finish };
 }

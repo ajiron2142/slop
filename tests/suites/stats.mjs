@@ -52,6 +52,8 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('.msg.assistant:last-of-type .stats-btn');
   const cut = await p.textContent('.msg.assistant:last-of-type .stats-card');
   check('a cut-off reply is marked', cut.includes('Cut off'));
+  check('and says so under the reply, for everyone', (await p.textContent('.msg.assistant:last-of-type .reply-note')).startsWith('Cut off: the model reached the most it can write'));
+  check('the output limit is sent only when LiteLLM gives one', mock.requests.some((r) => r.model === 'claude-haiku' && r.maxTokens === 8192) && mock.requests.at(-1).maxTokens === undefined);
   check('cached input is shown when reported', cut.includes('Cached'));
 
   await pickModel(p, 'gemini-pro');

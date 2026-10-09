@@ -15,6 +15,10 @@ export function pricesOf(info) {
 // limit, so it isn't used. Unknown means the meter shows tokens without a percentage.
 export const limitOf = (info) => info?.max_input_tokens ?? null;
 
+// How much the model may write in one turn, from LiteLLM's max_output_tokens; sent with each request
+// so a reply isn't cut short by a lower default. Unknown means the provider's default applies.
+export const maxOutputOf = (info) => (Number.isInteger(info?.max_output_tokens) && info.max_output_tokens > 0 ? info.max_output_tokens : undefined);
+
 // Cost of one reply in dollars, split into input and output; null when the price is unknown.
 export function costOf(info, { input, output, cached = 0 }) {
   const p = pricesOf(info);
