@@ -1,6 +1,6 @@
 /* Mini window (optional add-on): the chat in its own small window, and what the tab shows meanwhile. */
 .mini .chat { height: 100vh; height: 100dvh; }
 .mini .menu-btn { display: none; } /* the chat list stays in the tab */
-.mini-btn.on { color: var(--accent); }
+.mini .mini-btn { display: none; } /* the browser's own "back to tab" button does this there */
 .mini-home { display: grid; place-content: center; justify-items: center; gap: 12px; height: 100%; font-size: 14px; color: var(--muted); }
 .mini-home p { margin: 0; }

@@ -43,7 +43,6 @@ export function createMini({ button, chat, panel, sidebar }) {
     syncTheme();
     observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
     win.addEventListener('pagehide', comeBack, { once: true });
-    setButton(true);
     chat.querySelector('textarea')?.focus();
   }
 
@@ -52,16 +51,11 @@ export function createMini({ button, chat, panel, sidebar }) {
     home.replaceWith(chat);
     chat.after(panel);
     win = null;
-    setButton(false);
   }
 
-  function setButton(away) {
-    button.setAttribute('aria-label', away ? 'Back to the tab' : 'Pop out into a floating window');
-    button.title = away ? 'Back to the tab' : 'Pop out into a floating window';
-    button.classList.toggle('on', away);
-  }
-
-  setButton(false);
+  // In the floating window the browser's own "back to tab" button takes you back, so ours is hidden there.
+  button.setAttribute('aria-label', 'Pop out into a floating window');
+  button.title = 'Pop out into a floating window';
   button.hidden = false;
-  button.addEventListener('click', () => (win ? win.close() : open().catch(() => { win = null; })));
+  button.addEventListener('click', () => { if (!win) open().catch(() => { win = null; }); });
 }

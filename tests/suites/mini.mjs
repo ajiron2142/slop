@@ -11,6 +11,7 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('#mini-btn');
   await p.waitForFunction(() => documentPictureInPicture.window?.document.getElementById('chat'));
   check('the chat moves into the floating window', await p.evaluate(() => !document.getElementById('chat') && Boolean(documentPictureInPicture.window.document.getElementById('panel'))));
+  check('only the browser\'s own button leads back from the floating window', await inMini((doc) => doc.defaultView.getComputedStyle(doc.getElementById('mini-btn')).display === 'none'));
   check('the tab says where the chat went', (await p.textContent('.mini-home')).includes('floating window'));
   check('the floating window has the app’s styles', await inMini((doc) => doc.querySelectorAll('link[rel="stylesheet"]').length > 5 && doc.defaultView.getComputedStyle(doc.querySelector('.composer')).display === 'flex'));
 
