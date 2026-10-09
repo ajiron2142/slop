@@ -61,7 +61,7 @@ export default async function ({ browser, site, mock, check }) {
   check('Sign out goes back to Sign in', (await p.textContent('#signin button')) === 'Sign in with Example' && !(await p.evaluate(() => sessionStorage.getItem('oidc-tokens'))));
   await p.click('#close-settings');
 
-  await p.goto(`${site}?error=access_denied&error_description=The+user+declined&state=x`);
+  await p.goto(`${site}?error=access_denied&error_description=The+user+declined&state=oidc.x`);
   await p.waitForSelector('#settings[open]');
   check('a refused sign-in says why, and tidies the address', (await p.textContent('#settings-status')) === 'Sign-in failed: The user declined' && !p.url().includes('error='));
 

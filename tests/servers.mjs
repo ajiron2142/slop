@@ -76,6 +76,7 @@ Done.`;
 //   "edit …"     (with write tools) edits src/app.js and creates notes/new.txt in one round, then
 //                tries an edit that can't match, then reports the three results
 //   "git …"      (with git tools) reads the log and the uncommitted changes, then reports both
+//   "gitlab …"   (with GitLab tools) uses every GitLab tool once (and one path without the project), then reports
 //   anything else: the long reply
 export async function startMock() {
   const requests = []; // every chat request received, newest last
@@ -178,6 +179,26 @@ export async function startMock() {
         return res.end('data: [DONE]\n\n');
       }
 
+      if (body.tools && text.startsWith('gitlab')) {
+        const results = body.messages.filter((m) => m.role === 'tool');
+        const call = (i, name, args) => ({ index: i, id: `gl${i}`, type: 'function', function: { name, arguments: JSON.stringify(args) } });
+        if (results.length === 0) {
+          sse(res, { choices: [{ delta: { tool_calls: [
+            call(0, 'gitlab_pipeline', {}),
+            call(1, 'gitlab_pipeline', { job: 'test-unit' }),
+            call(2, 'gitlab_read', { path: 'platform/route-service/src/handler.js' }),
+            call(3, 'gitlab_search', { query: 'timeout' }),
+            call(4, 'gitlab_list', { path: 'platform/route-service/src' }),
+            call(5, 'gitlab_read', { path: 'src/handler.js' }),
+          ] } }] });
+        } else {
+          sse(res, { choices: [{ delta: { content: results.map((r) => r.content).join(' || ') } }] });
+        }
+        sse(res, { choices: [{ delta: {}, finish_reason: results.length ? 'stop' : 'tool_calls' }] });
+        if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
+        return res.end('data: [DONE]\n\n');
+      }
+
       if (body.tools && text.startsWith('git')) {
         const results = body.messages.filter((m) => m.role === 'tool');
         if (results.length === 0) {
@@ -232,18 +253,19 @@ export async function startMock() {
 // A fake OpenID Connect provider for the sign-in tests: discovery, an authorize page that signs
 // "alice" in straight away, and a token endpoint that checks PKCE and rotates refresh tokens.
 // Access tokens are at-1, at-2, …; `expiresIn` sets how long the next ones last (seconds).
-export async function startIdp() {
+// `scope` is what token responses say they grant; `api(req, res, url)` can answer other paths.
+export async function startIdp({ scope, api } = {}) {
   const crypto = await import('node:crypto');
   const codes = new Map(); // code -> { challenge, nonce, redirect }
   let n = 0;
   let refresh = null; // the only refresh token that still works
-  const idp = { url: '', expiresIn: 3600, grants: [] };
+  const idp = { url: '', expiresIn: 3600, grants: [], scope };
   const b64 = (v) => Buffer.from(JSON.stringify(v)).toString('base64url');
   const tokens = (nonce) => {
     n++;
     refresh = `rt-${n}`;
     const idToken = `${b64({ alg: 'none' })}.${b64({ iss: idp.url, sub: 'u1', preferred_username: 'alice', nonce, exp: Math.floor(Date.now() / 1000) + idp.expiresIn })}.`;
-    return { access_token: `at-${n}`, id_token: idToken, refresh_token: refresh, expires_in: idp.expiresIn, token_type: 'Bearer' };
+    return { access_token: `at-${n}`, id_token: idToken, refresh_token: refresh, expires_in: idp.expiresIn, token_type: 'Bearer', ...(idp.scope && { scope: idp.scope }) };
   };
   const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -285,9 +307,54 @@ export async function startIdp() {
       });
       return;
     }
+    if (api?.(req, res, url)) return;
     res.writeHead(404).end();
   });
   idp.url = await listen(server);
   idp.close = () => server.close();
   return idp;
+}
+
+// A fake GitLab: sign-in (startIdp, granting "openid read_api") plus a small read-only API with one
+// project. `gitlab.methods` lists the HTTP method of every API request, to check they're all reads.
+export async function startGitlab() {
+  const projects = [
+    { id: 7, path_with_namespace: 'platform/route-service', default_branch: 'main', last_activity_at: '2026-10-09T10:00:00Z' },
+    { id: 8, path_with_namespace: 'alice/notes', default_branch: 'master', last_activity_at: '2026-10-01T10:00:00Z' },
+  ];
+  const tree = [
+    { type: 'blob', path: 'README.md' }, { type: 'tree', path: 'src' }, { type: 'blob', path: 'src/handler.js' },
+    { type: 'tree', path: 'deploy' }, { type: 'blob', path: 'deploy/route.yaml' },
+  ];
+  const files = { 'src/handler.js': 'export function handle() {\n  const timeout = 30_000;\n  return timeout;\n}\n', 'README.md': '# Route service\n' };
+  const log = Array.from({ length: 250 }, (_, i) => (i === 249 ? '\x1b[31mFAIL handler.test.js: expected 30000, got 120000\x1b[0m' : `\x1b[32mstep ${i + 1}\x1b[0m`)).join('\n');
+  const gitlab = { methods: [] };
+  const json = (res, body) => res.end(JSON.stringify(body));
+  const api = (req, res, url) => {
+    if (!url.pathname.startsWith('/api/v4/')) return false;
+    gitlab.methods.push(req.method);
+    if (!/^Bearer at-\d+$/.test(req.headers.authorization ?? '')) { res.writeHead(401).end(JSON.stringify({ message: '401 Unauthorized' })); return true; }
+    const p = url.pathname.slice(7);
+    const q = url.searchParams;
+    if (p === '/user') return json(res, { username: 'alice' }), true;
+    if (p === '/projects') return json(res, projects.filter((x) => x.path_with_namespace.includes(q.get('search') ?? ''))), true;
+    if (p === '/projects/7/repository/tree') {
+      const under = q.get('path');
+      return json(res, q.get('page') > 1 ? [] : tree.filter((t) => !under || t.path.startsWith(`${under}/`))), true;
+    }
+    const file = p.match(/^\/projects\/7\/repository\/files\/(.+)\/raw$/);
+    if (file) {
+      const text = files[decodeURIComponent(file[1])];
+      if (text == null) { res.writeHead(404).end(JSON.stringify({ message: '404 File Not Found' })); return true; }
+      return res.end(text), true;
+    }
+    if (p === '/projects/7/search') return json(res, q.get('search') === 'timeout' ? [{ path: 'src/handler.js', startline: 1, data: 'export function handle() {\n  const timeout = 30_000;\n' }] : []), true;
+    if (p === '/projects/7/pipelines') return json(res, [{ id: 99, status: 'failed', sha: 'abcdef1234567' }]), true;
+    if (p === '/projects/7/pipelines/99/jobs') return json(res, [{ id: 501, name: 'build', stage: 'build', status: 'success' }, { id: 502, name: 'test-unit', stage: 'test', status: 'failed' }]), true;
+    if (p === '/projects/7/jobs/502/trace') return res.end(log), true;
+    res.writeHead(404).end(JSON.stringify({ message: '404 Not Found' }));
+    return true;
+  };
+  const idp = await startIdp({ scope: 'openid read_api', api });
+  return Object.assign(idp, gitlab);
 }

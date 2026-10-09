@@ -6,6 +6,7 @@ const MAX_TEXT = 512 * 1024;
 const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|jsonl|yaml|yml|toml|ini|xml|html|css|js|mjs|ts|jsx|tsx|py|rb|go|rs|java|kt|c|h|cpp|hpp|cs|php|sh|ps1|sql|log|env|conf)$/i;
 
 const DOC_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>'; // smart paste
+const GITLAB_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21l-9-7 3-10 3 7h6l3-7 3 10z"/></svg>'; // gitlab
 const FOLDER_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
 const BRANCH_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="7" r="2"/><path d="M6 7v10"/><path d="M18 9c0 5-6 4-11.2 8.2"/></svg>'; // git
 
@@ -19,11 +20,12 @@ const readAs = (file, how) => new Promise((resolve, reject) => {
 // The message box: Enter to send, Shift+Enter for a new line, Send/Stop button,
 // and attachments from the button, paste or drag-and-drop (all the same path).
 // Where folders are supported, the attach button opens a menu: Attach files or Connect folder.
-export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onSend, onStop, onReplyNote = () => false, notify }) {
+export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onConnectGitlab, onDisconnectGitlab, onSend, onStop, onReplyNote = () => false, notify }) {
   let files = [];
   let folderName = null;
   let folderEditable = false; // write mode
   let folderGit = null; // git: { branch, ahead, behind }
+  let gitlabProject = null; // gitlab: { path, ref }
   let busy = false;
 
   function autosize() {
@@ -51,8 +53,8 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   }
 
   function renderTray() {
-    tray.hidden = !files.length && !folderName;
-    tray.replaceChildren(...(folderName ? [folderChip()] : []), ...files.map((f, i) => {
+    tray.hidden = !files.length && !folderName && !gitlabProject;
+    tray.replaceChildren(...(folderName ? [folderChip()] : []), ...(gitlabProject ? [gitlabChip()] : []), ...files.map((f, i) => { // gitlab
       if (f.kind === 'paste') return pasteChip(f, i); // smart paste
       const chip = el('span', 'tray-chip');
       if (f.kind === 'image') {
@@ -75,6 +77,15 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     if (sync) chip.append(el('span', 'git-sync', sync));
     const counts = [ahead && `${ahead} to push`, behind && `${behind} to pull`].filter(Boolean).join(', ');
     chip.title += `\nGit branch ${branch}${counts ? `: ${counts} (as of your last fetch)` : ''}`;
+  }
+
+  // gitlab: "team/app · main", the GitLab project connected to this chat.
+  function gitlabChip() {
+    const chip = el('span', 'tray-chip gitlab');
+    chip.title = `GitLab project ${gitlabProject.path} on ${gitlabProject.ref} (read-only)`;
+    chip.innerHTML = GITLAB_ICON;
+    chip.append(el('span', 'tray-name', gitlabProject.path), el('span', 'git-sep', '·'), el('span', 'git-branch', gitlabProject.ref), removeButton(`Disconnect GitLab project ${gitlabProject.path}`, onDisconnectGitlab));
+    return chip;
   }
 
   // smart paste: a big paste shows as a chip; the model searches and reads it as needed.
@@ -142,8 +153,11 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     if (!e.clipboardData.types.includes('text/plain')) e.preventDefault();
     add(pasted);
   });
+  // The menu opens when it has more than "Attach files" to offer (folders, GitLab); otherwise the button picks files.
+  if (!onConnectFolder) for (const item of menu.querySelectorAll('[data-action^="folder"]')) item.hidden = true;
+  const hasMenu = () => [...menu.querySelectorAll('button[data-action]')].some((b) => b.dataset.action !== 'files' && !b.hidden);
   attach.addEventListener('click', () => {
-    if (!onConnectFolder) return fileInput.click();
+    if (!hasMenu()) return fileInput.click();
     if (menu.hidden) openMenu();
     else closeMenu();
   });
@@ -165,15 +179,26 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     stopOutside?.();
     stopOutside = null;
   }
-  if (onConnectFolder) {
-    attach.setAttribute('aria-haspopup', 'menu');
-    attach.setAttribute('aria-expanded', 'false');
-    attach.setAttribute('aria-label', 'Attach files or connect a folder');
+  // The button's label says what it does now: open the menu, or just pick files.
+  const labelAttach = () => {
+    if (hasMenu()) {
+      attach.setAttribute('aria-haspopup', 'menu');
+      attach.setAttribute('aria-expanded', String(!menu.hidden));
+      attach.setAttribute('aria-label', onConnectFolder ? 'Attach files or connect a folder' : 'Attach files or connect a GitLab project');
+    } else {
+      attach.removeAttribute('aria-haspopup');
+      attach.removeAttribute('aria-expanded');
+      attach.setAttribute('aria-label', 'Attach images or text files');
+    }
+  };
+  labelAttach();
+  {
     menu.addEventListener('click', (e) => {
       const item = e.target.closest('button[data-action]');
       if (!item) return;
       closeMenu();
       if (item.dataset.action === 'files') fileInput.click();
+      else if (item.dataset.action === 'gitlab') onConnectGitlab?.(); // gitlab
       else onConnectFolder(item.dataset.action === 'folder-edit');
     });
     menu.addEventListener('keydown', (e) => {
@@ -203,6 +228,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       send.setAttribute('aria-label', busy ? 'Stop' : 'Send');
     },
     focus: () => input.focus(),
+    setGitlab(project) { gitlabProject = project || null; renderTray(); labelAttach(); }, // gitlab
     setFolder(name, editable = false, git = null) {
       folderName = name || null;
       folderEditable = Boolean(name && editable);

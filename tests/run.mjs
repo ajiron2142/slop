@@ -16,9 +16,10 @@ import mini from './suites/mini.mjs';
 import viewer from './suites/viewer.mjs';
 import signin from './suites/signin.mjs';
 import titles from './suites/titles.mjs';
+import gitlab from './suites/gitlab.mjs';
 import git from './suites/git.mjs';
 
-const SUITES = { app, folder, write, git, paste, mini, viewer, signin, titles, stats, speed };
+const SUITES = { app, folder, write, git, paste, mini, viewer, signin, titles, gitlab, stats, speed };
 const only = process.argv.slice(2); // e.g. `npm test -- stats` runs one suite
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));

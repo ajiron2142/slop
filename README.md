@@ -87,6 +87,7 @@ app/                  behaviour
   ignore.js           which files to leave out, read from the folder's .gitignore files (folder tools and git)
   copy.js             Copy reply: formatted HTML for Teams/Outlook plus markdown, in one click
   oidc.js             sign-in with an identity provider, when config.json sets it up (removable add-on)
+  gitlab.js           GitLab, read-only: self-service connect in Settings, a project per chat, four tools (removable add-on)
   autotitle.js        names a chat after its first reply with one short request (removable add-on)
   viewer.js           image viewer: click an image to see it large (removable add-on)
   mini.js             mini window: pops the chat into a floating always-on-top window (Chrome/Edge, removable add-on)
@@ -126,6 +127,8 @@ tests/                browser tests; not part of the deployed app (see tests/REA
 
 **Connected folders.** In Chrome and Edge the paperclip also offers **Connect folder (read-only)**. The folder belongs to that one chat and is remembered with it. While a folder is connected, each request also sends three tools: `list_files` (optionally filtered, e.g. `*.yaml`), `search_files` (grep-style, returns matching lines with line numbers) and `read_file` (a whole short file, or a range of lines). The model is told to search first and read only the lines around a match, which keeps token use low on big folders. When the model calls one, the browser reads from the folder (`folder.js`), sends the result back, and asks again, up to 20 rounds. The reply shows a line such as "Read test/src/app.js". With no folder connected, requests are exactly as before, so models without tool support are unaffected. Firefox and Safari don't have this browser feature; there the paperclip just attaches files.
 
+**GitLab (read-only, self-service).** Anyone can connect their own GitLab: in Settings, type your GitLab address and slop shows the steps right there: a button that opens your GitLab's Applications page, the name and redirect URI to paste (with Copy buttons), and the boxes to tick (`openid` and `read_api`, not *Confidential*). Paste the Application ID back and click Connect GitLab; your company's sign-on does the rest. Nobody has to set anything up centrally. Then **Connect GitLab project…** in the paperclip menu picks one of your projects and a branch for that chat, and the chat gets the four `gitlab_` tools above. Every request slop makes to GitLab is a read, and a token that could do more than read (`api`, `write_repository`, …) is refused and never kept. The token lasts while the tab is open, like sign-in's; Disconnect in Settings forgets it.
+
 **Chat titles.** After a chat's first reply, the app sends one short extra request to the same model asking for a title of at most five words (abbreviations allowed). It happens once per chat and the title doesn't change after that. The answer is used only if it's one line of at most 8 words and 60 characters; otherwise, or if the request fails, the chat keeps its first message as its title. The request costs a few hundred tokens and isn't counted in the usage meter.
 
 **Tools the model can use.** A chat sends only the tools it has a use for, decided again for every message; a plain chat sends none, which is cheapest and works with any model. Every path starts with the folder's name (`test/src/app.js`).
@@ -139,6 +142,10 @@ tests/                browser tests; not part of the deployed app (see tests/REA
 | `git_diff` | Shows uncommitted changes, one commit, or two compared | the folder is a git repository |
 | `edit_file` | Replaces one exact piece of a file, after you approve it | the folder was connected with **can edit** |
 | `write_file` | Creates a file (or rewrites a small one), after you approve it | the folder was connected with **can edit** |
+| `gitlab_list` | Lists files in the chat's GitLab project or one of its folders | the chat has a GitLab project connected |
+| `gitlab_search` | Searches the project's files; matching lines with line numbers | the chat has a GitLab project connected |
+| `gitlab_read` | Reads a file from the project, or a range of its lines | the chat has a GitLab project connected |
+| `gitlab_pipeline` | The latest pipeline on the branch and each job's result; with a job name, the last 200 lines of its log | the chat has a GitLab project connected |
 | `search_paste` | Searches a long paste, like grep | the chat has a pasted chip still in memory |
 | `read_paste` | Reads lines of a long paste | the chat has a pasted chip still in memory |
 

@@ -1,0 +1,38 @@
+/* GitLab (optional add-on): its part of Settings with the setup steps, the project picker, and the chip. */
+.gitlab-settings { display: grid; gap: 10px; margin: 6px 0 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.gitlab-settings:empty { display: none; }
+.gitlab-head { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.gitlab-settings label { margin-bottom: 0; }
+.gitlab-found { font-size: 12px; }
+.gitlab-found.ok { color: #2e9a4f; }
+.gitlab-found.bad { color: #c4302b; }
+.gitlab-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.gitlab-note { font-size: 12.5px; color: var(--muted); }
+.gitlab-who { display: grid; flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink); }
+.gitlab-who small { font-family: var(--font-code); font-size: 11.5px; color: var(--muted); }
+
+.gitlab-steps { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; counter-reset: step; font-size: 13px; color: var(--ink); }
+.gitlab-steps li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 8px; counter-increment: step; }
+.gitlab-steps li::before { content: counter(step); display: grid; place-items: center; width: 20px; height: 20px; font: 600 11px var(--font-code); color: var(--ink); background: var(--surface); border-radius: 50%; }
+.gitlab-steps li > div { display: grid; gap: 6px; min-width: 0; }
+.gitlab-steps a.btn { justify-self: start; text-decoration: none; }
+.gitlab-steps a.btn::after { content: " \2197"; }
+.gitlab-values { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; font-size: 12.5px; }
+.gitlab-values .k { color: var(--muted); }
+.gitlab-values .v { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-code); font-size: 12px; }
+.gitlab-copy { padding: 3px 8px; font-size: 11.5px; }
+.gitlab-ticks { display: flex; flex-wrap: wrap; gap: 6px; }
+.gitlab-ticks .tick { padding: 2px 8px; font-family: var(--font-code); font-size: 11.5px; border: 1px solid var(--line); border-radius: 999px; }
+.gitlab-ticks .tick.no { color: #c4302b; text-decoration: line-through; }
+
+.gitlab-picker { width: min(420px, calc(100vw - 32px)); padding: 10px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: min(var(--radius), 12px); }
+.gitlab-picker::backdrop { background: rgba(0, 0, 0, 0.35); }
+.gitlab-picker input { box-sizing: border-box; width: 100%; padding: 8px 10px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; outline: none; }
+.gitlab-picker input:focus { border-color: var(--accent); }
+.gitlab-picker .gitlab-row input { flex: 1; width: auto; }
+.gitlab-projects { display: grid; gap: 2px; max-height: 50vh; margin: 8px 0; overflow-y: auto; }
+.gitlab-project { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; font: inherit; font-size: 13px; color: var(--ink); text-align: left; background: none; border: 0; border-radius: 6px; cursor: pointer; }
+.gitlab-project span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-code); font-size: 12.5px; }
+.gitlab-project small { color: var(--muted); }
+.gitlab-project:hover, .gitlab-project.on { background: var(--surface); }
+.tray-chip.gitlab .icon { width: 16px; height: 16px; color: var(--muted); }

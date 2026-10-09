@@ -21,6 +21,7 @@ import { miniSupported, createMini } from './mini.js'; // mini window
 import { createViewer } from './viewer.js'; // image viewer
 import { loadConfig, createAuth, renderSignIn } from './oidc.js'; // sign-in
 import { autoTitle } from './autotitle.js'; // chat titles
+import { createGitlab, GITLAB_TOOLS, gitlabPrompt, isGitlabTool } from './gitlab.js'; // gitlab
 import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 
@@ -33,6 +34,7 @@ const state = {
   active: null, // { meta, messages, folder }, or null for a new unsaved chat
   draftFolder: null, // folder connected before a new chat's first message
   draftEditable: false, // write mode: that folder may be edited (never saved; reloads come back read-only)
+  draftGitlab: null, // gitlab: project connected before a new chat's first message
   streaming: null, // { chat, msg, controller }
   auth: null, // sign-in, when config.json sets it up
 };
@@ -40,7 +42,7 @@ const state = {
 let signInBox = null; // sign-in: the Sign in / Signed in as part of Settings
 // Requests can go out with a pasted API key or, when sign-in is set up, while signed in.
 const canAuth = () => Boolean(state.settings.apiKey || state.auth?.signedIn());
-const openSettings = (message) => { signInBox?.draw(); settings.open(message); };
+const openSettings = (message) => { signInBox?.draw(); gitlab.draw(); settings.open(message); }; // gitlab
 
 const notice = $('notice');
 const notify = (text = '') => { notice.textContent = text; notice.hidden = !text; };
@@ -78,6 +80,16 @@ const sidebar = createSidebar({
 const panel = createPanel({ app: $('app'), root: $('panel') });
 const writer = createWriter({ onChange: () => render() }); // write mode
 
+// gitlab: its part of Settings, the "Connect GitLab project" menu item and the project picker.
+const gitlab = createGitlab({
+  box: $('gitlab-settings'),
+  menuItem: document.querySelector('#attach-menu [data-action="gitlab"]'),
+  chat: $('chat'),
+  getSettings: () => state.settings,
+  saveSettings: (changes) => { Object.assign(state.settings, changes); return store.saveSettings(state.settings); },
+  onChange: () => render(),
+});
+
 const messages = createMessages($('messages'), { onRetry: retry, extra: (m) => writer.decoration(m) }); // write mode: the line under a reply
 
 const meter = createMeter({ row: $('meter-row'), button: $('meter-btn'), pop: $('meter-pop') });
@@ -94,6 +106,8 @@ const composer = createComposer({
   menu: $('attach-menu'),
   onConnectFolder: folderSupported ? connectFolder : null,
   onDisconnectFolder: () => setFolder(null),
+  onConnectGitlab: async () => { const project = await gitlab.pick(); if (project) setGitlabProject(project); }, // gitlab
+  onDisconnectGitlab: () => setGitlabProject(null), // gitlab
   onSend: send,
   onStop: () => state.streaming?.controller.abort(),
   onReplyNote: (text) => writer.instead(text), // write mode: typed instead of Skip
@@ -141,6 +155,7 @@ const settings = createSettings({
     await store.clearAll();
     state.auth?.signOut(); // sign-in
     signInBox?.draw();
+    gitlab.disconnect(); // gitlab
     state.settings = await store.loadSettings();
     state.active = null;
     state.draftFolder = null;
@@ -188,6 +203,7 @@ function render(options) {
   composer.setBusy(Boolean(state.streaming));
   const folder = state.active ? state.active.folder : state.draftFolder;
   composer.setFolder(folder?.name, state.active ? state.active.canEdit : state.draftEditable, folder && gitStatusOf(folder)); // git
+  composer.setGitlab(gitlab.connected() ? (state.active ? state.active.meta.gitlab : state.draftGitlab) : null); // gitlab
 }
 
 async function reloadChatList() {
@@ -231,10 +247,11 @@ function send({ text, files }) {
   if (!state.active) {
     const now = Date.now();
     const title = (text || files[0].name).replace(/\s+/g, ' ').slice(0, 40);
-    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now }, messages: [], folder: state.draftFolder, canEdit: state.draftEditable };
+    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now, ...(state.draftGitlab && { gitlab: state.draftGitlab }) }, messages: [], folder: state.draftFolder, canEdit: state.draftEditable }; // gitlab
     if (state.draftFolder) store.saveFolder(state.active.meta.id, state.draftFolder);
     state.draftFolder = null;
     state.draftEditable = false;
+    state.draftGitlab = null; // gitlab
   }
   notify('');
   const chat = state.active;
@@ -271,10 +288,11 @@ async function complete(chat) {
       throw new Error(`Access to the folder "${folder.name}" wasn't allowed. Retry and allow it, or disconnect the folder.`);
     }
     const repo = Boolean(folder) && await isRepo(folder); // git
+    const project = gitlab.connected() ? chat.meta.gitlab : null; // gitlab
     // Tools only for what this chat has: a folder, a git repo, edit access, a paste still in memory.
-    const offered = [...(folder ? FOLDER_TOOLS : []), ...(repo ? GIT_TOOLS : []), ...(editable ? WRITE_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : [])]; // git, write mode, smart paste
+    const offered = [...(folder ? FOLDER_TOOLS : []), ...(repo ? GIT_TOOLS : []), ...(project ? GITLAB_TOOLS : []), ...(editable ? WRITE_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : [])]; // git, write mode, smart paste
     tools = offered.length ? offered : undefined;
-    const system = [today(), s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, editable && writePrompt].filter(Boolean).join('\n\n'); // git, write mode
+    const system = [today(), s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, project && gitlabPrompt(project), editable && writePrompt].filter(Boolean).join('\n\n'); // git, gitlab, write mode
     history.unshift({ role: 'system', content: system });
     // With a folder connected the model may ask to read files first: run those and ask again.
     for (let round = 1; ; round++) {
@@ -313,6 +331,7 @@ async function complete(chat) {
         const { label, result } = writer.handles(name) ? await writer.run(folder, call, controller.signal) // write mode
           : isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
           : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
+          : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments) // gitlab
           : await runTool(folder, name, call.function.arguments);
         if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
         (msg.tools ??= []).push(label);
@@ -388,6 +407,7 @@ function newChat() {
   state.active = null;
   state.draftFolder = null;
   state.draftEditable = false;
+  state.draftGitlab = null; // gitlab
   panel.close();
   sidebar.close();
   render();
@@ -445,6 +465,17 @@ async function setFolder(handle, editable = false) {
   if (handle) refreshGit(handle).then(() => render()); // git
 }
 
+// gitlab: the project for this chat (or the next new one), saved with the chat.
+async function setGitlabProject(project) {
+  if (state.active) {
+    if (project) state.active.meta.gitlab = project;
+    else delete state.active.meta.gitlab;
+    await store.saveMeta(state.active.meta);
+  } else state.draftGitlab = project;
+  render();
+  composer.focus();
+}
+
 // ---- start ----
 
 async function init() {
@@ -457,6 +488,8 @@ async function init() {
   modelPicker.set([], state.settings.model);
   render();
   const note = await setUpSignIn(); // sign-in
+  const gitlabNote = await gitlab.start(); // gitlab: also finishes a connect coming back from GitLab
+  if (gitlabNote) openSettings(gitlabNote);
   if (!state.settings.baseUrl) openSettings(note || 'Welcome! Enter your LiteLLM base URL and API key.');
   else if (!canAuth()) openSettings(note || (state.auth ? `Welcome! ${state.auth.label} to start, or enter an API key.` : 'Enter your API key to start.'));
   else {

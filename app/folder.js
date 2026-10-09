@@ -96,7 +96,7 @@ async function resolve(root, path, kind) {
 }
 
 // "*.yaml" matches by name anywhere; a pattern with a "/" matches the whole path.
-function globTest(pattern) {
+export function globTest(pattern) {
   if (!pattern) return () => true;
   const re = new RegExp(`^${pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\/?|\*|\?/g, (m) => (m === '?' ? '[^/]' : m === '*' ? '[^/]*' : '.*'))}$`, 'i');
   return pattern.includes('/') ? (path) => re.test(path) : (path) => re.test(path.slice(path.lastIndexOf('/') + 1));

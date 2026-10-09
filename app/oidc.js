@@ -8,13 +8,15 @@
 // names ("access", the default, or "id"); it's refreshed 60 seconds before it expires, keeping the
 // new refresh token each time; if a refresh fails you're signed out and see Sign in again.
 //
+// More than one sign-in can run side by side (GitLab uses this too): each has a name, keeps its own
+// tokens, and only handles a return from the provider whose state starts with that name.
+//
 // To remove it: delete this file, config.example.json and tests/suites/signin.mjs, their lines in
 // index.html, tests/run.mjs and .gitignore, and the lines marked "sign-in" in main.js and api.js.
+// (GitLab, if kept, uses createAuth from here too.)
 
 import { el } from './dom.js';
 
-const KEY = 'oidc-tokens';
-const PENDING = 'oidc-pending';
 const EARLY = 60; // seconds before expiry to refresh
 
 // The deployment's config.json, or null when there is none. Fetched fresh so a changed file applies on reload.
@@ -29,7 +31,11 @@ export async function loadConfig() {
   }
 }
 
-export function createAuth(oidc) {
+// `name` keeps this sign-in's tokens apart from others'. `allowedScopes`, when given, is the rule for
+// what the token may grant: a token with any other scope is refused and never kept.
+export function createAuth(oidc, { name = 'oidc', allowedScopes = null } = {}) {
+  const KEY = `${name}-tokens`;
+  const PENDING = `${name}-pending`;
   const issuer = String(oidc.issuer ?? '').replace(/\/+$/, '');
   if (!issuer || !oidc.clientId) throw new Error('config.json: "oidc" needs an "issuer" and a "clientId".');
   if (oidc.token && oidc.token !== 'access' && oidc.token !== 'id') throw new Error('config.json: "token" must be "access" or "id".');
@@ -60,10 +66,16 @@ export function createAuth(oidc) {
   // Keeps the tokens with the time the one we send expires: its expires_in for an access token,
   // the "exp" claim for an ID token.
   function save(body, previous = null) {
+    const extra = allowedScopes && String(body.scope ?? '').split(/\s+/).filter((s) => s && !allowedScopes.includes(s));
+    if (extra?.length) {
+      write(KEY, null);
+      throw new Error(`the token can do more than read (${extra.join(', ')}). Change the app to only ${allowedScopes.filter((s) => s.startsWith('read') || s === 'openid').join(' and ')}, then connect again.`);
+    }
     const tokens = {
       access_token: body.access_token,
       id_token: body.id_token ?? previous?.id_token,
       refresh_token: body.refresh_token ?? previous?.refresh_token,
+      scope: body.scope ?? previous?.scope ?? '',
     };
     tokens.expires_at = which === 'id_token' ? claims(tokens.id_token)?.exp : Math.floor(Date.now() / 1000) + Number(body.expires_in ?? 0);
     write(KEY, tokens);
@@ -84,6 +96,7 @@ export function createAuth(oidc) {
   return {
     label: oidc.label || 'Sign in',
     signedIn: () => Boolean(read(KEY)),
+    scopes: () => read(KEY)?.scope ?? '',
     // "Signed in as …": from the ID token, for display only (its signature isn't checked here; the API checks the token it gets).
     user() {
       const c = claims(read(KEY)?.id_token) ?? {};
@@ -93,7 +106,7 @@ export function createAuth(oidc) {
     async signIn() {
       const { authorization_endpoint: url } = await endpoints();
       const verifier = random();
-      const pending = { verifier, state: random(), nonce: random() };
+      const pending = { verifier, state: `${name}.${random()}`, nonce: random() };
       write(PENDING, pending);
       const challenge = base64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
       const params = new URLSearchParams({ response_type: 'code', client_id: oidc.clientId, redirect_uri: redirectUri, scope, state: pending.state, nonce: pending.nonce, code_challenge: challenge, code_challenge_method: 'S256' });
@@ -105,7 +118,7 @@ export function createAuth(oidc) {
     async handleCallback() {
       const url = new URL(location.href);
       const [code, state, error, why] = ['code', 'state', 'error', 'error_description'].map((p) => url.searchParams.get(p));
-      if (!code && !error) return '';
+      if ((!code && !error) || !state?.startsWith(`${name}.`)) return ''; // not a return to this sign-in
       const pending = read(PENDING);
       write(PENDING, null);
       for (const p of ['code', 'state', 'error', 'error_description', 'session_state', 'iss']) url.searchParams.delete(p);

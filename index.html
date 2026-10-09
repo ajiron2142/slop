@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="styles/components/folder-git.css">
   <link rel="stylesheet" href="styles/components/mini.css">
   <link rel="stylesheet" href="styles/components/viewer.css">
+  <link rel="stylesheet" href="styles/components/gitlab.css">
   <!-- Themes: one line each. Add a theme by adding its file and a line here.
        media="not all" lets them download without delaying the first paint; the chosen one is switched on. -->
   <link rel="stylesheet" href="styles/themes/monokai.css" media="not all" data-theme="monokai" data-name="Monokai">
@@ -52,6 +53,7 @@
   <link rel="modulepreload" href="app/viewer.js">
   <link rel="modulepreload" href="app/oidc.js">
   <link rel="modulepreload" href="app/autotitle.js">
+  <link rel="modulepreload" href="app/gitlab.js">
   <link rel="modulepreload" href="vendor/marked.esm.js">
   <link rel="modulepreload" href="vendor/purify.es.js">
   <link rel="modulepreload" href="vendor/idb-keyval.js">
@@ -97,6 +99,7 @@
         <button type="button" role="menuitem" data-action="files">Attach files</button>
         <button type="button" role="menuitem" data-action="folder">Connect folder (read-only)</button>
         <button type="button" role="menuitem" data-action="folder-edit">Connect folder (can edit)</button>
+        <button type="button" role="menuitem" data-action="gitlab" hidden>Connect GitLab project…</button><!-- gitlab -->
       </div>
     </section>
     <aside id="panel" class="panel themed" aria-label="Side panel" hidden></aside>
@@ -115,6 +118,7 @@
     <label>System prompt (optional)
       <textarea id="set-system" rows="3"></textarea>
     </label>
+    <div id="gitlab-settings" class="gitlab-settings"></div><!-- gitlab: filled by app/gitlab.js -->
     <div class="field">Theme <div class="picker block" id="theme-picker"></div></div>
     <label class="check"><input type="checkbox" id="set-stats"> Show detailed stats <span>Adds a Stats button to each reply, and a per-model breakdown to the usage meter.</span></label>
     <p id="settings-status" class="settings-status" role="status"></p>
