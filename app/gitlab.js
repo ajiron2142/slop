@@ -1,13 +1,15 @@
 // GitLab, read-only (optional add-on). Each person connects their own GitLab in Settings, using their
 // own GitLab app (the steps are shown right there), then connects one project to a chat. That chat
-// gets four tools: list, search and read files, and see the latest pipeline (with the end of a
-// failed job's log). Every request is a read (GET); nothing in here can change anything in GitLab.
+// gets four tools: list, search and read files, and gitlab_api for the rest of the project's API
+// (pipelines, jobs and their logs, merge requests, commits…), where the model finds its own way.
+// Every request is a read (GET); nothing in here can change anything in GitLab.
 //
 // Rules, all fixed: the token must not grant more than the scopes in ALLOWED, or it's refused and
-// never kept; paths start with the project's path ("team/app/src/main.js"); the branch is the one
-// the project's default branch unless you pick another on the chip; GitLab gets 30 seconds per
-// request, then the tool says it didn't answer. Settings (address and Client ID) are stored with the other
-// settings; the token lives in this tab only, like sign-in's.
+// never kept; file paths start with the project's path ("team/app/src/main.js"); gitlab_api paths
+// are relative to the project ("pipelines?ref=main") and can't leave it; the branch is the
+// project's default branch unless you pick another on the chip; GitLab gets 30 seconds per
+// request, then the tool says it didn't answer. Settings (address and Client ID) are stored with
+// the other settings; the token lives in this tab only, like sign-in's.
 //
 // To remove it: delete this file, styles/components/gitlab.css and tests/suites/gitlab.mjs, their
 // lines in index.html and tests/run.mjs (including the "gitlab" menu item and the Settings slot),
@@ -22,7 +24,6 @@ const ALLOWED = ['openid', 'profile', 'email', 'read_user', 'read_api', 'read_re
 const SCOPE = 'openid read_api';
 const MAX_FILES = 500; // per listing
 const MAX_MATCHES = 100; // lines per search
-const LOG_LINES = 200; // from the end of a job's log
 const MAX_BYTES = 4 * 1024 * 1024;
 const WAIT = 30; // seconds GitLab gets to answer one request
 
@@ -44,9 +45,11 @@ export const GITLAB_TOOLS = [
     start_line: int('First line to read (from 1).'),
     end_line: int('Last line to read.'),
   }, ['path']),
-  tool('gitlab_pipeline', "The latest pipeline on the connected branch: each job and whether it passed. With a job name, the last lines of that job's log instead.", {
-    job: str('A job name from the pipeline, to read the end of its log.'),
-  }),
+  tool('gitlab_api', `A read-only GitLab API request (GET) for the connected project: anything GitLab's REST API has under /projects/:id/, such as pipelines, jobs and their logs, merge requests, commits and issues. JSON comes back indented; long answers come back ${MAX_LINES} lines at a time, and the note says how many there are, so ask for any part (like the end of a job log) with start_line.`, {
+    path: str('The API path after /projects/:id/, with any query, e.g. "pipelines?ref=main&per_page=5", "pipelines/123/jobs", "jobs/456/trace", "merge_requests?state=opened".'),
+    start_line: int('First line to read (from 1).'),
+    end_line: int('Last line to read.'),
+  }, ['path']),
 ];
 
 export const isGitlabTool = (name) => name.startsWith('gitlab_');
@@ -54,7 +57,8 @@ export const isGitlabTool = (name) => name.startsWith('gitlab_');
 export const gitlabPrompt = (project) =>
   `The user connected the GitLab project "${project.path}" (branch ${project.ref}) to this chat, read-only. ` +
   `Every path starts with "${project.path}/". Use gitlab_search to find things before reading files. ` +
-  'gitlab_pipeline shows the latest pipeline on the branch; give it a job name to read the end of that job\'s log.';
+  'gitlab_api reads the rest of the project from GitLab\'s API (pipelines, jobs and their logs, merge requests, commits, issues). ' +
+  'When you mention something GitLab gave a web_url for, link to it with that URL.';
 
 export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, onChange }) {
   let auth = null;
@@ -74,7 +78,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
   // ---- reading GitLab: only ever GET ----
 
   // Each request (with its body) gets WAIT seconds; Stop (`signal`) ends it at once.
-  async function get(path, { text = false, signal } = {}) {
+  async function get(path, { text = false, raw = false, signal } = {}) {
     for (let force = false; ; force = true) {
       const token = await auth?.getToken({ force });
       if (!token) throw new Error('GitLab is not connected. Connect it again in Settings.');
@@ -85,7 +89,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         const body = await res.json().catch(() => ({}));
         throw new Error(`GitLab answered HTTP ${res.status}${body.message ? `: ${typeof body.message === 'string' ? body.message : JSON.stringify(body.message)}` : ''}`);
       }
-      return text ? res.text() : res.json();
+      return raw ? res : text ? res.text() : res.json();
     }
   }
 
@@ -337,19 +341,24 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         return { label: `Read ${shown(project, path)}${ranged ? `:${from}–${last}` : ''}`, result };
       }
 
-      if (name === 'gitlab_pipeline') {
-        const [pipeline] = await get(`${p}/pipelines?ref=${ref}&per_page=1`, { signal });
-        if (!pipeline) return { label: `Read pipeline ${project.ref}`, result: `No pipelines on ${project.ref}.` };
-        const jobs = await get(`${p}/pipelines/${pipeline.id}/jobs?per_page=100`, { signal });
-        if (args.job) {
-          const job = jobs.find((j) => j.name === args.job);
-          if (!job) throw new Error(`no job "${args.job}" in pipeline #${pipeline.id}; its jobs are: ${jobs.map((j) => j.name).join(', ')}`);
-          const lines = splitLines((await get(`${p}/jobs/${job.id}/trace`, { text: true, signal })).replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').replace(/\r/g, ''));
-          const tail = lines.slice(-LOG_LINES);
-          return { label: `Read job log ${job.name}`, result: `Job ${job.name} (${job.status}), last ${tail.length} of ${lines.length} lines:\n${tail.join('\n')}` };
+      if (name === 'gitlab_api') {
+        const path = String(args.path ?? '');
+        // Browsers also read "%2e%2e" as ".." and a backslash as "/", so neither can leave the project.
+        const parts = path.split(/[?#]/)[0].split(/[/\\]/).map((x) => x.toLowerCase().replace(/%2e/g, '.'));
+        if (!path || /^[/\\]/.test(path) || path.includes('://') || parts.some((x) => x === '..' || x === '.')) {
+          throw new Error('give the path after /projects/:id/, like "pipelines?ref=main"');
         }
-        const rows = jobs.map((j) => `${j.stage} / ${j.name}: ${j.status}`).join('\n');
-        return { label: `Read pipeline ${project.ref}`, result: `Pipeline #${pipeline.id} on ${project.ref}: ${pipeline.status} (commit ${String(pipeline.sha).slice(0, 8)})\n${rows}` };
+        const res = await get(`${p}/${path}`, { raw: true, signal });
+        let text = await res.text();
+        if (text.length > MAX_BYTES) throw new Error('the answer is larger than 4 MB; ask for less (per_page, filters)');
+        // JSON indented so it reads in lines; colour codes (as in job logs) removed.
+        if ((res.headers.get('content-type') ?? '').includes('json')) text = JSON.stringify(JSON.parse(text), null, 1);
+        text = text.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').replace(/\r/g, '');
+        const lines = splitLines(text);
+        const ranged = args.start_line != null || args.end_line != null;
+        if (!ranged && lines.length <= MAX_LINES && text.length <= MAX_CHARS) return { label: `Read GitLab ${path}`, result: text || '(empty)' };
+        const { from, last, text: result } = numberedRange(lines, args.start_line, args.end_line);
+        return { label: `Read GitLab ${path}${ranged ? `:${from}–${last}` : ''}`, result };
       }
       throw new Error(`unknown tool ${name}`);
     } catch (e) {

@@ -74,17 +74,18 @@ export default async function ({ browser, site, mock, check }) {
   const methodsBefore = gitlab.methods.length;
   await send(p, 'gitlab: why did the pipeline fail?');
   const sent = mock.requests.at(-1);
-  check('the chat gets the four GitLab tools and a line about the project', ['gitlab_list', 'gitlab_search', 'gitlab_read', 'gitlab_pipeline'].every((t) => sent.toolNames.includes(t)) && sent.system.includes('"platform/route-service" (branch main)'));
+  check('the chat gets the four GitLab tools and a line about the project', ['gitlab_list', 'gitlab_search', 'gitlab_read', 'gitlab_api'].every((t) => sent.toolNames.includes(t)) && sent.system.includes('"platform/route-service" (branch main)'));
   const reply = await p.textContent('.msg.assistant:last-of-type .body');
-  const [pipeline, job, file, found, listed, refused] = reply.split(/\s*\|\|\s*/); // shown as rendered text, so line breaks are folded
-  check('the pipeline shows each job and whether it passed', pipeline.includes('Pipeline #99 on main: failed') && pipeline.includes('test / test-unit: failed') && pipeline.includes('build / build: success'));
-  check('a job\'s log comes back as its last 200 lines, without colour codes', job.includes('last 200 of 250 lines') && job.endsWith('FAIL handler.test.js: expected 30000, got 120000') && !job.includes('\x1b') && !/step 50(?!\d)/.test(job) && job.includes('step 51'));
+  const [pipeline, job, file, found, listed, refused, outside, encoded] = reply.split(/\s*\|\|\s*/); // shown as rendered text, so line breaks are folded
+  check('gitlab_api reads the project\'s API, JSON indented, with GitLab\'s links', pipeline.includes('"status": "failed"') && pipeline.includes('"web_url": "https://gitlab.example/platform/route-service/-/pipelines/99"'));
+  check('any part of a long answer can be read, without colour codes', job.startsWith('240\tstep 240') && job.includes('250\tFAIL handler.test.js: expected 30000, got 120000') && job.endsWith('(lines 240–250 of 250)') && !job.includes('\x1b'));
+  check('a gitlab_api path can\'t leave the project', outside.startsWith('Error: give the path after /projects/:id/') && encoded.startsWith('Error: give the path after'));
   check('files can be read', file.includes('const timeout = 30_000;'));
   check('search finds lines with their numbers', found.startsWith('1 matching lines') && found.includes('platform/route-service/src/handler.js') && found.includes('2: const timeout = 30_000;'));
   check('files can be listed, with the project path', listed.trim() === 'platform/route-service/src/handler.js');
   check('a path without the project path is refused with the rule', refused.startsWith('Error: paths start with the project path, like "platform/route-service/src/handler.js"'));
-  check('the reply shows what was read', (await p.textContent('.msg.assistant:last-of-type .tool-log')).startsWith('Read pipeline main · Read job log test-unit · Read platform/route-service/src/handler.js'));
-  check('every request to GitLab was a read', gitlab.methods.slice(methodsBefore).length >= 6 && gitlab.methods.every((m) => m === 'GET'));
+  check('the reply shows what was read', (await p.textContent('.msg.assistant:last-of-type .tool-log')).startsWith('Read GitLab pipelines?ref=main&per_page=1 · Read GitLab jobs/502/trace:240–250 · Read platform/route-service/src/handler.js'));
+  check('every request to GitLab was a read', gitlab.methods.slice(methodsBefore).length >= 5 && gitlab.methods.every((m) => m === 'GET'));
 
   await p.click('#new-chat');
   await send(p, 'echo no project here');

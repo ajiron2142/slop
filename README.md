@@ -145,7 +145,7 @@ tests/                browser tests; not part of the deployed app (see tests/REA
 | `gitlab_list` | Lists files in the chat's GitLab project or one of its folders | the chat has a GitLab project connected |
 | `gitlab_search` | Searches the project's files; matching lines with line numbers | the chat has a GitLab project connected |
 | `gitlab_read` | Reads a file from the project, or a range of its lines | the chat has a GitLab project connected |
-| `gitlab_pipeline` | The latest pipeline on the branch and each job's result; with a job name, the last 200 lines of its log | the chat has a GitLab project connected |
+| `gitlab_api` | Any read-only GitLab API request for the project (pipelines, jobs and their logs, merge requests, commits, issues), with GitLab's links; long answers in parts | the chat has a GitLab project connected |
 | `search_paste` | Searches a long paste, like grep | the chat has a pasted chip still in memory |
 | `read_paste` | Reads lines of a long paste | the chat has a pasted chip still in memory |
 

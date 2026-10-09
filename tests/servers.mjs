@@ -191,12 +191,14 @@ export async function startMock() {
         const call = (i, name, args) => ({ index: i, id: `gl${i}`, type: 'function', function: { name, arguments: JSON.stringify(args) } });
         if (results.length === 0) {
           sse(res, { choices: [{ delta: { tool_calls: [
-            call(0, 'gitlab_pipeline', {}),
-            call(1, 'gitlab_pipeline', { job: 'test-unit' }),
+            call(0, 'gitlab_api', { path: 'pipelines?ref=main&per_page=1' }),
+            call(1, 'gitlab_api', { path: 'jobs/502/trace', start_line: 240 }),
             call(2, 'gitlab_read', { path: 'platform/route-service/src/handler.js' }),
             call(3, 'gitlab_search', { query: 'timeout' }),
             call(4, 'gitlab_list', { path: 'platform/route-service/src' }),
             call(5, 'gitlab_read', { path: 'src/handler.js' }),
+            call(6, 'gitlab_api', { path: '../../users' }),
+            call(7, 'gitlab_api', { path: 'jobs/%2E%2e/%2e%2e/users' }),
           ] } }] });
         } else {
           sse(res, { choices: [{ delta: { content: results.map((r) => r.content).join(' || ') } }] });
@@ -338,7 +340,7 @@ export async function startGitlab() {
   const files = { 'src/handler.js': 'export function handle() {\n  const timeout = 30_000;\n  return timeout;\n}\n', 'README.md': '# Route service\n' };
   const log = Array.from({ length: 250 }, (_, i) => (i === 249 ? '\x1b[31mFAIL handler.test.js: expected 30000, got 120000\x1b[0m' : `\x1b[32mstep ${i + 1}\x1b[0m`)).join('\n');
   const gitlab = { methods: [], refs: [] };
-  const json = (res, body) => res.end(JSON.stringify(body));
+  const json = (res, body) => res.setHeader('Content-Type', 'application/json').end(JSON.stringify(body));
   const api = (req, res, url) => {
     if (!url.pathname.startsWith('/api/v4/')) return false;
     gitlab.methods.push(req.method);
@@ -347,7 +349,7 @@ export async function startGitlab() {
     const q = url.searchParams;
     if (p === '/user') return json(res, { username: 'alice' }), true;
     if (p === '/projects') return json(res, projects.filter((x) => x.path_with_namespace.includes(q.get('search') ?? ''))), true;
-    if (q.get('ref')) gitlab.refs.push(q.get('ref'));
+    if (p.startsWith('/projects/7/repository/') && q.get('ref')) gitlab.refs.push(q.get('ref')); // the files' branch
     if (p === '/projects/7/repository/branches') return json(res, branches.filter((b) => b.name.includes(q.get('search') ?? ''))), true;
     if (p === '/projects/7/search' && q.get('search') === 'hang') return (gitlab.searches = 1), true; // never answers
     if (p === '/projects/7/repository/tree') {
@@ -361,7 +363,7 @@ export async function startGitlab() {
       return res.end(text), true;
     }
     if (p === '/projects/7/search') return json(res, q.get('search') === 'timeout' ? [{ path: 'src/handler.js', startline: 1, data: 'export function handle() {\n  const timeout = 30_000;\n' }] : []), true;
-    if (p === '/projects/7/pipelines') return json(res, [{ id: 99, status: 'failed', sha: 'abcdef1234567' }]), true;
+    if (p === '/projects/7/pipelines') return json(res, [{ id: 99, status: 'failed', sha: 'abcdef1234567', web_url: 'https://gitlab.example/platform/route-service/-/pipelines/99' }]), true;
     if (p === '/projects/7/pipelines/99/jobs') return json(res, [{ id: 501, name: 'build', stage: 'build', status: 'success' }, { id: 502, name: 'test-unit', stage: 'test', status: 'failed' }]), true;
     if (p === '/projects/7/jobs/502/trace') return res.end(log), true;
     res.writeHead(404).end(JSON.stringify({ message: '404 Not Found' }));
