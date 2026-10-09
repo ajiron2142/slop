@@ -1,4 +1,4 @@
-import { el } from '../dom.js';
+import { el, onClickOutside } from '../dom.js';
 
 // A searchable dropdown: a button that opens a filterable list.
 // Used for the model picker and the theme picker.
@@ -77,6 +77,8 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
     }
   }
 
+  let stopOutside = null;
+
   function place() {
     const r = button.getBoundingClientRect();
     pop.style.top = `${r.bottom + 6}px`;
@@ -84,7 +86,7 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
       pop.style.left = `${r.left}px`;
       pop.style.width = `${r.width}px`;
     } else {
-      pop.style.right = `${Math.max(12, innerWidth - r.right)}px`;
+      pop.style.right = `${Math.max(12, root.ownerDocument.defaultView.innerWidth - r.right)}px`;
     }
   }
 
@@ -93,6 +95,7 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
     place();
     pop.hidden = false;
     button.setAttribute('aria-expanded', 'true');
+    stopOutside = onClickOutside(root, () => close(false));
     search.value = '';
     renderList();
     search.focus();
@@ -102,6 +105,8 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
     if (pop.hidden) return;
     pop.hidden = true;
     button.setAttribute('aria-expanded', 'false');
+    stopOutside?.();
+    stopOutside = null;
     if (focusButton) button.focus();
   }
 
@@ -128,9 +133,6 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
     if (li) choose(visible[+li.dataset.index]);
   });
   addEventListener('resize', () => close(false));
-  document.addEventListener('pointerdown', (e) => {
-    if (!root.contains(e.target)) close(false);
-  });
 
   return {
     set(newItems, newValue, newRecent = []) {

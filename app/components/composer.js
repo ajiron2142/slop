@@ -1,4 +1,4 @@
-import { el } from '../dom.js';
+import { el, onClickOutside } from '../dom.js';
 import { isBigPaste, createPaste, inFull, asReference } from '../paste.js'; // smart paste
 
 const MAX_IMAGE = 10 * 1024 * 1024;
@@ -131,17 +131,21 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   });
   fileInput.addEventListener('change', () => { add([...fileInput.files]); fileInput.value = ''; });
 
+  let stopOutside = null;
   function openMenu() {
     const r = attach.getBoundingClientRect();
     menu.style.left = `${r.left}px`;
-    menu.style.bottom = `${window.innerHeight - r.top + 6}px`;
+    menu.style.bottom = `${attach.ownerDocument.defaultView.innerHeight - r.top + 6}px`;
     menu.hidden = false;
     attach.setAttribute('aria-expanded', 'true');
     menu.querySelector('button').focus();
+    stopOutside = onClickOutside([menu, attach], closeMenu);
   }
   function closeMenu() {
     menu.hidden = true;
     attach.setAttribute('aria-expanded', 'false');
+    stopOutside?.();
+    stopOutside = null;
   }
   if (onConnectFolder) {
     attach.setAttribute('aria-haspopup', 'menu');
@@ -156,9 +160,6 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     });
     menu.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closeMenu(); attach.focus(); }
-    });
-    document.addEventListener('pointerdown', (e) => {
-      if (!menu.hidden && !menu.contains(e.target) && !attach.contains(e.target)) closeMenu();
     });
     window.addEventListener('resize', closeMenu);
   }

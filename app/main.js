@@ -17,6 +17,7 @@ import { createSettings } from './components/settings.js';
 import { createMeter } from './components/meter.js';
 import { createPanel } from './components/panel.js';
 import { PASTE_TOOLS, hasPastes, isPasteTool, runPasteTool } from './paste.js'; // smart paste
+import { miniSupported, createMini } from './mini.js'; // mini window
 import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
 
 const state = {
@@ -153,6 +154,8 @@ const settings = createSettings({
     return [`Imported ${added} chat(s)${skipped ? `, skipped ${skipped}` : ''}.`, 'ok'];
   },
 });
+
+if (miniSupported) createMini({ button: $('mini-btn'), chat: $('chat'), panel: $('panel'), sidebar: document.querySelector('.sidebar') }); // mini window
 
 $('new-chat').addEventListener('click', newChat);
 $('settings-btn').addEventListener('click', () => settings.open());

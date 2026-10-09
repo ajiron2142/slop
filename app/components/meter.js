@@ -1,4 +1,4 @@
-import { el } from '../dom.js';
+import { el, onClickOutside } from '../dom.js';
 import { fmt } from '../stats.js';
 
 // The usage meter above the message box: "13% · $0.04". Clicking it opens a summary right above it:
@@ -9,13 +9,15 @@ export function createMeter({ row, button, pop }) {
   const label = el('span', 'meter-label');
   button.append(ring, label);
 
+  let stopOutside = null;
   const toggle = (open) => {
     pop.hidden = !open;
     button.setAttribute('aria-expanded', String(open));
+    stopOutside?.();
+    stopOutside = open ? onClickOutside(row, () => toggle(false)) : null;
   };
   button.addEventListener('click', () => toggle(pop.hidden));
-  document.addEventListener('pointerdown', (e) => { if (!row.contains(e.target)) toggle(false); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !pop.hidden) { toggle(false); button.focus(); } });
+  row.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !pop.hidden) { toggle(false); button.focus(); } });
 
   return {
     render(sum, { detailed = false, key = null, model = '' } = {}) {

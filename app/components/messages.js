@@ -47,7 +47,7 @@ export function createMessages(pane, { onRetry, extra = () => null }) {
     const code = btn.closest('.code').querySelector('code');
     const label = btn.querySelector('span');
     try {
-      await navigator.clipboard.writeText(code.textContent);
+      await btn.ownerDocument.defaultView.navigator.clipboard.writeText(code.textContent);
       label.textContent = 'Copied';
     } catch {
       label.textContent = 'Failed';
@@ -149,7 +149,7 @@ function copyButton(msg) {
   btn.title = 'Copy this reply, formatted for Teams, Outlook and Word';
   btn.addEventListener('click', async () => {
     try {
-      await copyReply(msg.content);
+      await copyReply(msg.content, btn.ownerDocument.defaultView);
       btn.textContent = 'Copied';
     } catch {
       btn.textContent = 'Copy failed';

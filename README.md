@@ -38,11 +38,12 @@ app/                  behaviour
   paste.js            smart paste: long pastes stay in the tab and the model searches them (removable add-on)
   lines.js            line search and numbered ranges, shared by the folder tools and smart paste
   copy.js             Copy reply: formatted HTML for Teams/Outlook plus markdown, in one click
+  mini.js             mini window: pops the chat into a floating always-on-top window (Chrome/Edge, removable add-on)
   stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)
   markdown.js         markdown to sanitised HTML
   highlight.js        syntax colours for code blocks; loads highlight.js on first use (lists the languages)
   theme.js            theme list, switching, font warm-up
-  dom.js              two tiny DOM helpers
+  dom.js              tiny DOM helpers ($, el, click-outside-to-close)
   components/         one file per piece of UI
     sidebar.js        chat list, search, mobile menu
     messages.js       message rendering, code copy, retry, per-reply Stats card
@@ -114,6 +115,7 @@ Or with Node.js: `npm ci`, `npx playwright install chromium`, then `npm test`. P
 - Connect a folder to a chat, read-only, so the model can look through it (Chrome and Edge, models with tool support)
 - Optional write mode: the model proposes file edits, you review each diff in a side panel, and can undo the latest reply
 - Copy any reply in one click: pastes formatted into Teams, Outlook and Word, and as markdown everywhere else
+- Mini window (Chrome and Edge): pop the chat out into a small floating window that stays on top of your terminal; close it to bring the chat back
 - Smart paste: paste a long log or command output and the model searches it instead of reading it all, so follow-up questions stay cheap
 - Markdown replies with syntax-coloured, copyable code blocks, tables and nested lists
 - Chat history with search, export/import, and Stop / Retry

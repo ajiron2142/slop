@@ -70,6 +70,8 @@
   border-bottom: 1px solid var(--line);
 }
 
+.chat-header .picker { margin-left: auto; } /* the model picker and any header buttons sit on the right */
+
 .chat-title {
   margin: 0;
   font-family: var(--font-display);
@@ -154,5 +156,4 @@ button, input, textarea, select { font: inherit; color: inherit; }
   .app.sidebar-open .scrim { display: block; position: fixed; inset: 0; z-index: 10; background: rgba(0, 0, 0, 0.35); }
   .menu-btn { display: inline-grid; }
   .chat-header { justify-content: flex-start; }
-  .chat-header .picker { margin-left: auto; }
 }

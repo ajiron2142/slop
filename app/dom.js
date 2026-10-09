@@ -6,3 +6,14 @@ export function el(tag, className, text) {
   if (text != null) node.textContent = text;
   return node;
 }
+
+// Closes a popup when you click outside it (`inside` is an element or a list, e.g. the popup and
+// its button). It listens in whichever window those are in when the popup opens, so it keeps
+// working when the chat is moved into the mini window. Returns a function that stops listening.
+export function onClickOutside(inside, close) {
+  const nodes = [].concat(inside);
+  const doc = nodes[0].ownerDocument;
+  const down = (e) => { if (!nodes.some((n) => n.contains(e.target))) close(); };
+  doc.addEventListener('pointerdown', down);
+  return () => doc.removeEventListener('pointerdown', down);
+}

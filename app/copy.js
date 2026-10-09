@@ -20,13 +20,15 @@ export function replyHtml(markdown) {
   return doc.body.innerHTML;
 }
 
-export async function copyReply(markdown) {
+// `view` is the window the Copy button is in: the tab, or the mini window (each has its own clipboard access).
+export async function copyReply(markdown, view = window) {
+  const { clipboard } = view.navigator;
   try {
-    await navigator.clipboard.write([new ClipboardItem({
+    await clipboard.write([new view.ClipboardItem({
       'text/html': new Blob([replyHtml(markdown)], { type: 'text/html' }),
       'text/plain': new Blob([markdown], { type: 'text/plain' }),
     })]);
   } catch {
-    await navigator.clipboard.writeText(markdown); // browsers without rich copy still get the text
+    await clipboard.writeText(markdown); // browsers without rich copy still get the text
   }
 }
