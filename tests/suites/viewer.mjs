@@ -1,5 +1,5 @@
 // Image viewer (optional add-on): clicking an image in the chat or above the message box shows it
-// large; Esc, the dimmed area and × close it.
+// large; Esc or a click anywhere closes it.
 import { openApp, send } from '../helpers.mjs';
 
 export default async function ({ browser, site, mock, check }) {
@@ -12,6 +12,7 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('.tray-chip img');
   check('an image waiting above the message box opens large', await open());
   await p.keyboard.press('Escape');
+  await p.waitForTimeout(100);
   check('Esc closes it', !(await open()) && !(await p.$('dialog.viewer')));
 
   await send(p, 'echo look');
@@ -24,8 +25,8 @@ export default async function ({ browser, site, mock, check }) {
   await p.mouse.click(20, 20);
   check('clicking the dimmed area closes it', !(await open()));
   await p.click('.msg.user .file-thumb');
-  await p.click('dialog.viewer .viewer-close');
-  check('× closes it', !(await open()));
+  await p.click('dialog.viewer img');
+  check('clicking the image closes it too', !(await open()));
 
   await p.setViewportSize({ width: 500, height: 400 });
   await p.click('.msg.user .file-thumb');
