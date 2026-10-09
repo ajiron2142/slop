@@ -52,7 +52,7 @@
 .send:active { transform: scale(0.97); }
 
 .composer .attach { width: 44px; height: 44px; }
-.tray { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px var(--edge) 0; }
+.tray { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px var(--edge); }
 .tray-chip {
   display: inline-flex;
   align-items: center;

@@ -163,7 +163,7 @@ const FINISH = { stop: 'Complete', length: 'Cut off (length limit)', stopped: 'S
 
 // "Stats" button and the card it opens: what one reply used, cost and how long it took.
 function statsNodes(s, open) {
-  const btn = el('button', 'reply-btn stats-btn', 'Stats');
+  const btn = el('button', 'reply-btn stats-btn', 'ⓘ Stats');
   btn.type = 'button';
   btn.dataset.action = 'stats';
   btn.setAttribute('aria-expanded', String(open));
