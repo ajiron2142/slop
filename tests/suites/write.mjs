@@ -80,6 +80,20 @@ export default async function ({ browser, site, mock, check }) {
   check('clicking a card opens its diff', (await p.textContent('.msg.assistant:last-of-type .change >> nth=0 >> .diff')).includes('+ console.log("hello")'));
   await p.click('.msg.assistant:last-of-type .change >> nth=0 >> .change-head');
   check('and clicking again closes it', (await p.$$('.msg.assistant:last-of-type .write-review .diff')).length === 0);
+  // Opening a card while scrolled up keeps your place (a redraw used to jump to the top).
+  await p.setViewportSize({ width: 1280, height: 600 });
+  const scrolled = () => p.evaluate(() => document.getElementById('messages').scrollTop);
+  await p.evaluate(() => {
+    const m = document.getElementById('messages');
+    m.scrollTop = m.scrollHeight - m.clientHeight - 60;
+  });
+  const before = await scrolled();
+  await p.click('.msg.assistant:last-of-type .change >> nth=0 >> .change-head');
+  await p.waitForTimeout(150);
+  const after = await scrolled();
+  await p.click('.msg.assistant:last-of-type .change >> nth=0 >> .change-head');
+  await p.setViewportSize({ width: 1280, height: 800 });
+  check('opening a card keeps your place in the chat', before > 0 && Math.abs(after - before) < 2);
   await footButton('↶ Undo');
   await p.waitForTimeout(200);
   check('Undo removes files the reply created', (await file('notes/new.txt')) === null && (await file('src/app.js')) === 'console.log("hi")');

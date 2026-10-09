@@ -61,11 +61,14 @@ export function createMessages(pane, { onRetry, extra = () => null }) {
   return {
     render(messages, streamingMsg, { toBottom = false, showStats = false } = {}) {
       if (toBottom) stick = true;
+      // Swapping the children briefly empties the pane, which resets its scroll; keep your place.
+      const top = pane.scrollTop;
       pane.replaceChildren(
         ...(messages.length
           ? messages.map((m) => nodeFor(m, m === streamingMsg, showStats))
           : [el('div', 'empty', 'Start a conversation.')]),
       );
+      if (!stick) pane.scrollTop = top;
       follow();
     },
     // Re-render only the message that is streaming.
