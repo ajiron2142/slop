@@ -155,8 +155,9 @@
 
 /* Per-reply Stats card (Settings → Show detailed stats). */
 /* Quiet text buttons under a finished reply: Copy, Stats. */
-.reply-actions { display: flex; gap: 14px; margin-top: 6px; }
-.reply-btn { padding: 0; font-family: var(--font-meta); font-size: 12px; color: var(--muted); background: none; border: 0; cursor: pointer; }
+.reply-actions { display: flex; justify-content: flex-end; gap: 14px; margin-top: 6px; }
+.reply-btn { display: inline-flex; align-items: center; gap: 5px; padding: 0; font-family: var(--font-meta); font-size: 12px; color: var(--muted); background: none; border: 0; cursor: pointer; }
+.reply-btn .icon { width: 13px; height: 13px; }
 .reply-btn:hover, .reply-btn[aria-expanded="true"] { color: var(--ink); }
 .stats-card {
   display: grid;
@@ -164,7 +165,7 @@
   gap: 4px 16px;
   width: fit-content;
   max-width: 100%;
-  margin-top: 6px;
+  margin: 6px 0 0 auto; /* under its button, on the right */
   padding: 10px 12px;
   font-family: var(--font-body);
   font-size: 12.5px;

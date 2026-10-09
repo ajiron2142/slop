@@ -6,6 +6,7 @@ import { copyReply } from '../copy.js';
 
 const LABEL = { user: 'You', assistant: 'Assistant', error: 'Error' };
 const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+const CHECK_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg>';
 
 // The conversation pane: renders messages, follows the bottom while streaming,
 // and handles the Copy (code and whole reply), Retry and Stats buttons. `extra(msg)` lets an add-on put a line of its own
@@ -87,12 +88,13 @@ function messageNode(msg, streaming, openStats, more) {
   const body = el('div', 'body');
   fillBody(body, msg);
   node.append(body);
-  // Under a finished reply: Copy, and Stats when detailed stats are on.
+  // Under a finished reply, on the right so they don't read as part of it: Stats (when detailed
+  // stats are on), then Copy.
   if (msg.role === 'assistant' && !streaming && msg.content) {
     const actions = el('div', 'reply-actions');
-    actions.append(copyButton(msg));
     const stats = openStats && msg.stats ? statsNodes(msg.stats, openStats.has(String(msg.ts))) : [];
     if (stats.length) actions.append(stats[0]);
+    actions.append(copyButton(msg));
     node.append(actions, ...stats.slice(1));
   }
   if (msg.role === 'error') {
@@ -144,17 +146,19 @@ function filesNode(files) {
 }
 
 function copyButton(msg) {
-  const btn = el('button', 'reply-btn copy-reply', 'Copy');
+  const btn = el('button', 'reply-btn copy-reply');
   btn.type = 'button';
   btn.title = 'Copy this reply, formatted for Teams, Outlook and Word';
+  const show = (icon, text) => { btn.innerHTML = icon; btn.append(text); };
+  show(COPY_ICON, 'Copy');
   btn.addEventListener('click', async () => {
     try {
       await copyReply(msg.content, btn.ownerDocument.defaultView);
-      btn.textContent = 'Copied';
+      show(CHECK_ICON, 'Copied');
     } catch {
-      btn.textContent = 'Copy failed';
+      show(COPY_ICON, 'Copy failed');
     }
-    setTimeout(() => { btn.textContent = 'Copy'; }, 1200);
+    setTimeout(() => show(COPY_ICON, 'Copy'), 1200);
   });
   return btn;
 }
