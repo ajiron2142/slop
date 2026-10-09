@@ -9,8 +9,8 @@ const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rec
 const CHECK_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5L19 7"/></svg>';
 
 // The conversation pane: renders messages, follows the bottom while streaming,
-// and handles the Copy (code and whole reply), Retry and Stats buttons. `extra(msg)` lets an add-on put a line of its own
-// under a reply, as { key, node }; the key says when it needs redrawing.
+// and handles the Copy (code and whole reply), Retry and Stats buttons. `extra(msg)` lets an add-on put content of its own
+// under a reply's text, as { key, node }; the key says when it needs redrawing.
 export function createMessages(pane, { onRetry, extra = () => null }) {
   let stick = true;
   const openStats = new Set(); // replies whose Stats card is open, by timestamp
@@ -84,10 +84,10 @@ function messageNode(msg, streaming, openStats, more) {
   node.append(el('span', 'who', LABEL[msg.role]));
   if (msg.files?.length) node.append(filesNode(msg.files));
   if (msg.tools?.length) node.append(el('div', 'tool-log', msg.tools.join(' · ')));
-  if (more) node.append(more.node);
   const body = el('div', 'body');
   fillBody(body, msg);
   node.append(body);
+  if (more) node.append(more.node);
   // Under a finished reply, on the right so they don't read as part of it: Stats (when detailed
   // stats are on), then Copy.
   if (msg.role === 'assistant' && !streaming && msg.content) {

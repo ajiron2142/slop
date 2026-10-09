@@ -19,7 +19,7 @@ const readAs = (file, how) => new Promise((resolve, reject) => {
 // The message box: Enter to send, Shift+Enter for a new line, Send/Stop button,
 // and attachments from the button, paste or drag-and-drop (all the same path).
 // Where folders are supported, the attach button opens a menu: Attach files or Connect folder.
-export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onSend, onStop, notify }) {
+export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onSend, onStop, onReplyNote = () => false, notify }) {
   let files = [];
   let folderName = null;
   let folderEditable = false; // write mode
@@ -119,7 +119,14 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   form.addEventListener('submit', (e) => { e.preventDefault(); submit(); });
   input.addEventListener('input', autosize);
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
+    if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+    e.preventDefault();
+    // write mode: while a reply waits for you, Enter sends what you typed to it instead of stopping it.
+    if (busy && input.value.trim()) {
+      if (onReplyNote(input.value.trim())) { input.value = ''; autosize(); }
+      return;
+    }
+    submit();
   });
   input.addEventListener('paste', (e) => {
     const pasted = [...(e.clipboardData?.files ?? [])];

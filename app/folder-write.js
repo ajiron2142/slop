@@ -1,12 +1,12 @@
 // Optional add-on: lets the model create and edit files in a connected folder, with your approval.
-// Each change shows in the side panel as a diff with Apply / Skip / Apply all remaining, and the
-// latest reply's changes can be undone in one click. Nothing here is saved: edit access, the
-// review and Undo last until you reload or send another message. Git is the long-term undo.
+// Each change shows in the reply as a one-line card (file, +/− lines, status) that opens into its
+// diff. The change waiting for you is open, with Apply / Skip; or type what you want instead and
+// press Enter. The latest reply's changes can be undone in one click. Nothing here is saved: edit
+// access, the review and Undo last until you reload or send another message. Git is the long-term undo.
 //
 // To remove it: delete this file, styles/components/folder-write.css, tests/suites/write.mjs and
 // their lines in index.html and tests/run.mjs (including the "folder-edit" menu item), then
-// remove or simplify each line marked "write mode" in main.js and composer.js. The side panel
-// (components/panel.js) stays; it's generic and simply never opens.
+// remove or simplify each line marked "write mode" in main.js and composer.js.
 
 import { el } from './dom.js';
 import { cleanPath, insidePath } from './folder.js';
@@ -55,18 +55,15 @@ export const WRITE_TOOLS = [
 ];
 
 const MAX_REWRITE = 100 * 1024; // larger files must use edit_file
-const STATUS = { waiting: 'waiting', applied: 'applied', created: 'created', skipped: 'skipped' };
+const STATUS = { waiting: 'waiting for you', applied: 'applied', created: 'created', skipped: 'skipped' };
 
-// The review state for the latest reply. `onChange` lets the chat redraw its status line;
-// `canShow` says whether that chat is on screen, so the panel never opens over another chat.
-export function createWriter({ panel, onChange, canShow = () => true }) {
+// The review state for the latest reply. `onChange` lets the chat redraw the reply's cards.
+export function createWriter({ onChange }) {
   let reply = null; // { msg, root, changes: [], applyAll, done, undone }
-  let selected = 0;
-  let pending = null; // { resolve } while a change waits for you
+  let pending = null; // { resolve, change } while a change waits for you
+  const opened = new Set(); // changes you opened, by index
   let version = 0;
-  const changed = () => { version++; onChange(); if (panel.showing('changes')) show(); };
-
-  // ---- the panel ----
+  const changed = () => { version++; onChange(); };
 
   function button(label, cls, onClick) {
     const b = el('button', `btn ${cls}`, label);
@@ -75,62 +72,60 @@ export function createWriter({ panel, onChange, canShow = () => true }) {
     return b;
   }
 
-  function show() {
-    if (!reply?.changes.length) return;
-    const list = el('div', 'changes');
-    reply.changes.forEach((c, i) => {
-      const row = el('button', `change${i === selected ? ' on' : ''}`);
-      row.type = 'button';
-      row.append(el('span', 'change-path', c.path), counts(c), el('span', `change-status ${c.status}`, STATUS[c.status]));
-      row.addEventListener('click', () => { selected = i; show(); });
-      list.append(row);
-    });
-    const c = reply.changes[selected];
-    const view = el('div', 'changes-view');
-    view.append(list, el('div', 'change-title', c.path), diffNode(c.lines));
-
-    const applied = reply.changes.filter((x) => x.status === 'applied' || x.status === 'created').length;
-    const foot = pending
-      ? [
-          button('Apply', 'primary', () => decide('apply')),
-          button('Skip', '', () => decide('skip')),
-          button('Apply all remaining', '', () => { reply.applyAll = true; decide('apply'); }),
-        ]
-      : reply.undone
-        ? [el('span', 'changes-note', 'Undone.')]
-        : reply.done && applied
-          ? [el('span', 'changes-note', `${applied} file${applied > 1 ? 's' : ''} changed`), button('↶ Undo this reply', 'undo', undo)]
-          : [el('span', 'changes-note', 'Working…')];
-    panel.open({ key: 'changes', title: 'Changes · this reply', body: view, foot });
-  }
-
-  function decide(choice) {
+  // Apply or skip the waiting change. A note (typed instead of Skip) is passed to the model.
+  function decide(choice, note = '') {
     const p = pending;
     pending = null;
-    p?.resolve(choice);
+    p?.resolve({ choice, note });
   }
 
   // ---- the chat ----
 
-  // A status line under the reply that changed files: what's waiting, Review, Undo.
+  // Under the reply that changed files: a summary line, then one card per file. Only the change
+  // waiting for you is open; click any card to open or close it.
   function decoration(msg) {
     if (!reply || reply.msg !== msg || !reply.changes.length) return null;
-    const applied = reply.changes.filter((c) => c.status === 'applied' || c.status === 'created').length;
-    const line = el('div', 'write-log');
-    if (pending) line.append(el('span', 'waiting', `Waiting for you: ${reply.changes[selected].path}`));
-    else if (reply.undone) line.append(el('span', '', 'Changes undone'));
-    else line.append(el('span', '', applied ? `${applied} file${applied === 1 ? '' : 's'} changed` : 'No changes applied'));
-    const review = el('button', 'link', 'Review');
-    review.type = 'button';
-    review.addEventListener('click', show);
-    line.append(review);
-    if (reply.done && applied && !reply.undone) {
-      const u = el('button', 'link', '↶ Undo');
-      u.type = 'button';
-      u.addEventListener('click', undo);
-      line.append(u);
-    }
-    return { key: `w${version}`, node: line };
+    const box = el('div', 'write-review');
+    const add = reply.changes.reduce((n, c) => n + c.lines.stats.add, 0);
+    const del = reply.changes.reduce((n, c) => n + c.lines.stats.del, 0);
+    const done = reply.changes.filter((c) => c.status === 'applied' || c.status === 'created').length;
+    const summary = el('div', 'write-log');
+    summary.append(el('b', '', `${reply.changes.length} file${reply.changes.length === 1 ? '' : 's'} · +${add} −${del}`));
+    if (reply.undone) summary.append(el('span', '', 'Changes undone'));
+    else if (pending) {
+      summary.append(el('span', 'waiting', `Waiting for you: ${pending.change.path}`));
+      summary.append(button('Apply all remaining', '', () => { reply.applyAll = true; decide('apply'); }));
+    } else if (reply.done) {
+      summary.append(el('span', '', done ? `${done} changed` : 'No changes applied'));
+      if (done) summary.append(button('↶ Undo', 'undo', undo));
+    } else summary.append(el('span', '', 'Working…'));
+    box.append(summary);
+
+    reply.changes.forEach((c, i) => {
+      const open = c === pending?.change || opened.has(i);
+      const card = el('div', `change${c === pending?.change ? ' waiting' : ''}`);
+      const head = el('button', 'change-head');
+      head.type = 'button';
+      head.setAttribute('aria-expanded', String(open));
+      head.append(el('span', 'change-arrow', open ? '▾' : '▸'), el('span', 'change-path', c.path), counts(c), el('span', `change-status ${c.status}`, STATUS[c.status]));
+      head.addEventListener('click', () => {
+        if (c === pending?.change) return; // the waiting change stays open
+        if (!opened.delete(i)) opened.add(i);
+        changed();
+      });
+      card.append(head);
+      if (open) {
+        card.append(diffNode(c.lines));
+        if (c === pending?.change) {
+          const acts = el('div', 'change-actions');
+          acts.append(button('Apply', 'primary', () => decide('apply')), button('Skip', '', () => decide('skip')), el('span', 'change-hint', 'or type what you want instead and press Enter'));
+          card.append(acts);
+        }
+      }
+      if (c.note) card.append(el('div', 'change-note', `You: ${c.note}`));
+      box.append(card);
+    });
+    return { key: `w${version}`, node: box };
   }
 
   // ---- running the tools ----
@@ -160,21 +155,23 @@ export function createWriter({ panel, onChange, canShow = () => true }) {
       reply.root = root;
       const change = { path, before, after, lines: diffLines(before ?? '', after, before == null), status: 'waiting' };
       reply.changes.push(change);
-      selected = reply.changes.length - 1;
 
-      let choice = 'apply';
+      let decision = { choice: 'apply', note: '' };
       if (!reply.applyAll) {
-        choice = await new Promise((resolve, reject) => {
-          pending = { resolve };
+        decision = await new Promise((resolve, reject) => {
+          pending = { resolve, change };
           signal.addEventListener('abort', () => { pending = null; change.status = 'skipped'; reject(new DOMException('Stopped', 'AbortError')); }, { once: true });
           changed();
-          if (canShow()) show();
         });
       }
-      if (choice === 'skip') {
+      if (decision.choice === 'skip') {
         change.status = 'skipped';
+        change.note = decision.note;
         changed();
-        return { label: `Skipped ${path}`, result: `The user skipped this change to ${path}. Don't make it again unless they ask.` };
+        const result = decision.note
+          ? `The user skipped this change to ${path} and said instead: "${decision.note}". Do what they asked.`
+          : `The user skipped this change to ${path}. Don't make it again unless they ask.`;
+        return { label: `Skipped ${path}`, result };
       }
       await writeText(root, path, after);
       change.status = before == null ? 'created' : 'applied';
@@ -209,12 +206,17 @@ export function createWriter({ panel, onChange, canShow = () => true }) {
     handles: (name) => name === 'edit_file' || name === 'write_file',
     run,
     decoration,
+    // Typing while a change waits skips it and passes your words to the model. False when nothing waits.
+    instead(note) {
+      if (!pending) return false;
+      decide('skip', note);
+      return true;
+    },
     // A new reply replaces the old one: its changes are no longer undoable from here.
     startReply(msg) {
       decide('skip');
-      panel.close('changes');
       reply = { msg, root: null, changes: [], applyAll: false, done: false, undone: false };
-      selected = 0;
+      opened.clear();
       version++;
     },
     endReply() {
@@ -269,11 +271,15 @@ function counts(change) {
 }
 
 const MAX_SHOWN = 400;
+// The diff, with "@@ line N" where each part starts so you can find it in the file.
 function diffNode(lines) {
   const pre = el('pre', 'diff');
-  for (const [mark, text] of lines.slice(0, MAX_SHOWN)) {
-    const cls = mark === '+' ? 'add' : mark === '-' ? 'del' : mark === '…' ? 'gap' : '';
-    pre.append(el('span', cls, mark === '…' ? '…' : `${mark} ${text}`));
+  let head = true;
+  for (const [mark, text, oldNo, newNo] of lines.slice(0, MAX_SHOWN)) {
+    if (mark === '…') { head = true; continue; }
+    if (head && lines.length > 1) pre.append(el('span', 'gap', `@@ line ${mark === '-' ? oldNo : newNo}`));
+    head = false;
+    pre.append(el('span', mark === '+' ? 'add' : mark === '-' ? 'del' : '', `${mark} ${text}`));
   }
   if (lines.length > MAX_SHOWN) pre.append(el('span', 'gap', `… ${lines.length - MAX_SHOWN} more lines`));
   return pre;

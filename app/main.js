@@ -67,7 +67,7 @@ const sidebar = createSidebar({
 });
 
 const panel = createPanel({ app: $('app'), root: $('panel') });
-const writer = createWriter({ panel, onChange: () => render(), canShow: () => state.active === state.streaming?.chat }); // write mode
+const writer = createWriter({ onChange: () => render() }); // write mode
 
 const messages = createMessages($('messages'), { onRetry: retry, extra: (m) => writer.decoration(m) }); // write mode: the line under a reply
 
@@ -87,6 +87,7 @@ const composer = createComposer({
   onDisconnectFolder: () => setFolder(null),
   onSend: send,
   onStop: () => state.streaming?.controller.abort(),
+  onReplyNote: (text) => writer.instead(text), // write mode: typed instead of Skip
   notify,
 });
 
