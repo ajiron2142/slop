@@ -18,6 +18,7 @@ import { createMeter } from './components/meter.js';
 import { createPanel } from './components/panel.js';
 import { PASTE_TOOLS, hasPastes, isPasteTool, runPasteTool } from './paste.js'; // smart paste
 import { miniSupported, createMini } from './mini.js'; // mini window
+import { createViewer } from './viewer.js'; // image viewer
 import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 
@@ -157,6 +158,7 @@ const settings = createSettings({
   },
 });
 
+createViewer($('chat')); // image viewer
 if (miniSupported) createMini({ button: $('mini-btn'), chat: $('chat'), panel: $('panel'), sidebar: document.querySelector('.sidebar') }); // mini window
 
 $('new-chat').addEventListener('click', newChat);

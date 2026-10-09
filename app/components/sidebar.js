@@ -4,6 +4,8 @@ import { el } from '../dom.js';
 export function createSidebar({ app, list, search, menuButton, collapseButton, scrim, onOpen, onDelete, onSearch, onCollapse }) {
   let timer = 0;
   let shown = null; // the list and active chat last rendered, to skip identical re-renders
+  // Same width as the CSS: below it the sidebar slides over the chat instead of collapsing to a rail.
+  const narrow = window.matchMedia('(max-width: 760px)');
 
   list.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
@@ -18,9 +20,14 @@ export function createSidebar({ app, list, search, menuButton, collapseButton, s
   });
   menuButton.addEventListener('click', () => app.classList.toggle('sidebar-open'));
   scrim.addEventListener('click', close);
+  // The same button collapses the sidebar on a wide window and closes the slide-over on a narrow one.
   collapseButton.addEventListener('click', () => {
+    if (narrow.matches) return close();
     setCollapsed(!app.classList.contains('collapsed'));
     onCollapse(app.classList.contains('collapsed'));
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && app.classList.contains('sidebar-open')) { close(); menuButton.focus(); }
   });
 
   function setCollapsed(collapsed) {

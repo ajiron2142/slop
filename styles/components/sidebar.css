@@ -70,5 +70,4 @@
 
 @media (max-width: 760px) {
   aside.sidebar { position: fixed; }
-  .collapse-btn { display: none; }
 }

@@ -41,6 +41,7 @@ app/                  behaviour
   lines.js            line search and numbered ranges, shared by the folder tools and smart paste
   ignore.js           which files to leave out, read from the folder's .gitignore files (folder tools and git)
   copy.js             Copy reply: formatted HTML for Teams/Outlook plus markdown, in one click
+  viewer.js           image viewer: click an image to see it large (removable add-on)
   mini.js             mini window: pops the chat into a floating always-on-top window (Chrome/Edge, removable add-on)
   stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)
   markdown.js         markdown to sanitised HTML
@@ -131,7 +132,7 @@ Or with Node.js: `npm ci`, `npx playwright install chromium`, then `npm test`. P
 ## Features
 
 - Model picker with search and recent models
-- Attach images (sent to vision models) and text files (inlined) with the button, paste or drag-and-drop
+- Attach images (sent to vision models) and text files (inlined) with the button, paste or drag-and-drop; click an image to see it large
 - Connect a folder to a chat, read-only, so the model can look through it (Chrome and Edge, models with tool support)
 - Git, read-only: when the folder is a repo, the model can read its history and diffs, and the chip shows the branch (e.g. `slop · main ⇡2`)
 - Optional write mode: the model proposes file edits, you review each diff right in the reply, and can undo the latest reply

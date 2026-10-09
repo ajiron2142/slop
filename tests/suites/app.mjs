@@ -166,6 +166,14 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('#menu-btn');
   await p.waitForTimeout(300);
   check('menu button opens the chat list on a phone', await p.evaluate(() => document.getElementById('app').classList.contains('sidebar-open')));
+  const isOpen = () => p.evaluate(() => document.getElementById('app').classList.contains('sidebar-open'));
+  await p.click('#collapse-btn');
+  await p.waitForTimeout(300);
+  check('the sidebar\'s own button closes it, and leaves the wide-window setting alone', !(await isOpen()) && await p.evaluate(() => document.getElementById('app').classList.contains('collapsed')));
+  await p.click('#menu-btn');
+  await p.waitForTimeout(300);
+  await p.keyboard.press('Escape');
+  check('Escape closes it too', !(await isOpen()));
   check('nothing scrolls sideways on a phone', await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
 
   check('no errors in the browser console', errors.length === 0);
