@@ -57,17 +57,19 @@ export async function listModels(settings) {
   return [...new Set((body.data ?? []).map((m) => m.id).filter(Boolean))].sort();
 }
 
-// Context limits and prices per model from LiteLLM's /model/info. Optional: if the proxy
-// doesn't allow it, the meter just shows tokens without limits or costs.
+// Context limits and prices per model from LiteLLM's /v2/model/info, or /model/info on proxies
+// where that's the one with data. Optional: if the proxy allows neither, the meter just shows
+// tokens without limits or costs.
 export async function getModelInfo(settings) {
-  try {
-    const body = await (await request(settings, '/model/info')).json();
-    const info = {};
-    for (const m of body.data ?? []) if (m.model_name && !info[m.model_name]) info[m.model_name] = m.model_info ?? {};
-    return info;
-  } catch {
-    return {};
+  for (const path of ['/v2/model/info', '/model/info']) {
+    try {
+      const body = await (await request(settings, path)).json();
+      const info = {};
+      for (const m of body.data ?? []) if (m.model_name && !info[m.model_name]) info[m.model_name] = m.model_info ?? {};
+      if (Object.keys(info).length) return info;
+    } catch {}
   }
+  return {};
 }
 
 // Your key's budget from LiteLLM's /key/info: spend, max_budget and budget_reset_at.

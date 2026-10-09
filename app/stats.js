@@ -1,5 +1,5 @@
 // Usage numbers for the cost meter and the per-reply Stats card. Plain arithmetic on what
-// each reply recorded (msg.stats) and what LiteLLM publishes about each model (/model/info).
+// each reply recorded (msg.stats) and what LiteLLM publishes about each model (/v2/model/info).
 
 // A model's prices per token, or null when the proxy doesn't say. Missing prices count as free
 // (a model LiteLLM knows but charges nothing for, like a locally hosted one).

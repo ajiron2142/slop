@@ -28,7 +28,7 @@ export async function startSite(root) {
 }
 
 const MODELS = ['claude-sonnet-4', 'claude-haiku', 'gpt-4o', 'gpt-4o-mini', 'llama-3.1-70b', 'mistral-large', 'gemini-pro', 'deepseek-v3'];
-// Context limits and prices, as LiteLLM's /model/info reports them. llama has no price (free).
+// Context limits and prices, as LiteLLM's /v2/model/info reports them. llama has no price (free).
 const INFO = [
   { model_name: 'claude-haiku', model_info: { max_input_tokens: 200000, input_cost_per_token: 0.8e-6, output_cost_per_token: 4e-6, cache_read_input_token_cost: 0.08e-6 } },
   { model_name: 'gpt-4o-mini', model_info: { max_input_tokens: 128000, input_cost_per_token: 0.15e-6, output_cost_per_token: 0.6e-6 } },
@@ -88,7 +88,9 @@ export async function startMock() {
     res.setHeader('Access-Control-Allow-Headers', '*');
     if (req.method === 'OPTIONS') return res.end();
     if (req.url === '/v1/models') return res.end(JSON.stringify({ data: Array.from({ length: 40 }, (_, i) => ({ id: MODELS[i % 8] + (i >= 8 ? `-v${Math.floor(i / 8)}` : '') })) }));
-    if (req.url === '/model/info') return res.end(JSON.stringify({ data: INFO }));
+    // Like the deployments where only the v2 endpoint has the data.
+    if (req.url === '/v2/model/info') return res.end(JSON.stringify({ data: INFO }));
+    if (req.url === '/model/info') return res.end(JSON.stringify({ data: [] }));
     // A key with a $50 monthly budget, $12.40 spent.
     if (req.url === '/key/info') {
       const day = 86400000;
