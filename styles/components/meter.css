@@ -58,22 +58,16 @@
 .meter-cap.bad { color: var(--meter-bad); }
 .meter-rule { width: 100%; margin: 2px 0; border: 0; border-top: 1px solid var(--line); }
 .meter-sec { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.meter-pairs { display: flex; gap: 22px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.meter-pair b { margin-left: 6px; font-weight: 500; color: var(--ink); }
-.meter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.meter-chip { max-width: 100%; padding: 2px 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; background: var(--surface); border-radius: 999px; }
-.meter-table-wrap { overflow-x: auto; }
-.meter-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
-.meter-table th, .meter-table td { padding: 5px 0 5px 8px; text-align: right; white-space: nowrap; }
-.meter-table tr:first-child th { padding-top: 0; font-size: 11.5px; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line); }
-.meter-table th:first-child { padding-left: 0; text-align: left; }
-.meter-table th.meter-model { max-width: 96px; overflow: hidden; text-overflow: ellipsis; font-weight: 400; color: var(--ink); }
-.meter-table tr.total td, .meter-table tr.total th { font-weight: 600; color: var(--ink); border-top: 1px solid var(--line); }
-/* Each model's share of the cost: a thin bar and its percentage, under its row. */
-.meter-share td { padding: 0 0 6px; }
-.meter-share-line { display: flex; align-items: center; gap: 8px; }
-.meter-share-line .meter-bar { flex: 1; height: 3px; }
-.meter-share-line small { min-width: 26px; font-size: 10.5px; color: var(--muted); text-align: right; }
+.meter-line .meter-sec { align-self: center; }
+/* One block per model: name and cost, then (with detailed stats) speed and tokens, then its share. */
+.meter-model { display: grid; gap: 2px; }
+.meter-model-top { display: flex; justify-content: space-between; gap: 10px; font-variant-numeric: tabular-nums; }
+.meter-model-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.meter-free { color: var(--muted); }
+.meter-model-meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meter-share { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.meter-share .meter-bar { flex: 1; height: 3px; }
+.meter-share small { min-width: 26px; font-size: 10.5px; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 .meter-rows { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; font-variant-numeric: tabular-nums; }
 .meter-rows .k { color: var(--muted); }
 .meter-rows .v { text-align: right; }

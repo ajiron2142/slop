@@ -1,9 +1,10 @@
 import { el, onClickOutside } from '../dom.js';
 import { fmt } from '../stats.js';
 
-// The usage meter above the message box: "13% · $0.04". Clicking it opens a summary right above it:
-// the context window, your key's budget (when LiteLLM reports one), and this chat's cost and cache
-// use. With "Show detailed stats" on, it adds a breakdown by model.
+// The usage meter in the chat header: "13% · $0.04". Clicking it opens a summary right below it:
+// the context window, your key's budget (when LiteLLM reports one), this chat's cost and cache
+// use, and each model the chat used with its cost. "Show detailed stats" adds each model's speed
+// and tokens, and what the chat grows by per reply.
 export function createMeter({ row, button, pop }) {
   const ring = el('span', 'meter-ring');
   const label = el('span', 'meter-label');
@@ -34,8 +35,7 @@ export function createMeter({ row, button, pop }) {
         ...context(sum, model),
         ...budget(key),
         el('hr', 'meter-rule'),
-        ...thisChat(sum),
-        ...(detailed ? [el('hr', 'meter-rule'), ...breakdown(sum)] : []),
+        ...thisChat(sum, detailed),
       );
     },
   };
@@ -77,62 +77,45 @@ function budget(key) {
   ];
 }
 
-function thisChat(sum) {
-  const pair = (k, v) => {
-    const node = el('span', 'meter-pair', k);
-    node.append(el('b', '', v));
-    return node;
-  };
-  const stats = el('div', 'meter-pairs');
-  stats.append(
-    pair('Cost', sum.cost == null ? '—' : fmt.usd(sum.cost)),
-    pair('Cache', sum.input ? `${Math.round((sum.cached / sum.input) * 100)}%` : '—'),
-  );
-  const chips = el('div', 'meter-chips');
-  for (const m of sum.models) chips.append(el('span', 'meter-chip', `${m.model} ${Math.round((m.replies / sum.replies) * 100)}%`));
-  return [el('div', 'meter-sec', 'This chat'), stats, chips];
-}
+// "This chat" with its cost and cache use, then one block per model, most expensive first
+// (free ones after, by tokens). With several models, each has a bar for its share of the cost.
+function thisChat(sum, detailed) {
+  const head = el('div', 'meter-line');
+  const right = el('span', 'meter-detail', `Cache ${sum.input ? `${Math.round((sum.cached / sum.input) * 100)}%` : '—'} · Cost `);
+  right.append(el('b', '', sum.cost == null ? '—' : fmt.usd(sum.cost)));
+  head.append(el('span', 'meter-sec', 'This chat'), right);
 
-// One row per model (so any number of models fits), each with a bar for its share of the
-// chat's cost, then a Total row.
-function breakdown(sum) {
-  const head = el('div', 'meter-sec');
-  head.append(el('span', '', 'Breakdown'));
-  const many = sum.models.length > 1;
-  const table = el('table', 'meter-table');
-  const row = (cells, cls = '') => {
-    const tr = el('tr', cls);
-    cells.forEach((c, i) => tr.append(el(i ? 'td' : 'th', i ? '' : 'meter-model', c)));
-    if (cls === '') tr.firstChild.title = cells[0];
-    table.append(tr);
-  };
-  const speed = (s) => (s ? `${Math.round(s)}/s` : '—');
-  const top = el('tr');
-  for (const h of ['Model', 'In', 'Out', 'Avg speed', 'Cost']) top.append(el('th', '', h));
-  table.append(top);
+  const cost = (m) => (m.priced ? m.cost : 0);
+  const models = [...sum.models].sort((a, b) => cost(b) - cost(a) || b.input + b.output - (a.input + a.output));
   // Shares of what the priced models cost; a model without a known price gets an empty bar.
-  const total = many ? sum.models.reduce((a, m) => a + (m.priced ? m.cost : 0), 0) : 0;
-  for (const m of sum.models) {
-    row([m.model, fmt.short(m.input), fmt.short(m.output), speed(m.speed), m.priced ? fmt.usd(m.cost) : '—']);
+  const total = models.length > 1 ? models.reduce((a, m) => a + cost(m), 0) : 0;
+  const blocks = models.map((m) => {
+    const block = el('div', 'meter-model');
+    const top = el('div', 'meter-model-top');
+    const name = el('span', 'meter-model-name', m.model);
+    name.title = m.model;
+    top.append(name, el('span', m.priced && m.cost ? '' : 'meter-free', m.priced ? fmt.usd(m.cost) : '—'));
+    block.append(top);
+    if (detailed) {
+      const speed = m.speed ? `${Math.round(m.speed)}/s · ` : '';
+      block.append(el('div', 'meter-model-meta', `${speed}${fmt.short(m.input + m.output)} tokens (${fmt.short(m.input)} in · ${fmt.short(m.output)} out)`));
+    }
     if (total) {
       const share = m.priced ? Math.round((m.cost / total) * 100) : 0;
-      const tr = el('tr', 'meter-share');
-      const td = el('td');
-      td.colSpan = 5;
-      const line = el('div', 'meter-share-line');
+      const line = el('div', 'meter-share');
       line.append(bar(share), el('small', '', m.priced ? `${share}%` : ''));
-      td.append(line);
-      tr.append(td);
-      table.append(tr);
+      block.append(line);
     }
-  }
-  if (many) row(['Total', fmt.short(sum.input), fmt.short(sum.output), speed(sum.speed), sum.cost != null ? fmt.usd(sum.cost) : '—'], 'total');
-  const scroll = el('div', 'meter-table-wrap');
-  scroll.append(table);
+    return block;
+  });
 
-  const extra = el('div', 'meter-rows');
-  const add = (k, v) => extra.append(el('span', 'k', k), el('span', 'v', v));
-  if (sum.growth != null) add('Grows per reply', `~${fmt.int(sum.growth)} tokens`);
-  if (sum.nextCost != null) add('Next reply costs about', sum.nextCost === 0 ? 'Free' : `~${fmt.usd(sum.nextCost)}`);
-  return [head, scroll, extra];
+  const nodes = [head, ...blocks];
+  if (detailed) {
+    const extra = el('div', 'meter-rows');
+    const add = (k, v) => extra.append(el('span', 'k', k), el('span', 'v', v));
+    if (sum.growth != null) add('Grows per reply', `~${fmt.int(sum.growth)} tokens`);
+    if (sum.nextCost != null) add('Next reply costs about', sum.nextCost === 0 ? 'Free' : `~${fmt.usd(sum.nextCost)}`);
+    if (extra.childElementCount) nodes.push(extra);
+  }
+  return nodes;
 }
