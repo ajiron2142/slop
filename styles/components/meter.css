@@ -63,11 +63,17 @@
 .meter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .meter-chip { max-width: 100%; padding: 2px 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; background: var(--surface); border-radius: 999px; }
 .meter-table-wrap { overflow-x: auto; }
-.meter-table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
-.meter-table th, .meter-table td { padding: 4px 0 4px 12px; text-align: right; white-space: nowrap; border-top: 1px solid var(--line); }
-.meter-table tr:first-child th { padding-top: 0; font-weight: 500; color: var(--muted); border-top: 0; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
-.meter-table th:first-child { padding-left: 0; text-align: left; font-weight: 400; color: var(--muted); }
-.meter-table tr.total td, .meter-table tr.total th { font-weight: 600; color: var(--ink); }
+.meter-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.meter-table th, .meter-table td { padding: 5px 0 5px 8px; text-align: right; white-space: nowrap; }
+.meter-table tr:first-child th { padding-top: 0; font-size: 11.5px; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--line); }
+.meter-table th:first-child { padding-left: 0; text-align: left; }
+.meter-table th.meter-model { max-width: 96px; overflow: hidden; text-overflow: ellipsis; font-weight: 400; color: var(--ink); }
+.meter-table tr.total td, .meter-table tr.total th { font-weight: 600; color: var(--ink); border-top: 1px solid var(--line); }
+/* Each model's share of the cost: a thin bar and its percentage, under its row. */
+.meter-share td { padding: 0 0 6px; }
+.meter-share-line { display: flex; align-items: center; gap: 8px; }
+.meter-share-line .meter-bar { flex: 1; height: 3px; }
+.meter-share-line small { min-width: 26px; font-size: 10.5px; color: var(--muted); text-align: right; }
 .meter-rows { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; font-variant-numeric: tabular-nums; }
 .meter-rows .k { color: var(--muted); }
 .meter-rows .v { text-align: right; }

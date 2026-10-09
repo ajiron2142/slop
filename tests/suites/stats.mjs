@@ -38,13 +38,17 @@ export default async function ({ browser, site, mock, check }) {
   await send(p, 'echo second');
   await p.click('#meter-btn');
   const pop2 = await p.textContent('#meter-pop');
-  check('breakdown has a column per model and a Total', pop2.includes('Breakdown') && pop2.includes('llama-3.1-70b') && pop2.includes('claude-haiku') && pop2.includes('Avg speed') && pop2.includes('Total'));
+  check('breakdown has a row per model and a Total', pop2.includes('Breakdown') && pop2.includes('llama-3.1-70b') && pop2.includes('claude-haiku') && pop2.includes('Avg speed') && pop2.includes('Total'));
   check('share of replies by model', pop2.includes('claude-haiku 50%') && pop2.includes('llama-3.1-70b 50%'));
   check('a model with no price counts as free', pop2.includes('Free') && pop2.includes('Next reply costs aboutFree'));
   check('growth per reply shown', pop2.includes('Grows per reply'));
   check('context is measured against the newly picked model', pop2.includes('/ 32.8k'));
-  const sums = await p.$$eval('.meter-table tr', (trs) => trs.slice(1, 4).map((tr) => [...tr.querySelectorAll('td')].map((td) => +td.textContent.replace(/,/g, ''))));
-  check('Input, Output and Cached add up to their totals', sums.every((r) => r.slice(0, -1).reduce((a, b) => a + b, 0) === r.at(-1)));
+  const rows = await p.$$eval('.meter-table tr:not(.meter-share)', (trs) => trs.slice(1).map((tr) => [...tr.children].map((c) => c.textContent)));
+  const num = (t) => (t.endsWith('k') ? parseFloat(t) * 1000 : Number(t));
+  const adds = (col) => Math.abs(rows.slice(0, -1).reduce((a, r) => a + num(r[col]), 0) - num(rows.at(-1)[col])) <= 100; // rows are rounded to 0.1k
+  check('In and Out add up to their totals', rows.at(-1)[0] === 'Total' && adds(1) && adds(2));
+  const shares = await p.$$eval('.meter-share small', (xs) => xs.map((x) => x.textContent));
+  check('each model shows its share of the cost', shares.join() === '100%,0%');
   await p.keyboard.press('Escape');
 
   await send(p, 'cut this reply short');

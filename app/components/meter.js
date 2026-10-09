@@ -93,26 +93,40 @@ function thisChat(sum) {
   return [el('div', 'meter-sec', 'This chat'), stats, chips];
 }
 
-// Rows of figures, one column per model plus Total.
+// One row per model (so any number of models fits), each with a bar for its share of the
+// chat's cost, then a Total row.
 function breakdown(sum) {
   const head = el('div', 'meter-sec');
   head.append(el('span', '', 'Breakdown'));
-  const cols = sum.models.length > 1 ? [...sum.models, { model: 'Total', total: true, ...sum, priced: sum.cost != null }] : sum.models;
+  const many = sum.models.length > 1;
   const table = el('table', 'meter-table');
-  const tr = (cells, cls = '') => {
-    const row = el('tr', cls);
-    cells.forEach((c, i) => row.append(el(i ? 'td' : 'th', '', c)));
-    table.append(row);
+  const row = (cells, cls = '') => {
+    const tr = el('tr', cls);
+    cells.forEach((c, i) => tr.append(el(i ? 'td' : 'th', i ? '' : 'meter-model', c)));
+    if (cls === '') tr.firstChild.title = cells[0];
+    table.append(tr);
   };
-  const top = el('tr');
-  top.append(el('th', ''), ...cols.map((c) => el('th', c.total ? 'total' : '', c.model)));
-  table.append(top);
   const speed = (s) => (s ? `${Math.round(s)}/s` : '—');
-  tr(['Input', ...cols.map((c) => fmt.int(c.input))]);
-  tr(['Output', ...cols.map((c) => fmt.int(c.output))]);
-  tr(['Cached', ...cols.map((c) => fmt.int(c.cached))]);
-  tr(['Avg speed', ...cols.map((c) => speed(c.speed))]);
-  tr(['Cost', ...cols.map((c) => (c.priced ? fmt.usd(c.cost) : '—'))], 'total');
+  const top = el('tr');
+  for (const h of ['Model', 'In', 'Out', 'Avg speed', 'Cost']) top.append(el('th', '', h));
+  table.append(top);
+  // Shares of what the priced models cost; a model without a known price gets an empty bar.
+  const total = many ? sum.models.reduce((a, m) => a + (m.priced ? m.cost : 0), 0) : 0;
+  for (const m of sum.models) {
+    row([m.model, fmt.short(m.input), fmt.short(m.output), speed(m.speed), m.priced ? fmt.usd(m.cost) : '—']);
+    if (total) {
+      const share = m.priced ? Math.round((m.cost / total) * 100) : 0;
+      const tr = el('tr', 'meter-share');
+      const td = el('td');
+      td.colSpan = 5;
+      const line = el('div', 'meter-share-line');
+      line.append(bar(share), el('small', '', m.priced ? `${share}%` : ''));
+      td.append(line);
+      tr.append(td);
+      table.append(tr);
+    }
+  }
+  if (many) row(['Total', fmt.short(sum.input), fmt.short(sum.output), speed(sum.speed), sum.cost != null ? fmt.usd(sum.cost) : '—'], 'total');
   const scroll = el('div', 'meter-table-wrap');
   scroll.append(table);
 
