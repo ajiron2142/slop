@@ -139,7 +139,7 @@ export async function startMock() {
         if (results.length === 0) {
           sse(res, { choices: [{ delta: { content: 'Making two changes.', tool_calls: [
             call('e0', 'edit_file', { path: 'src/app.js', old_text: '"hi"', new_text: '"hello"' }),
-            call('e1', 'write_file', { path: 'notes/new.txt', content: 'fresh\n' }),
+            call('e1', 'write_file', { path: 'wproject/notes/new.txt', content: 'fresh\n' }), // models often start with the folder's name
           ] } }] });
         } else if (results.length === 2) {
           sse(res, { choices: [{ delta: { tool_calls: [call('e0', 'edit_file', { path: 'src/app.js', old_text: 'nope', new_text: 'x' })] } }] });

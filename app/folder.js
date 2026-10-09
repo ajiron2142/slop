@@ -19,7 +19,8 @@ export const folderPrompt = (handle) =>
   `The user connected their local folder "${handle.name}" to this chat (read-only). ` +
   'To find something, use search_files first, then read_file with start_line/end_line around the matches ' +
   'instead of reading whole files. Use list_files to see how the folder is laid out. ' +
-  'You can call several tools at once.';
+  'You can call several tools at once. ' +
+  `Paths start inside the folder: "src/app.js", not "${handle.name}/src/app.js".`;
 
 const str = (description) => ({ type: 'string', description });
 const int = (description) => ({ type: 'integer', description });
@@ -58,7 +59,7 @@ export async function runTool(root, name, argsJson) {
   let args = {};
   try {
     args = JSON.parse(argsJson || '{}');
-    const path = cleanPath(args.path);
+    const path = await insidePath(root, args.path);
     if (name === 'list_files') return { label: `Listed ${path || root.name}`, result: await list(root, path, args.pattern) };
     if (name === 'search_files') return { label: `Searched "${args.query}"${path ? ` in ${path}` : ''}`, result: await search(root, path, args) };
     if (name === 'read_file') return await read(root, path, args);
@@ -69,6 +70,15 @@ export async function runTool(root, name, argsJson) {
 }
 
 export const cleanPath = (path) => String(path ?? '').split('/').filter((p) => p && p !== '.').join('/');
+
+// A path from the model, inside the folder. Models often start it with the folder's own name
+// ("test/hello.txt" in a folder called test); that's dropped unless a subfolder really has that name.
+export async function insidePath(root, path) {
+  const clean = cleanPath(path);
+  const [first, ...rest] = clean.split('/');
+  if (first !== root.name) return clean;
+  try { await root.getDirectoryHandle(first); return clean; } catch { return rest.join('/'); }
+}
 
 async function resolve(root, path, kind) {
   const parts = path.split('/').filter(Boolean);

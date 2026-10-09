@@ -42,6 +42,7 @@ export default async function ({ browser, site, mock, check }) {
   await waiting();
   const sent = mock.requests.at(-1);
   check('edit mode sends the write tools and says how to use them', sent.toolNames.includes('edit_file') && sent.toolNames.includes('write_file') && sent.system.includes('change files'));
+  check('the model is told to use the tools, not ask first, and where paths start', sent.system.includes("don't ask in the chat first") && sent.system.includes('not "wproject/src/app.js"'));
   check('the side panel opens with the change to review', (await p.textContent('#panel .panel-title')) === 'Changes · this reply' && (await p.textContent('#panel .diff')).includes('+ console.log("hello")'));
   check('the chat says what is waiting', (await p.textContent('.write-log')).includes('Waiting for you: src/app.js'));
   check('nothing is written before you choose', (await file('src/app.js')) === 'console.log("hi")');
@@ -53,7 +54,7 @@ export default async function ({ browser, site, mock, check }) {
   const reply = await p.textContent('.msg.assistant:last-of-type .body');
   check('the model hears what was applied, skipped and refused', reply.includes('EDIT[Applied the change to src/app.js.]') && reply.includes('CREATE[The user skipped this change') && reply.includes("BAD[Error: old_text wasn't found in src/app.js"));
   check('applied changes are written', (await file('src/app.js')) === 'console.log("hello")');
-  check('skipped changes are not', (await file('notes/new.txt')) === null);
+  check('skipped changes are not', (await file('notes/new.txt')) === null && (await file('wproject/notes/new.txt')) === null);
   check('the reply lists what happened', (await p.textContent('.msg.assistant:last-of-type .tool-log')) === "Edited src/app.js (+1 −1) · Skipped notes/new.txt · Couldn't change src/app.js");
   check('the reply offers Undo', (await p.textContent('.write-log')).includes('1 file changed') && (await p.isVisible('#panel .panel-foot button:text-is("↶ Undo this reply")')));
 

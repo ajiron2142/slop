@@ -57,6 +57,7 @@ export default async function ({ browser, site, mock, check }) {
     const root = await (await navigator.storage.getDirectory()).getDirectoryHandle('project');
     return (await (await import('./app/folder.js')).runTool(root, name, JSON.stringify(args)));
   }, [name, args]);
+  check('a path that starts with the folder\'s own name still works', (await tool('read_file', { path: 'project/src/app.js' })).result === 'console.log("hi")');
   const found = (await tool('search_files', { query: 'timeout' })).result;
   check('search finds matches with line numbers, grouped by file', found.startsWith('2 matching lines in 2 files') && found.includes('deploy/route.yaml\n  3: timeout: 30s') && found.includes('deploy/notes.txt\n  1: Timeout raised'));
   check('search skips lockfiles, binaries and node_modules', !found.includes('package-lock') && !found.includes('logo.png') && !found.includes('junk'));

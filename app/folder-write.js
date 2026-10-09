@@ -9,13 +9,15 @@
 // (components/panel.js) stays; it's generic and simply never opens.
 
 import { el } from './dom.js';
-import { cleanPath } from './folder.js';
+import { cleanPath, insidePath } from './folder.js';
 import { diffLines } from './diff.js';
 
 export const pickEditableFolder = () => window.showDirectoryPicker({ mode: 'readwrite' });
 
 export const writePrompt =
   'You can also change files in this folder; the user reviews each change before it is written. ' +
+  "When the user asks for a change, make it with the tools straight away: don't ask in the chat first " +
+  'or show the new content as text, because the app already asks the user to approve each change. ' +
   'Use edit_file to change part of a file: old_text must match the file exactly and appear once ' +
   '(copy it without the line numbers read_file adds). Use write_file for new files. ' +
   "If the user skips a change, don't make it again unless they ask.";
@@ -138,7 +140,7 @@ export function createWriter({ panel, onChange, canShow = () => true }) {
     const name = call.function.name;
     try {
       args = JSON.parse(call.function.arguments || '{}');
-      const path = cleanPath(args.path);
+      const path = await insidePath(root, args.path);
       if (!path || path.split('/').includes('..')) throw new Error('give a path inside the folder');
       const before = await readText(root, path);
       let after;
