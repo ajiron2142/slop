@@ -7,6 +7,7 @@ A lean, static chat UI for a LiteLLM proxy. These are the musts. Read them befor
 - **Small and simple.** Add a feature only if it brings a lot of value. Prefer removing to adding.
 - **No backend.** Everything runs in the browser from static files (nginx serves them). No server code, no storage service.
 - **Ephemeral.** Keep only what must be kept (chats, settings). Review state, pastes, edit access and Undo live in memory and are gone after a reload.
+- **Connections are optional and self-service.** The core app works on its own with just a LiteLLM URL and key. Anything that connects elsewhere (sign-in, GitLab, …) is opt-in, set up by each person for themselves, read-only where possible, and needs no one to manage it.
 - **Ask before anything heavy or anything that changes how the app works.** Show a mockup (an artifact that also works on a phone, plus a desktop screenshot) before design changes.
 - **No emojis in the UI.** Text symbols like ⓘ ⇡ ⇣ ↶ are fine.
 
