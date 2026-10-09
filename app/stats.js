@@ -1,12 +1,14 @@
 // Usage numbers for the cost meter and the per-reply Stats card. Plain arithmetic on what
 // each reply recorded (msg.stats) and what LiteLLM publishes about each model (/v2/model/info).
 
-// A model's prices per token, or null when the proxy doesn't say. Missing prices count as free
-// (a model LiteLLM knows but charges nothing for, like a locally hosted one).
+// A model's prices per token, or null (unknown) unless LiteLLM gives both an input and an output
+// price. A price of 0 is free. Without a separate cached-input price, cached tokens cost the same
+// as other input, which is what no cache discount means.
 export function pricesOf(info) {
-  if (!info) return null;
-  const input = info.input_cost_per_token ?? 0;
-  return { input, output: info.output_cost_per_token ?? 0, cached: info.cache_read_input_token_cost ?? input };
+  const input = info?.input_cost_per_token;
+  const output = info?.output_cost_per_token;
+  if (typeof input !== 'number' || typeof output !== 'number') return null;
+  return { input, output, cached: info.cache_read_input_token_cost ?? input };
 }
 
 // The context window. Only max_input_tokens says that: LiteLLM's max_tokens is often the output

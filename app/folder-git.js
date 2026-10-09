@@ -9,6 +9,7 @@
 
 import { fromModel, forModel } from './folder.js';
 import { diffLines, unifiedText } from './diff.js';
+import { parseIgnore, ignoreRulesFor, withIgnoreFile, isIgnored } from './ignore.js';
 
 export const gitPrompt =
   'The folder is a git repository. Use git_log for its history and git_diff to see what changed, ' +
@@ -276,11 +277,11 @@ async function workingChanges(repo, tree, path) {
     const sha = same ? known.sha : await hashBlob(bytes);
     if (sha !== before) out.push({ path: p, before, after: bytes ? { bytes } : sha });
   }
-  // New files git doesn't track yet, minus ignored ones.
-  const ignored = await ignoreRules(repo);
+  // New files git doesn't track yet, minus ignored ones (.gitignore files and .git/info/exclude).
   const start = path ? await dirAt(repo.root, path) : repo.root;
   if (start) {
-    for (const [p, handle] of await walkFiles(start, path, ignored)) {
+    const exclude = parseIgnore((await readText(repo.git, 'info/exclude')) ?? '');
+    for (const [p, handle] of await walkFiles(start, path, await ignoreRulesFor(repo.root, path, exclude))) {
       if (tracked.has(p)) continue;
       const file = await handle.getFile();
       out.push({ path: p, before: null, after: { bytes: file.size > MAX_BLOB ? new Uint8Array([0]) : new Uint8Array(await file.arrayBuffer()) } });
@@ -289,38 +290,15 @@ async function workingChanges(repo, tree, path) {
   return out;
 }
 
-async function walkFiles(dir, prefix, ignored, out = []) {
+async function walkFiles(dir, prefix, rules, out = []) {
   for await (const entry of dir.values()) {
     if (out.length >= MAX_UNTRACKED) break;
     const path = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (entry.name === '.git' || ignored(path, entry.kind === 'directory')) continue;
+    if (isIgnored(rules, path, entry.kind === 'directory')) continue;
     if (entry.kind === 'file') out.push([path, entry]);
-    else await walkFiles(entry, path, ignored, out);
+    else await walkFiles(entry, path, await withIgnoreFile(entry, path, rules), out);
   }
   return out;
-}
-
-// The top-level .gitignore and .git/info/exclude (nested .gitignore files aren't read).
-async function ignoreRules(repo) {
-  const text = `${(await readText(repo.root, '.gitignore')) ?? ''}\n${(await readText(repo.git, 'info/exclude')) ?? ''}`;
-  const rules = [];
-  for (let line of text.split('\n')) {
-    line = line.trim();
-    if (!line || line.startsWith('#')) continue;
-    const negate = line.startsWith('!');
-    if (negate) line = line.slice(1);
-    const dirOnly = line.endsWith('/');
-    line = line.replace(/\/+$/, '');
-    const anchored = line.includes('/');
-    line = line.replace(/^\//, '');
-    const body = line.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\/|\/\*\*|\*\*|\*|\?/g, (m) => (m === '**/' ? '(.*/)?' : m === '/**' ? '/.*' : m === '**' ? '.*' : m === '*' ? '[^/]*' : '[^/]'));
-    rules.push({ negate, dirOnly, re: new RegExp(anchored ? `^${body}$` : `(^|/)${body}$`) });
-  }
-  return (path, isDir) => {
-    let hit = false;
-    for (const r of rules) if ((!r.dirOnly || isDir) && r.re.test(path)) hit = !r.negate;
-    return hit;
-  };
 }
 
 // .git/index: path -> { sha, size, mtime } for the files git tracks (versions 2 to 4).

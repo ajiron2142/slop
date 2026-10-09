@@ -14,7 +14,8 @@ A lean, static chat UI for a LiteLLM proxy. These are the musts. Read them befor
 
 - **Deterministic rules, never guesses.** Logic follows fixed, stated rules: the same input always gives the same result, and the user can predict it. Don't infer intent from wording, don't add "if it looks like X, assume Y" fallbacks, don't silently fix up bad input. If input breaks a rule, refuse it with a message that shows the right form. Examples:
   - Paths between the app and the model always start with the folder's name (`test/src/app.js`); anything else is refused.
-  - The context limit comes only from LiteLLM's `max_input_tokens`; without it the limit is shown as unknown.
+  - The context limit comes only from LiteLLM's `max_input_tokens`; prices only from `input_cost_per_token` and `output_cost_per_token` (0 is free). A missing value is shown as unknown.
+  - What the folder tools leave out comes only from the folder's `.gitignore` files; no built-in skip lists.
   - Thresholds are fixed numbers (a paste over 500 lines or 40,000 characters becomes a chip).
 - **Modular, like Legos.** Each optional feature lives in its own files and plugs in through small hooks marked with a comment (`// write mode`, `// git`, `// smart paste`, `// mini window`). Its header says exactly how to remove it. Removing one must never touch the others.
 - **No dependencies.** Plain ES modules, no build step. The only libraries are vendored in `vendor/` (see its README), and new ones need a very good reason.

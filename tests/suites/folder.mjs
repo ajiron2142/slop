@@ -15,6 +15,14 @@ const fakePicker = async () => {
   await write(dir, 'README.md', '# Project');
   await write(await dir.getDirectoryHandle('src', { create: true }), 'app.js', 'console.log("hi")');
   await write(await dir.getDirectoryHandle('node_modules', { create: true }), 'junk.js', 'x');
+  // What to leave out comes only from .gitignore files: the top one, and one in a subfolder.
+  await write(dir, '.gitignore', 'node_modules/\n*.log\n!keep.log\n');
+  await write(dir, 'debug.log', 'timeout');
+  await write(dir, 'keep.log', 'kept');
+  const docs = await dir.getDirectoryHandle('docs', { create: true });
+  await write(docs, '.gitignore', 'draft.md\n');
+  await write(docs, 'draft.md', 'draft');
+  await write(docs, 'guide.md', 'guide');
   // For search and ranged reads.
   const deploy = await dir.getDirectoryHandle('deploy', { create: true });
   await write(deploy, 'route.yaml', 'kind: Route\nspec:\n  timeout: 30s\n  host: chat.example.com\n');
@@ -47,7 +55,7 @@ export default async function ({ browser, site, mock, check }) {
 
   await send(p, 'folder: what is in here?');
   const reply = await p.textContent('.msg.assistant:last-of-type .body');
-  check('model can list files (node_modules skipped)', reply.includes('FILES[project/deploy/notes.txt,project/deploy/route.yaml,project/logo.png,project/long.txt,project/package-lock.json,project/README.md,project/src/app.js]'));
+  check('listing follows the .gitignore files, nested ones and ! included', reply.includes('FILES[project/.gitignore,project/deploy/notes.txt,project/deploy/route.yaml,project/docs/.gitignore,project/docs/guide.md,project/keep.log,project/logo.png,project/long.txt,project/package-lock.json,project/README.md,project/src/app.js]'));
   check('model can read a file', reply.includes('APP[console.log("hi")]'));
   check('paths outside the folder are refused', reply.includes('paths must stay inside the folder'));
   check('text before a tool call is kept', reply.startsWith('Let me look.'));
@@ -58,9 +66,16 @@ export default async function ({ browser, site, mock, check }) {
     return (await (await import('./app/folder.js')).runTool(root, name, JSON.stringify(args)));
   }, [name, args]);
   check('a path without the folder\'s name is refused with the rule', (await tool('read_file', { path: 'src/app.js' })).result === 'Error: paths start with the folder\'s name, like "project/src/app.js"');
-  check('the folder\'s name alone is the whole folder', (await tool('list_files', { path: 'project', pattern: '*.md' })).result === 'project/README.md');
+  check('the folder\'s name alone is the whole folder', (await tool('list_files', { path: 'project', pattern: '*.md' })).result === 'project/docs/guide.md\nproject/README.md');
+  check('asking for an ignored folder by name still lists it', (await tool('list_files', { path: 'project/node_modules' })).result === 'project/node_modules/junk.js');
+  check('a folder without a .gitignore leaves nothing out', await p.evaluate(async () => {
+    const top = await (await navigator.storage.getDirectory()).getDirectoryHandle('bare', { create: true });
+    const nm = await top.getDirectoryHandle('node_modules', { create: true });
+    await nm.getFileHandle('lib.js', { create: true });
+    return (await (await import('./app/folder.js')).runTool(top, 'list_files', '{}')).result === 'bare/node_modules/lib.js';
+  }));
   const found = (await tool('search_files', { query: 'timeout' })).result;
-  check('search finds matches with line numbers, grouped by file', found.startsWith('2 matching lines in 2 files') && found.includes('project/deploy/route.yaml\n  3: timeout: 30s') && found.includes('project/deploy/notes.txt\n  1: Timeout raised'));
+  check('search finds matches with line numbers, grouped by file, and skips ignored files', found.startsWith('2 matching lines in 2 files') && found.includes('project/deploy/route.yaml\n  3: timeout: 30s') && found.includes('project/deploy/notes.txt\n  1: Timeout raised'));
   check('search skips lockfiles, binaries and node_modules', !found.includes('package-lock') && !found.includes('logo.png') && !found.includes('junk'));
   check('search with capitals is case-sensitive', (await tool('search_files', { query: 'Timeout' })).result.startsWith('1 matching lines in 1 files'));
   check('search can use a regular expression and a pattern', (await tool('search_files', { query: 'host:\\s+\\S+example', regex: true, pattern: '*.yaml' })).result.includes('4: host: chat.example.com'));

@@ -28,11 +28,13 @@ export async function startSite(root) {
 }
 
 const MODELS = ['claude-sonnet-4', 'claude-haiku', 'gpt-4o', 'gpt-4o-mini', 'llama-3.1-70b', 'mistral-large', 'gemini-pro', 'deepseek-v3'];
-// Context limits and prices, as LiteLLM's /v2/model/info reports them. llama has no price (free).
+// Context limits and prices, as LiteLLM's /v2/model/info reports them. llama is free (prices of 0);
+// models not listed here have no price, so their cost is unknown.
 const INFO = [
   { model_name: 'claude-haiku', model_info: { max_input_tokens: 200000, input_cost_per_token: 0.8e-6, output_cost_per_token: 4e-6, cache_read_input_token_cost: 0.08e-6 } },
   { model_name: 'gpt-4o-mini', model_info: { max_input_tokens: 128000, input_cost_per_token: 0.15e-6, output_cost_per_token: 0.6e-6 } },
-  { model_name: 'llama-3.1-70b', model_info: { max_input_tokens: 32768 } },
+  { model_name: 'llama-3.1-70b', model_info: { max_input_tokens: 32768, input_cost_per_token: 0, output_cost_per_token: 0 } },
+  { model_name: 'mistral-large', model_info: { max_input_tokens: 128000 } }, // known, but no price given
 ];
 
 // A reply with the awkward markdown: nested code in a list, a table, a long line, a long block.

@@ -4,6 +4,7 @@
 // Results are kept short on purpose: every line the model gets back costs tokens.
 
 import { MAX_LINES, MAX_CHARS, queryRegex, splitLines, excerpt, numberedRange } from './lines.js';
+import { ignoreRulesFor, withIgnoreFile, isIgnored } from './ignore.js';
 
 export const folderSupported = typeof window.showDirectoryPicker === 'function';
 
@@ -28,11 +29,11 @@ const tool = (name, description, properties, required = []) =>
   ({ type: 'function', function: { name, description, parameters: { type: 'object', properties, required } } });
 
 export const FOLDER_TOOLS = [
-  tool('list_files', 'List file paths in the connected folder or a subfolder, including subfolders.', {
+  tool('list_files', 'List file paths in the connected folder or a subfolder, including subfolders. Leaves out what the folder\'s .gitignore files list.', {
     path: str('Subfolder, starting with the folder\'s name like every path. Empty for the whole folder.'),
     pattern: str('Only names matching this glob, e.g. "*.yaml". A pattern with "/" matches the whole path, folder name included.'),
   }),
-  tool('search_files', 'Search file contents, like grep. Returns matching lines with line numbers, grouped by file. Case-insensitive unless the query has capitals.', {
+  tool('search_files', 'Search file contents, like grep. Returns matching lines with line numbers, grouped by file. Case-insensitive unless the query has capitals. Leaves out what the .gitignore files list, and lockfiles, minified and binary files (read_file still opens them).', {
     query: str('Text to find, or a regular expression when regex is true.'),
     path: str('Subfolder to search, starting with the folder\'s name. Empty for the whole folder.'),
     pattern: str('Only files matching this glob, e.g. "*.py".'),
@@ -45,8 +46,7 @@ export const FOLDER_TOOLS = [
   }, ['path']),
 ];
 
-// Folders that are never listed or searched, and files that only add noise to searches.
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.venv', 'venv', '__pycache__', 'dist', 'build', '.next', '.cache', 'coverage', '.terraform', '.idea', 'target']);
+// Files searches leave out because they only add noise; listing and reading still show them.
 const NOISE = /(^|\/)(package-lock\.json|yarn\.lock|pnpm-lock\.yaml|poetry\.lock|Cargo\.lock|go\.sum)$|\.(min\.(js|css)|map|png|jpe?g|gif|webp|ico|pdf|zip|gz|tgz|jar|woff2?|ttf|exe|dll|so|dylib|bin)$/i;
 const MAX_FILES = 500; // per listing
 const MAX_SCAN = 5000; // files per search
@@ -102,23 +102,25 @@ function globTest(pattern) {
   return pattern.includes('/') ? (path) => re.test(path) : (path) => re.test(path.slice(path.lastIndexOf('/') + 1));
 }
 
-// Every file under dir, in name order, as [path, handle]. Stops after `limit`.
-async function walk(dir, prefix, limit, out = []) {
+// Every file under dir, in name order, as [path, handle], leaving out what the .gitignore files
+// list (ignore.js). Stops after `limit`.
+async function walk(dir, prefix, limit, rules, out = []) {
   const entries = [];
   for await (const entry of dir.values()) entries.push(entry);
   entries.sort((a, b) => a.name.localeCompare(b.name));
   for (const entry of entries) {
     if (out.length >= limit) break;
     const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (isIgnored(rules, path, entry.kind === 'directory')) continue;
     if (entry.kind === 'file') out.push([path, entry]);
-    else if (!SKIP_DIRS.has(entry.name)) await walk(entry, path, limit, out);
+    else await walk(entry, path, limit, await withIgnoreFile(entry, path, rules), out);
   }
   return out;
 }
 
 async function list(root, path, pattern) {
   const test = globTest(pattern);
-  const files = (await walk(await resolve(root, path, 'dir'), path, Infinity)).map(([p]) => forModel(root, p)).filter(test);
+  const files = (await walk(await resolve(root, path, 'dir'), path, Infinity, await ignoreRulesFor(root, path))).map(([p]) => forModel(root, p)).filter(test);
   if (!files.length) return pattern ? `No files match ${pattern}.` : '(empty folder)';
   const more = files.length > MAX_FILES ? `\n…and ${files.length - MAX_FILES} more. Narrow it with path or pattern.` : '';
   return files.slice(0, MAX_FILES).join('\n') + more;
@@ -128,7 +130,7 @@ async function search(root, path, { query, pattern, regex }) {
   const re = queryRegex(query, regex);
 
   const test = globTest(pattern);
-  const files = (await walk(await resolve(root, path, 'dir'), path, MAX_SCAN)).filter(([p]) => test(forModel(root, p)) && !NOISE.test(p));
+  const files = (await walk(await resolve(root, path, 'dir'), path, MAX_SCAN, await ignoreRulesFor(root, path))).filter(([p]) => test(forModel(root, p)) && !NOISE.test(p));
   const out = [];
   let total = 0;
   let hitFiles = 0;

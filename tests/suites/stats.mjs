@@ -41,7 +41,7 @@ export default async function ({ browser, site, mock, check }) {
   const blocks = await p.$$eval('.meter-model', (bs) => bs.map((b) => b.textContent));
   check('each model appears once, with speed before its tokens', blocks.length === 2 && blocks.every((b) => /\d+\/s · [\d.k]+ tokens \([\d.k]+ in · [\d.k]+ out\)/.test(b)));
   check('models are sorted by cost, free ones after', blocks[0].startsWith('claude-haiku') && blocks[1].startsWith('llama-3.1-70b') && blocks[1].includes('Free'));
-  check('a model with no price counts as free', pop2.includes('Next reply costs aboutFree'));
+  check('a model priced at 0 is free', pop2.includes('Next reply costs aboutFree'));
   check('growth per reply shown', pop2.includes('Grows per reply'));
   check('context is measured against the newly picked model', pop2.includes('/ 32.8k'));
   const shares = await p.$$eval('.meter-share small', (xs) => xs.map((x) => x.textContent));
@@ -58,6 +58,12 @@ export default async function ({ browser, site, mock, check }) {
   await send(p, 'echo unknown price');
   const unpriced = await label();
   check('with an unpriced model, the meter keeps tokens and drops cost', unpriced.includes('tokens') && !unpriced.includes('$'));
+  await pickModel(p, 'mistral-large');
+  await send(p, 'echo no price given');
+  await p.click('#meter-btn');
+  const mistral = await p.$$eval('.meter-model', (bs) => bs.map((b) => b.textContent).find((t) => t.startsWith('mistral-large')));
+  check('a model LiteLLM lists without a price shows an unknown cost, not Free', mistral.includes('—') && !mistral.includes('Free') && (await p.textContent('#meter-pop')).includes('Cost —'));
+  await p.keyboard.press('Escape');
 
   await p.reload();
   await p.waitForSelector('#chat-list li[data-id]', { state: 'attached' });
