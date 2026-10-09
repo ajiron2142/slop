@@ -87,6 +87,7 @@ app/                  behaviour
   ignore.js           which files to leave out, read from the folder's .gitignore files (folder tools and git)
   copy.js             Copy reply: formatted HTML for Teams/Outlook plus markdown, in one click
   oidc.js             sign-in with an identity provider, when config.json sets it up (removable add-on)
+  autotitle.js        names a chat after its first reply with one short request (removable add-on)
   viewer.js           image viewer: click an image to see it large (removable add-on)
   mini.js             mini window: pops the chat into a floating always-on-top window (Chrome/Edge, removable add-on)
   stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)
@@ -124,6 +125,8 @@ tests/                browser tests; not part of the deployed app (see tests/REA
 **Today's date.** Models don't know the date, so the system prompt starts with one line from your computer: "Today is Thursday, October 8, 2026. The user's time zone is America/Denver (UTC-06:00)." There's no time of day, so the line changes only once a day and providers can keep caching the request; if the exact time matters (say, for fresh logs), mention it in your message. Your messages are sent exactly as you typed them.
 
 **Connected folders.** In Chrome and Edge the paperclip also offers **Connect folder (read-only)**. The folder belongs to that one chat and is remembered with it. While a folder is connected, each request also sends three tools: `list_files` (optionally filtered, e.g. `*.yaml`), `search_files` (grep-style, returns matching lines with line numbers) and `read_file` (a whole short file, or a range of lines). The model is told to search first and read only the lines around a match, which keeps token use low on big folders. When the model calls one, the browser reads from the folder (`folder.js`), sends the result back, and asks again, up to 20 rounds. The reply shows a line such as "Read test/src/app.js". With no folder connected, requests are exactly as before, so models without tool support are unaffected. Firefox and Safari don't have this browser feature; there the paperclip just attaches files.
+
+**Chat titles.** After a chat's first reply, the app sends one short extra request to the same model asking for a title of at most five words (abbreviations allowed). It happens once per chat and the title doesn't change after that. The answer is used only if it's one line of at most 8 words and 60 characters; otherwise, or if the request fails, the chat keeps its first message as its title. The request costs a few hundred tokens and isn't counted in the usage meter.
 
 **Tools the model can use.** A chat sends only the tools it has a use for, decided again for every message; a plain chat sends none, which is cheapest and works with any model. Every path starts with the folder's name (`test/src/app.js`).
 

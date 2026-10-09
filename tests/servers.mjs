@@ -81,6 +81,7 @@ export async function startMock() {
   const requests = []; // every chat request received, newest last
   const auths = []; // the Authorization header of every request, newest last
   const rejected = new Set(); // bearer tokens answered with 401, like an expired one
+  const titles = []; // the chat-title requests (kept apart from `requests`)
   const sse = (res, data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
   const usage = (body, text) => {
     const huge = String(body.messages.at(-1).content).startsWith('huge');
@@ -109,6 +110,17 @@ export async function startMock() {
     req.on('data', (c) => (raw += c));
     req.on('end', async () => {
       const body = JSON.parse(raw);
+      // A chat-title request: "Mock chat title", or an error / an answer too long to use, on request.
+      if (String(body.messages[0]?.content).startsWith('Write a title')) {
+        const about = body.messages[1].content;
+        titles.push({ about, maxTokens: body.max_tokens });
+        if (about.includes('notitle')) return res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { message: 'no' } }));
+        const answer = about.includes('longtitle') ? 'Here is a title for you: a very long one that keeps going on' : '"Mock chat title."';
+        res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+        sse(res, { choices: [{ delta: { content: answer } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] });
+        return res.end('data: [DONE]\n\n');
+      }
       const last = body.messages.filter((m) => m.role === 'user').at(-1);
       const parts = Array.isArray(last.content) ? last.content : [{ type: 'text', text: last.content }];
       const text = parts[0].text;
@@ -214,7 +226,7 @@ export async function startMock() {
       res.end('data: [DONE]\n\n');
     });
   });
-  return { url: await listen(server), requests, auths, rejected, close: () => server.close() };
+  return { url: await listen(server), requests, auths, rejected, titles, close: () => server.close() };
 }
 
 // A fake OpenID Connect provider for the sign-in tests: discovery, an authorize page that signs

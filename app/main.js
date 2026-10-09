@@ -20,6 +20,7 @@ import { PASTE_TOOLS, hasPastes, isPasteTool, runPasteTool } from './paste.js'; 
 import { miniSupported, createMini } from './mini.js'; // mini window
 import { createViewer } from './viewer.js'; // image viewer
 import { loadConfig, createAuth, renderSignIn } from './oidc.js'; // sign-in
+import { autoTitle } from './autotitle.js'; // chat titles
 import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 
@@ -357,8 +358,19 @@ async function complete(chat) {
     chat.meta.updated = Date.now();
     await store.saveChat(chat.meta, withoutErrors(chat.messages));
     await reloadChatList();
+    if (finish && msg.content && !chat.meta.titled) nameChat(chat); // chat titles
   }
   render();
+}
+
+// chat titles: once per chat, after its first finished reply; the first-message title stays if it fails.
+async function nameChat(chat) {
+  chat.meta.titled = true;
+  const title = await autoTitle(state.settings, withoutErrors(chat.messages));
+  if (!title || chat.deleted) return;
+  chat.meta.title = title;
+  await store.saveMeta(chat.meta);
+  await reloadChatList();
 }
 
 function retry() {

@@ -34,6 +34,9 @@ export function saveChat(meta, messages) {
   ]);
 }
 
+// Just a chat's title and dates, without touching its messages.
+export const saveMeta = (meta) => set(`chatmeta:${meta.id}`, meta);
+
 // Chats whose title or any message contains the query (case-insensitive).
 export async function searchChats(query) {
   const q = query.toLowerCase();
