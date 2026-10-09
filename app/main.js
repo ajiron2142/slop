@@ -16,6 +16,7 @@ import { createPicker } from './components/picker.js';
 import { createSettings } from './components/settings.js';
 import { createMeter } from './components/meter.js';
 import { createPanel } from './components/panel.js';
+import { PASTE_TOOLS, hasPastes, isPasteTool, runPasteTool } from './paste.js'; // smart paste
 import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
 
 const state = {
@@ -231,7 +232,9 @@ async function complete(chat) {
   const s = state.settings;
   const folder = chat.folder;
   const editable = Boolean(folder && chat.canEdit); // write mode
-  const tools = folder ? [...FOLDER_TOOLS, ...(editable ? WRITE_TOOLS : [])] : undefined; // write mode
+  // Tools only for what this chat has: a folder, edit access, a paste still in memory.
+  const offered = [...(folder ? FOLDER_TOOLS : []), ...(editable ? WRITE_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : [])]; // write mode, smart paste
+  const tools = offered.length ? offered : undefined;
   const history = withoutErrors(chat.messages).map((m) => ({ role: m.role, content: toApiContent(m) }));
   // The time goes on the newest message, not the system prompt, so the rest of the request stays
   // the same between messages and providers can keep caching it.
@@ -291,10 +294,11 @@ async function complete(chat) {
       if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of tool calls.`);
       history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
       for (const call of toolCalls) {
-        const { label, result } = writer.handles(call.function.name) // write mode
-          ? await writer.run(folder, call, controller.signal)
-          : await runTool(folder, call.function.name, call.function.arguments);
-        if (call.function.name === 'read_file' && !result.startsWith('Error:')) used.files++;
+        const name = call.function.name;
+        const { label, result } = writer.handles(name) ? await writer.run(folder, call, controller.signal) // write mode
+          : isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
+          : await runTool(folder, name, call.function.arguments);
+        if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
         (msg.tools ??= []).push(label);
         history.push({ role: 'tool', tool_call_id: call.id, content: result });
       }
@@ -306,7 +310,7 @@ async function complete(chat) {
     if (e.name === 'AbortError') finish = 'stopped';
     else {
       finish = null;
-      const hint = tools && e.kind === 'http' ? '\n\nIf this model doesn\'t support tools, disconnect the folder or pick another model.' : '';
+      const hint = tools && e.kind === 'http' ? '\n\nIf this model doesn\'t support tools, pick another model, disconnect the folder, or send pastes in full.' : '';
       chat.messages.push({ role: 'error', content: e.message + hint });
     }
   }

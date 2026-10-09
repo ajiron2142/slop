@@ -1,4 +1,5 @@
 import { el } from '../dom.js';
+import { isBigPaste, createPaste, inFull, asReference } from '../paste.js'; // smart paste
 
 const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_TEXT = 512 * 1024;
@@ -48,6 +49,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   function renderTray() {
     tray.hidden = !files.length && !folderName;
     tray.replaceChildren(...(folderName ? [folderChip()] : []), ...files.map((f, i) => {
+      if (f.kind === 'paste' || f.pasteId) return pasteChip(f, i); // smart paste
       const chip = el('span', 'tray-chip');
       if (f.kind === 'image') {
         const img = el('img');
@@ -58,6 +60,19 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       chip.append(el('span', 'tray-name', f.name), removeButton(`Remove ${f.name}`, () => { files.splice(i, 1); renderTray(); input.focus(); }));
       return chip;
     }));
+  }
+
+  // smart paste: a big paste is kept as a reference the model searches; one click sends it in full instead.
+  function pasteChip(f, i) {
+    const chip = el('span', 'tray-chip paste');
+    const full = f.kind === 'text';
+    chip.title = full ? 'Sent in full with your message' : 'Kept in this tab only; the model searches and reads it as needed';
+    const toggle = el('button', 'paste-mode', full ? 'in full' : 'as reference');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-label', full ? 'Send as a reference instead' : 'Send in full instead');
+    toggle.addEventListener('click', () => { files[i] = full ? asReference(f) : inFull(f); renderTray(); input.focus(); });
+    chip.append(el('span', 'tray-name', full ? f.pasteName : f.name), toggle, removeButton(`Remove ${f.name}`, () => { files.splice(i, 1); renderTray(); input.focus(); }));
+    return chip;
   }
 
   async function add(list) {
@@ -97,7 +112,15 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   });
   input.addEventListener('paste', (e) => {
     const pasted = [...(e.clipboardData?.files ?? [])];
-    if (!pasted.length) return;
+    if (!pasted.length) {
+      // smart paste
+      const text = e.clipboardData?.getData('text/plain') ?? '';
+      if (!isBigPaste(text)) return;
+      e.preventDefault();
+      try { files.push(createPaste(text)); } catch (err) { notify(err.message); }
+      renderTray();
+      return;
+    }
     if (!e.clipboardData.types.includes('text/plain')) e.preventDefault();
     add(pasted);
   });

@@ -49,6 +49,16 @@ export default async function ({ browser, site, mock, check }) {
   }));
   await p.click('.msg.assistant .code .copy');
   check('Copy puts the exact code on the clipboard', (await p.evaluate(() => navigator.clipboard.readText())).startsWith('def hello(name):'));
+  await p.click('.msg.assistant .copy-reply');
+  await p.waitForSelector('.msg.assistant .copy-reply:text-is("Copied")');
+  const copied = await p.evaluate(async () => {
+    const [item] = await navigator.clipboard.read();
+    const html = await (await item.getType('text/html')).text();
+    const text = await (await item.getType('text/plain')).text();
+    return { html, text };
+  });
+  check('Copy reply puts formatted HTML on the clipboard for Teams and Outlook', copied.html.includes('<h2') && copied.html.includes('<table') && /<pre style="[^"]*background:#f6f8fa/.test(copied.html));
+  check('…and the markdown as plain text', copied.text.startsWith("Here's a tricky reply.") && copied.text.includes('## A heading'));
   check('Copy stays visible while scrolling a long block', await p.evaluate(() => {
     const pane = document.getElementById('messages');
     const code = [...document.querySelectorAll('.msg.assistant .code')].at(-1);

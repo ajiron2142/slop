@@ -11,8 +11,9 @@ import folder from './suites/folder.mjs';
 import stats from './suites/stats.mjs';
 import speed from './suites/speed.mjs';
 import write from './suites/write.mjs';
+import paste from './suites/paste.mjs';
 
-const SUITES = { app, folder, write, stats, speed };
+const SUITES = { app, folder, write, paste, stats, speed };
 const only = process.argv.slice(2); // e.g. `npm test -- stats` runs one suite
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));

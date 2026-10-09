@@ -1,3 +1,5 @@
+import { pasteNote } from './paste.js'; // smart paste
+
 export class ApiError extends Error {
   constructor(message, kind, status) {
     super(message);
@@ -42,6 +44,7 @@ export function toApiContent(msg) {
   let text = msg.content;
   for (const f of files) {
     if (f.kind === 'text') text += `\n\n<file name="${f.name.replace(/"/g, '')}">\n${f.text}\n</file>`;
+    if (f.kind === 'paste') text += `\n\n${pasteNote(f)}`; // smart paste
   }
   const images = files.filter((f) => f.kind === 'image');
   if (!images.length) return text;

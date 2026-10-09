@@ -3,6 +3,8 @@
 // the browser reads from the folder and sends the result back. Nothing is ever written.
 // Results are kept short on purpose: every line the model gets back costs tokens.
 
+import { MAX_LINES, MAX_CHARS, queryRegex, splitLines, excerpt, numberedRange } from './lines.js';
+
 export const folderSupported = typeof window.showDirectoryPicker === 'function';
 
 export const pickFolder = () => window.showDirectoryPicker({ mode: 'read' });
@@ -49,8 +51,6 @@ const MAX_FILES = 500; // per listing
 const MAX_SCAN = 5000; // files per search
 const MAX_MATCHES = 100; // lines per search
 const PER_FILE = 15; // lines per file in a search
-const MAX_LINES = 1000; // lines per read
-const MAX_CHARS = 100_000; // characters per read, for minified files with huge lines
 const MAX_BYTES = 4 * 1024 * 1024;
 
 // Runs one tool call. Returns a short label for the chat and the text the model gets back.
@@ -113,10 +113,7 @@ async function list(root, path, pattern) {
 }
 
 async function search(root, path, { query, pattern, regex }) {
-  if (!query) throw new Error('no query given');
-  const flags = /[A-Z]/.test(query) ? '' : 'i';
-  let re;
-  try { re = new RegExp(regex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags); } catch (e) { throw new Error(`bad regular expression: ${e.message}`); }
+  const re = queryRegex(query, regex);
 
   const test = globTest(pattern);
   const files = (await walk(await resolve(root, path, 'dir'), path, MAX_SCAN)).filter(([p]) => test(p) && !NOISE.test(p));
@@ -160,30 +157,16 @@ async function readText(root, path, handle) {
   return text;
 }
 
-// One line of a search result: trimmed, and cut to ~160 characters around the match.
-function excerpt(line, re) {
-  const text = line.trim();
-  if (text.length <= 160) return text;
-  const at = Math.max(0, (text.search(re) || 0) - 60);
-  return `${at ? '…' : ''}${text.slice(at, at + 160)}…`;
-}
-
 async function read(root, path, { start_line, end_line }) {
   const file = await (await resolve(root, path, 'file')).getFile();
   if (file.size > MAX_BYTES) throw new Error('file is larger than 4 MB');
   const text = await file.text();
   if (text.includes('\0')) throw new Error('not a text file');
-  const lines = text.split('\n');
-  if (lines.length > 1 && lines.at(-1) === '') lines.pop(); // a final newline isn't another line
+  const lines = splitLines(text);
   const ranged = start_line != null || end_line != null;
   // A short file asked for whole comes back as is: line numbers would only add tokens.
   if (!ranged && lines.length <= MAX_LINES && text.length <= MAX_CHARS) return { label: `Read ${path}`, result: text };
 
-  const from = Math.min(Math.max(1, start_line ?? 1), lines.length);
-  const to = Math.min(lines.length, end_line ?? Infinity, from + MAX_LINES - 1);
-  let body = '';
-  let last = from - 1;
-  for (let n = from; n <= to && body.length < MAX_CHARS; n++, last++) body += `${n}\t${lines[n - 1].slice(0, MAX_CHARS)}\n`;
-  const rest = last < lines.length ? `(lines ${from}–${last} of ${lines.length}; next: start_line ${last + 1})` : `(lines ${from}–${last} of ${lines.length})`;
-  return { label: `Read ${path}${ranged ? `:${from}–${last}` : ''}`, result: body + rest };
+  const { from, last, text: result } = numberedRange(lines, start_line, end_line);
+  return { label: `Read ${path}${ranged ? `:${from}–${last}` : ''}`, result };
 }

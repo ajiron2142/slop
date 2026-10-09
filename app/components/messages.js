@@ -2,12 +2,13 @@ import { el } from '../dom.js';
 import { renderMarkdown } from '../markdown.js';
 import { highlight } from '../highlight.js';
 import { fmt, replySpeed } from '../stats.js';
+import { copyReply } from '../copy.js';
 
 const LABEL = { user: 'You', assistant: 'Assistant', error: 'Error' };
 const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
 
 // The conversation pane: renders messages, follows the bottom while streaming,
-// and handles the Copy, Retry and Stats buttons. `extra(msg)` lets an add-on put a line of its own
+// and handles the Copy (code and whole reply), Retry and Stats buttons. `extra(msg)` lets an add-on put a line of its own
 // under a reply, as { key, node }; the key says when it needs redrawing.
 export function createMessages(pane, { onRetry, extra = () => null }) {
   let stick = true;
@@ -36,7 +37,7 @@ export function createMessages(pane, { onRetry, extra = () => null }) {
     if (!btn) return;
     if (btn.dataset.action === 'retry') return onRetry();
     if (btn.dataset.action === 'stats') {
-      const card = btn.nextElementSibling;
+      const card = btn.closest('.msg').querySelector('.stats-card');
       card.hidden = !card.hidden;
       btn.setAttribute('aria-expanded', String(!card.hidden));
       const ts = btn.closest('.msg').dataset.ts;
@@ -86,7 +87,14 @@ function messageNode(msg, streaming, openStats, more) {
   const body = el('div', 'body');
   fillBody(body, msg);
   node.append(body);
-  if (openStats && msg.stats && !streaming) node.append(...statsNodes(msg.stats, openStats.has(String(msg.ts))));
+  // Under a finished reply: Copy, and Stats when detailed stats are on.
+  if (msg.role === 'assistant' && !streaming && msg.content) {
+    const actions = el('div', 'reply-actions');
+    actions.append(copyButton(msg));
+    const stats = openStats && msg.stats ? statsNodes(msg.stats, openStats.has(String(msg.ts))) : [];
+    if (stats.length) actions.append(stats[0]);
+    node.append(actions, ...stats.slice(1));
+  }
   if (msg.role === 'error') {
     const retry = el('button', 'btn retry', 'Retry');
     retry.dataset.action = 'retry';
@@ -135,11 +143,27 @@ function filesNode(files) {
   return row;
 }
 
+function copyButton(msg) {
+  const btn = el('button', 'reply-btn copy-reply', 'Copy');
+  btn.type = 'button';
+  btn.title = 'Copy this reply, formatted for Teams, Outlook and Word';
+  btn.addEventListener('click', async () => {
+    try {
+      await copyReply(msg.content);
+      btn.textContent = 'Copied';
+    } catch {
+      btn.textContent = 'Copy failed';
+    }
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1200);
+  });
+  return btn;
+}
+
 const FINISH = { stop: 'Complete', length: 'Cut off (length limit)', stopped: 'Stopped by you', tool_calls: 'Complete' };
 
 // "Stats" button and the card it opens: what one reply used, cost and how long it took.
 function statsNodes(s, open) {
-  const btn = el('button', 'stats-btn', 'ⓘ Stats');
+  const btn = el('button', 'reply-btn stats-btn', 'Stats');
   btn.type = 'button';
   btn.dataset.action = 'stats';
   btn.setAttribute('aria-expanded', String(open));
