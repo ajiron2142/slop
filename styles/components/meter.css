@@ -1,22 +1,23 @@
-/* Usage meter above the message box, and its summary, which opens right above the button. */
-.meter-row { --meter-bad: #c4302b; --meter-warn: #b7791f; display: flex; margin-left: auto; }
+/* Usage meter in the chat header, next to the model, and its summary, which opens right below it. */
+.meter-row { --meter-bad: #c4302b; --meter-warn: #b7791f; display: flex; align-items: center; }
 .meter-anchor { position: relative; }
 .meter {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 3px 10px 3px 6px;
+  padding: 4px 8px;
   font-family: var(--font-meta);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: var(--muted);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  background: none;
+  border: 0;
+  border-radius: min(var(--radius), 8px);
   cursor: pointer;
 }
-.meter:hover, .meter[aria-expanded="true"] { color: var(--ink); border-color: var(--muted); }
-.meter.too-long { color: var(--meter-bad); border-color: var(--meter-bad); }
+.meter:hover, .meter[aria-expanded="true"] { color: var(--ink); background: var(--surface); }
+.meter.too-long { color: var(--meter-bad); }
 .meter-ring {
   width: 15px;
   height: 15px;
@@ -30,7 +31,7 @@
 .meter-pop {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   z-index: 20;
   display: grid;
   gap: 8px;
@@ -44,7 +45,7 @@
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: min(var(--radius), 12px);
-  box-shadow: 0 -12px 36px -14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 12px 36px -14px rgba(0, 0, 0, 0.35);
 }
 .meter-line { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .meter-detail { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -70,3 +71,12 @@
 .meter-rows { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; font-variant-numeric: tabular-nums; }
 .meter-rows .k { color: var(--muted); }
 .meter-rows .v { text-align: right; }
+
+/* Narrow screens: just the ring in the header, and the summary spans the header's width. */
+.chat-header { position: relative; }
+@container (max-width: 520px) {
+  .meter-label { display: none; }
+  .meter { padding: 6px; }
+  .meter-anchor { position: static; }
+  .meter-pop { left: var(--edge); right: var(--edge); width: auto; }
+}

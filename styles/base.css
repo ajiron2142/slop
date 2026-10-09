@@ -70,10 +70,8 @@
   border-bottom: 1px solid var(--line);
 }
 
-.chat-header .picker { margin-left: auto; } /* the model picker and any header buttons sit on the right */
-
 .chat-title {
-  margin: 0;
+  margin: 0 auto 0 0; /* pushes the meter, model picker and buttons to the right */
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 500;
@@ -91,8 +89,8 @@
   .chat.chat .chat-header,
   .chat.chat .messages,
   .chat.chat .notice { padding-inline: max(var(--edge), calc((100% - 760px) / 2)); }
-  /* The message box, its attachments and the usage meter sit a little wider than the conversation. */
-  .chat.chat .above-box,
+  /* The message box and its attachments sit a little wider than the conversation. */
+  .chat.chat .tray,
   .chat.chat .composer { padding-inline: max(var(--edge), calc((100% - 840px) / 2)); }
 }
 

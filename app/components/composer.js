@@ -1,10 +1,11 @@
 import { el, onClickOutside } from '../dom.js';
-import { isBigPaste, createPaste, inFull, asReference } from '../paste.js'; // smart paste
+import { isBigPaste, createPaste } from '../paste.js'; // smart paste
 
 const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_TEXT = 512 * 1024;
 const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|jsonl|yaml|yml|toml|ini|xml|html|css|js|mjs|ts|jsx|tsx|py|rb|go|rs|java|kt|c|h|cpp|hpp|cs|php|sh|ps1|sql|log|env|conf)$/i;
 
+const DOC_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>'; // smart paste
 const FOLDER_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
 
 const readAs = (file, how) => new Promise((resolve, reject) => {
@@ -49,7 +50,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   function renderTray() {
     tray.hidden = !files.length && !folderName;
     tray.replaceChildren(...(folderName ? [folderChip()] : []), ...files.map((f, i) => {
-      if (f.kind === 'paste' || f.pasteId) return pasteChip(f, i); // smart paste
+      if (f.kind === 'paste') return pasteChip(f, i); // smart paste
       const chip = el('span', 'tray-chip');
       if (f.kind === 'image') {
         const img = el('img');
@@ -62,16 +63,12 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     }));
   }
 
-  // smart paste: a big paste is kept as a reference the model searches; one click sends it in full instead.
+  // smart paste: a big paste shows as a chip; the model searches and reads it as needed.
   function pasteChip(f, i) {
     const chip = el('span', 'tray-chip paste');
-    const full = f.kind === 'text';
-    chip.title = full ? 'Sent in full with your message' : 'Kept in this tab only; the model searches and reads it as needed';
-    const toggle = el('button', 'paste-mode', full ? 'in full' : 'as reference');
-    toggle.type = 'button';
-    toggle.setAttribute('aria-label', full ? 'Send as a reference instead' : 'Send in full instead');
-    toggle.addEventListener('click', () => { files[i] = full ? asReference(f) : inFull(f); renderTray(); input.focus(); });
-    chip.append(el('span', 'tray-name', full ? f.pasteName : f.name), toggle, removeButton(`Remove ${f.name}`, () => { files.splice(i, 1); renderTray(); input.focus(); }));
+    chip.title = `Pasted text, ${f.lines.toLocaleString('en-US')} lines. Kept in this tab only; the model searches and reads it as needed.`;
+    chip.innerHTML = DOC_ICON;
+    chip.append(el('span', 'tray-name', f.name), removeButton(`Remove pasted text (${f.name})`, () => { files.splice(i, 1); renderTray(); input.focus(); }));
     return chip;
   }
 

@@ -52,10 +52,7 @@
 .send:active { transform: scale(0.97); }
 
 .composer .attach { width: 44px; height: 44px; }
-/* The row above the message box: attachment chips on the left, the usage meter on the right. Hidden when both are. */
-.above-box { display: flex; align-items: center; gap: 8px; padding: 10px var(--edge); }
-.above-box:not(:has(> :not([hidden]))) { display: none; }
-.tray { display: flex; flex: 1; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.tray { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px var(--edge); }
 .tray-chip {
   display: inline-flex;
   align-items: center;
@@ -108,6 +105,4 @@
 .chat .send.stop { font-size: 0; }
 .chat .send.stop::before { content: "■"; font-size: 13px; letter-spacing: 0; }
 
-/* smart paste: the mode switch inside a pasted-text chip. */
-.tray-chip .paste-mode { padding: 0 4px; font: inherit; font-size: 11.5px; color: var(--accent); background: none; border: 0; cursor: pointer; }
-.tray-chip .paste-mode:hover { text-decoration: underline; }
+.tray-chip.paste .icon { width: 15px; height: 15px; color: var(--muted); } /* smart paste */

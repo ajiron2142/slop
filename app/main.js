@@ -313,7 +313,7 @@ async function complete(chat) {
     if (e.name === 'AbortError') finish = 'stopped';
     else {
       finish = null;
-      const hint = tools && e.kind === 'http' ? '\n\nIf this model doesn\'t support tools, pick another model, disconnect the folder, or send pastes in full.' : '';
+      const hint = tools && e.kind === 'http' ? '\n\nIf this model doesn\'t support tools, pick another model or disconnect the folder.' : '';
       chat.messages.push({ role: 'error', content: e.message + hint });
     }
   }

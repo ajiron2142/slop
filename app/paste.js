@@ -2,10 +2,9 @@
 // stays in memory while the page is open; the model gets a short preview plus two tools to
 // search and read the rest, so a big log costs a few hundred tokens instead of the whole thing
 // on every message. Nothing is saved, so there's nothing to clean up: a reload forgets it.
-// "Send in full" on the chip turns it back into a normal attachment.
 //
 // To remove it: delete this file and the lines marked "smart paste" in composer.js, api.js,
-// main.js and composer.css.
+// main.js and composer.css, and tests/suites/paste.mjs.
 
 import { queryRegex, splitLines, excerpt, numberedRange } from './lines.js';
 
@@ -30,14 +29,11 @@ export function createPaste(text) {
   const id = crypto.randomUUID().slice(0, 8);
   const lines = splitLines(text);
   pastes.set(id, lines);
-  return { kind: 'paste', id, lines: lines.length, name: `Pasted · ${lines.length.toLocaleString('en-US')} lines` };
+  return { kind: 'paste', id, lines: lines.length, name: `${shortCount(lines.length)} lines` };
 }
 
-// "Send in full" and back: in full it's an ordinary text attachment.
-export function inFull(paste) {
-  return { kind: 'text', name: 'pasted.txt', text: pastes.get(paste.id).join('\n'), pasteId: paste.id, pasteName: paste.name, lines: paste.lines };
-}
-export const asReference = (file) => ({ kind: 'paste', id: file.pasteId, lines: file.lines, name: file.pasteName });
+// 640, 1.2k, 18.4k: short enough for a chip.
+const shortCount = (n) => (n < 1000 ? String(n) : `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k`);
 
 // What the model sees in place of the paste.
 export function pasteNote(file) {

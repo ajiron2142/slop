@@ -14,10 +14,11 @@ export default async function ({ browser, site, mock, check }) {
   const pop = await p.textContent('#meter-pop');
   check('summary shows the context window and this chat', pop.includes('Context window') && pop.includes('/ 200k') && pop.includes('This chat') && pop.includes('Cost') && pop.includes('Cache'));
   check('key budget shows spend and reset date', pop.includes('Key budget') && pop.includes('resets') && pop.includes('$12.40 of $50.00 spent'));
-  check('the summary opens right above its button', await p.evaluate(() => {
+  check('the meter sits in the header with the model', await p.evaluate(() => document.querySelector('.chat-header #meter-btn') !== null));
+  check('the summary opens right below its button', await p.evaluate(() => {
     const pop = document.getElementById('meter-pop').getBoundingClientRect();
     const btn = document.getElementById('meter-btn').getBoundingClientRect();
-    return Math.abs(pop.right - btn.right) < 2 && pop.bottom <= btn.top && btn.top - pop.bottom < 16;
+    return Math.abs(pop.right - btn.right) < 2 && pop.top >= btn.bottom && pop.top - btn.bottom < 16;
   }));
   check('no breakdown while detailed stats are off', !pop.includes('Breakdown'));
   await p.keyboard.press('Escape');

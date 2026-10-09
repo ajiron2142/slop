@@ -43,7 +43,7 @@
 .theme-linen .assistant .body { padding-left: 0; padding-right: 0; }
 .theme-linen .body pre { background: var(--surface); }
 .theme-linen .body .code { border: 1px solid var(--line); }
-/* A floating box as wide as the usage meter above it, not the whole screen. */
+/* A floating box as wide as the attachments row above it, not the whole screen. */
 .chat.theme-linen .composer {
   box-sizing: border-box;
   width: min(840px, calc(100% - 2 * var(--edge)));
