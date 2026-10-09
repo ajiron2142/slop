@@ -93,14 +93,16 @@ function messageNode(msg, streaming, openStats, more) {
   if (more) node.append(more.node);
   if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'length') {
     node.append(el('div', 'reply-note', 'Cut off: the model reached the most it can write in one reply. Say "continue" to get the rest.'));
+  } else if (msg.role === 'assistant' && !streaming && msg.stats && msg.stats.finish !== 'stopped' && !msg.content) {
+    node.append(el('div', 'reply-note', `No answer: the model finished without writing anything${msg.stats.reasoned ? ' (it sent only its reasoning, which isn\'t shown)' : ''}.`));
   }
   // Under a finished reply, on the right so they don't read as part of it: Stats (when detailed
-  // stats are on), then Copy.
-  if (msg.role === 'assistant' && !streaming && msg.content) {
+  // stats are on), then Copy (when there's something to copy).
+  if (msg.role === 'assistant' && !streaming && (msg.content || msg.stats)) {
     const actions = el('div', 'reply-actions');
     const stats = openStats && msg.stats ? statsNodes(msg.stats, openStats.has(String(msg.ts))) : [];
     if (stats.length) actions.append(stats[0]);
-    actions.append(copyButton(msg));
+    if (msg.content) actions.append(copyButton(msg));
     node.append(actions, ...stats.slice(1));
   }
   if (msg.role === 'error') {

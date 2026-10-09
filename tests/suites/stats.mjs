@@ -56,6 +56,13 @@ export default async function ({ browser, site, mock, check }) {
   check('the output limit is sent only when LiteLLM gives one', mock.requests.some((r) => r.model === 'claude-haiku' && r.maxTokens === 8192) && mock.requests.at(-1).maxTokens === undefined);
   check('cached input is shown when reported', cut.includes('Cached'));
 
+  // A reply the model finishes without writing anything stays, and says so.
+  await send(p, 'thinkonly what is this repo');
+  check('a reply with only reasoning says so under it', (await p.textContent('.msg.assistant:last-of-type .reply-note')) === 'No answer: the model finished without writing anything (it sent only its reasoning, which isn\'t shown).');
+  check('and still has its stats, but nothing to copy', await p.isVisible('.msg.assistant:last-of-type .stats-btn') && !(await p.$('.msg.assistant:last-of-type .copy-reply')));
+  await send(p, 'blank');
+  check('a reply with nothing at all says so too', (await p.textContent('.msg.assistant:last-of-type .reply-note')) === 'No answer: the model finished without writing anything.');
+
   await pickModel(p, 'gemini-pro');
   await send(p, 'echo unknown price');
   const unpriced = await label();

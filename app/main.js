@@ -287,6 +287,7 @@ async function complete(chat) {
   const started = performance.now();
   let firstAt = null;
   let finish = null;
+  let reasoned = false; // in the last round
   let frame = 0;
   try {
     if (folder && !(await allowRead(folder))) {
@@ -302,7 +303,7 @@ async function complete(chat) {
     // With a folder connected the model may ask to read files first: run those and ask again.
     for (let round = 1; ; round++) {
       let text = '';
-      const { toolCalls, usage, finish: why } = await streamChat({
+      const { toolCalls, usage, finish: why, reasoned: thought } = await streamChat({
         settings: s,
         messages: history,
         tools,
@@ -321,6 +322,7 @@ async function complete(chat) {
         },
       });
       finish = why ?? 'stop';
+      reasoned = thought;
       if (usage) {
         used.input += usage.input;
         used.output += usage.output;
@@ -361,13 +363,15 @@ async function complete(chat) {
   if (folder) refreshGit(folder).then(() => render()); // git: commits or a fetch may have happened meanwhile
 
   msg.content = msg.content.trimEnd();
-  if (!msg.content && !msg.tools) chat.messages.splice(chat.messages.indexOf(msg), 1);
+  // An empty reply goes away only when you stopped it or it failed; one the model finished empty stays, and says so.
+  if (!msg.content && !msg.tools && (!finish || finish === 'stopped')) chat.messages.splice(chat.messages.indexOf(msg), 1);
   else if (finish) {
     const info = state.modelInfo[model];
     const counted = used.context > 0; // a stopped reply never gets the usage report
     msg.stats = {
       model,
       finish,
+      ...(!msg.content && reasoned && { reasoned }),
       ms: Math.round(performance.now() - started),
       firstMs: firstAt && Math.round(firstAt - started),
       ...(counted && { input: used.input, output: used.output, cached: used.cached, context: used.context, cost: costOf(info, used) }),

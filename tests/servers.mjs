@@ -78,6 +78,7 @@ Done.`;
 //   "git …"      (with git tools) reads the log and the uncommitted changes, then reports both
 //   "gitlab …"   (with GitLab tools) uses every GitLab tool once (and one path without the project), then reports
 //   "slowgitlab …" (with GitLab tools) a GitLab search that never answers, to check Stop
+//   "thinkonly …" sends only reasoning, then finishes; "blank …" finishes with nothing at all
 //   anything else: the long reply
 export async function startMock() {
   const requests = []; // every chat request received, newest last
@@ -241,6 +242,13 @@ export async function startMock() {
         }
         sse(res, { choices: [{ delta: {}, finish_reason: results.length < 2 ? 'tool_calls' : 'stop' }] });
         if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(200)));
+        return res.end('data: [DONE]\n\n');
+      }
+
+      if (text.startsWith('thinkonly') || text.startsWith('blank')) { // finishes without writing an answer
+        if (text.startsWith('thinkonly')) sse(res, { choices: [{ delta: { reasoning_content: 'I should search the repository first.' } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] });
+        if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(40)));
         return res.end('data: [DONE]\n\n');
       }
 

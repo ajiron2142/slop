@@ -116,6 +116,7 @@ export async function streamChat({ settings, messages, tools, maxTokens, signal,
   const calls = [];
   let usage = null;
   let finish = null;
+  let reasoned = false; // the model sent reasoning (not shown), whatever it then wrote
   let buffer = '';
   read: for (;;) {
     const { done, value } = await reader.read();
@@ -134,6 +135,7 @@ export async function streamChat({ settings, messages, tools, maxTokens, signal,
       finish = chunk.choices?.[0]?.finish_reason ?? finish;
       const delta = chunk.choices?.[0]?.delta;
       if (delta?.content) onDelta(delta.content);
+      if (delta?.reasoning_content || delta?.reasoning) reasoned = true;
       // Tool calls arrive in pieces; join them up by index.
       for (const part of delta?.tool_calls ?? []) {
         const call = (calls[part.index ?? 0] ??= { id: '', type: 'function', function: { name: '', arguments: '' } });
@@ -144,7 +146,7 @@ export async function streamChat({ settings, messages, tools, maxTokens, signal,
     }
     if (done) break;
   }
-  return { toolCalls: calls.filter(Boolean).map((c, i) => ({ ...c, id: c.id || `call_${i}` })), usage, finish };
+  return { toolCalls: calls.filter(Boolean).map((c, i) => ({ ...c, id: c.id || `call_${i}` })), usage, finish, reasoned };
 }
 
 // Token counts, including how much input the provider served from its cache.
