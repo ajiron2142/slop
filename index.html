@@ -71,13 +71,16 @@
       </header>
       <p id="notice" class="notice" role="status" hidden></p>
       <div id="messages" class="messages"></div>
-      <div id="meter-row" class="meter-row" hidden>
-        <div class="meter-anchor">
-          <div id="meter-pop" class="meter-pop" role="dialog" aria-label="Usage for this chat" hidden></div>
-          <button type="button" id="meter-btn" class="meter" aria-expanded="false" aria-controls="meter-pop" aria-label="Usage for this chat"></button>
+      <!-- Above the message box, on one line: attachments on the left, the usage meter on the right. -->
+      <div class="above-box">
+        <div id="tray" class="tray" hidden></div>
+        <div id="meter-row" class="meter-row" hidden>
+          <div class="meter-anchor">
+            <div id="meter-pop" class="meter-pop" role="dialog" aria-label="Usage for this chat" hidden></div>
+            <button type="button" id="meter-btn" class="meter" aria-expanded="false" aria-controls="meter-pop" aria-label="Usage for this chat"></button>
+          </div>
         </div>
       </div>
-      <div id="tray" class="tray" hidden></div>
       <form id="composer" class="composer">
         <button type="button" id="attach-btn" class="icon-btn attach" aria-label="Attach images or text files"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6l8.5-8.5"/></svg></button>
         <input type="file" id="file-input" multiple hidden>

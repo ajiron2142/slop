@@ -92,8 +92,7 @@
   .chat.chat .messages,
   .chat.chat .notice { padding-inline: max(var(--edge), calc((100% - 760px) / 2)); }
   /* The message box, its attachments and the usage meter sit a little wider than the conversation. */
-  .chat.chat .tray,
-  .chat.chat .meter-row,
+  .chat.chat .above-box,
   .chat.chat .composer { padding-inline: max(var(--edge), calc((100% - 840px) / 2)); }
 }
 

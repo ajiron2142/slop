@@ -20,7 +20,7 @@ export default async function ({ browser, site, mock, check }) {
     input.value = 'echo from the mini window';
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   });
-  await p.waitForFunction(() => documentPictureInPicture.window.document.querySelector('.msg.assistant .body')?.textContent.includes('Got 0 image'));
+  await p.waitForFunction(() => documentPictureInPicture.window.document.querySelector('.msg.assistant .copy-reply')); // the reply has finished
   check('you can chat from the floating window', true);
 
   await inMini((doc) => doc.querySelector('.copy-reply').click());

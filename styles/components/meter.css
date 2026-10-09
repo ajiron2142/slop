@@ -1,5 +1,5 @@
 /* Usage meter above the message box, and its summary, which opens right above the button. */
-.meter-row { --meter-bad: #c4302b; --meter-warn: #b7791f; display: flex; justify-content: flex-end; padding: 0 var(--edge) 6px; }
+.meter-row { --meter-bad: #c4302b; --meter-warn: #b7791f; display: flex; margin-left: auto; }
 .meter-anchor { position: relative; }
 .meter {
   display: inline-flex;

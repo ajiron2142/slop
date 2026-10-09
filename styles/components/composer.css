@@ -52,7 +52,10 @@
 .send:active { transform: scale(0.97); }
 
 .composer .attach { width: 44px; height: 44px; }
-.tray { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px var(--edge); }
+/* The row above the message box: attachment chips on the left, the usage meter on the right. Hidden when both are. */
+.above-box { display: flex; align-items: center; gap: 8px; padding: 10px var(--edge); }
+.above-box:not(:has(> :not([hidden]))) { display: none; }
+.tray { display: flex; flex: 1; flex-wrap: wrap; gap: 8px; min-width: 0; }
 .tray-chip {
   display: inline-flex;
   align-items: center;
