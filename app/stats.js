@@ -9,7 +9,9 @@ export function pricesOf(info) {
   return { input, output: info.output_cost_per_token ?? 0, cached: info.cache_read_input_token_cost ?? input };
 }
 
-export const limitOf = (info) => info?.max_input_tokens ?? info?.max_tokens ?? null;
+// The context window. Only max_input_tokens says that: LiteLLM's max_tokens is often the output
+// limit, so it isn't used. Unknown means the meter shows tokens without a percentage.
+export const limitOf = (info) => info?.max_input_tokens ?? null;
 
 // Cost of one reply in dollars, split into input and output; null when the price is unknown.
 export function costOf(info, { input, output, cached = 0 }) {

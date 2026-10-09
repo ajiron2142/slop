@@ -312,7 +312,8 @@ async function complete(chat) {
     if (e.name === 'AbortError') finish = 'stopped';
     else {
       finish = null;
-      const hint = tools && e.kind === 'http' ? '\n\nIf this model doesn\'t support tools, pick another model or disconnect the folder.' : '';
+      // A fact, not a guess about the cause: the server's own message comes first.
+      const hint = tools && e.kind === 'http' ? `\n\nThis request included tools (${tools.map((t) => t.function.name).join(', ')}). If this model doesn't support tools, pick another model or disconnect the folder.` : '';
       chat.messages.push({ role: 'error', content: e.message + hint });
     }
   }
