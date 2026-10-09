@@ -122,7 +122,8 @@ export default async function ({ browser, site, mock, check }) {
   await send(p, 'echo files');
   const sent = mock.requests.at(-1);
   check('API gets the image and the inlined text files', sent.images === 1 && sent.hasFile && sent.model.includes('mini'));
-  check('the newest message tells the model the date, time and time zone', /<app-note>Added by the app, not typed by the user\. Current date and time: \w+day, .+ \d{4} at \d{1,2}:\d\d [AP]M \S+ \(.+, UTC[+-]\d\d:\d\d\)\. Use it only when .+never copy this note into answers or files\.<\/app-note>$/.test(sent.text));
+  check('the system prompt starts with the date and time zone', /^Today is \w+day, \w+ \d{1,2}, \d{4}\. The user's time zone is .+ \(UTC[+-]\d\d:\d\d\)\.$/m.test(sent.system.split('\n')[0]));
+  check('your message is sent exactly as you typed it', !/Today is|app-note|Current date/.test(sent.sent.split('"role":"user"').slice(1).join('')));
   check('the time is not saved or shown in the chat', !(await p.textContent('#messages')).includes('Current date'));
   check('sent message shows thumbnail and file chips', (await p.$$('.msg.user .file-thumb')).length === 1 && (await p.$$('.msg.user .file-chip')).length === 2);
 
