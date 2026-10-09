@@ -1,0 +1,10 @@
+{
+  "baseUrl": "https://llm.example.com",
+  "oidc": {
+    "label": "Sign in",
+    "issuer": "https://idp.example.com",
+    "clientId": "CLIENT_ID",
+    "scope": "openid profile offline_access API_SCOPE",
+    "token": "access"
+  }
+}

@@ -11,12 +11,17 @@ export class ApiError extends Error {
 // Accept the base URL with or without a trailing slash or "/v1".
 const endpoint = (baseUrl, path) => baseUrl.trim().replace(/\/+$/, '').replace(/\/v1$/, '') + path;
 
-async function request(settings, path, init = {}) {
+// sign-in: when signed in, the token comes from here instead of the pasted API key.
+let signedInToken = null;
+export const useSignIn = (getToken) => { signedInToken = getToken; };
+
+async function request(settings, path, init = {}, retried = false) {
+  const token = signedInToken && await signedInToken({ force: retried }); // sign-in
   let res;
   try {
     res = await fetch(endpoint(settings.baseUrl, path), {
       ...init,
-      headers: { Authorization: `Bearer ${settings.apiKey}`, ...init.headers },
+      headers: { Authorization: `Bearer ${token || settings.apiKey}`, ...init.headers },
     });
   } catch (e) {
     if (e.name === 'AbortError') throw e;
@@ -24,6 +29,11 @@ async function request(settings, path, init = {}) {
       'The request failed before any response arrived. Most likely CORS (the LiteLLM host does not allow this origin), or the URL is wrong or unreachable.',
       'cors',
     );
+  }
+  // sign-in: a 401 while signed in gets one fresh token and one more try, then asks you to sign in again.
+  if (res.status === 401 && token) {
+    if (!retried) return request(settings, path, init, true);
+    throw new ApiError('Your sign-in has expired. Sign in again in Settings.', 'auth', 401);
   }
   if (!res.ok) {
     let msg = res.statusText || 'Request failed';

@@ -3,7 +3,7 @@
 //   -> messages (renders it) and storage.js (saves it) -> sidebar (lists chats).
 // Components only handle their own piece of the page and call back here.
 
-import { listModels, getModelInfo, getKeyInfo, streamChat, toApiContent } from './api.js';
+import { listModels, getModelInfo, getKeyInfo, streamChat, toApiContent, useSignIn } from './api.js';
 import * as store from './storage.js';
 import { $ } from './dom.js';
 import { applyTheme, rememberForBoot } from './theme.js';
@@ -19,6 +19,7 @@ import { createPanel } from './components/panel.js';
 import { PASTE_TOOLS, hasPastes, isPasteTool, runPasteTool } from './paste.js'; // smart paste
 import { miniSupported, createMini } from './mini.js'; // mini window
 import { createViewer } from './viewer.js'; // image viewer
+import { loadConfig, createAuth, renderSignIn } from './oidc.js'; // sign-in
 import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 
@@ -32,7 +33,13 @@ const state = {
   draftFolder: null, // folder connected before a new chat's first message
   draftEditable: false, // write mode: that folder may be edited (never saved; reloads come back read-only)
   streaming: null, // { chat, msg, controller }
+  auth: null, // sign-in, when config.json sets it up
 };
+
+let signInBox = null; // sign-in: the Sign in / Signed in as part of Settings
+// Requests can go out with a pasted API key or, when sign-in is set up, while signed in.
+const canAuth = () => Boolean(state.settings.apiKey || state.auth?.signedIn());
+const openSettings = (message) => { signInBox?.draw(); settings.open(message); };
 
 const notice = $('notice');
 const notify = (text = '') => { notice.textContent = text; notice.hidden = !text; };
@@ -131,6 +138,8 @@ const settings = createSettings({
       state.streaming.controller.abort();
     }
     await store.clearAll();
+    state.auth?.signOut(); // sign-in
+    signInBox?.draw();
     state.settings = await store.loadSettings();
     state.active = null;
     state.draftFolder = null;
@@ -162,7 +171,7 @@ createViewer($('chat')); // image viewer
 if (miniSupported) createMini({ button: $('mini-btn'), chat: $('chat'), panel: $('panel'), sidebar: document.querySelector('.sidebar') }); // mini window
 
 $('new-chat').addEventListener('click', newChat);
-$('settings-btn').addEventListener('click', () => settings.open());
+$('settings-btn').addEventListener('click', () => openSettings());
 
 // ---- rendering ----
 
@@ -189,7 +198,7 @@ async function reloadChatList() {
 async function refreshModels() {
   const s = state.settings;
   state.models = [];
-  if (s.baseUrl && s.apiKey) {
+  if (s.baseUrl && canAuth()) {
     try {
       [state.models, state.modelInfo, state.keyInfo] = await Promise.all([listModels(s), getModelInfo(s), getKeyInfo(s)]);
       notify('');
@@ -215,7 +224,7 @@ function showModels() {
 function send({ text, files }) {
   if (state.streaming) return false;
   const s = state.settings;
-  if (!s.baseUrl || !s.apiKey) { settings.open('Set a base URL and API key first.'); return false; }
+  if (!s.baseUrl || !canAuth()) { openSettings(state.auth ? 'Sign in, or set a base URL and API key, first.' : 'Set a base URL and API key first.'); return false; }
   if (!s.model) { notify('Pick a model first.'); return false; }
 
   if (!state.active) {
@@ -435,8 +444,32 @@ async function init() {
   await reloadChatList();
   modelPicker.set([], state.settings.model);
   render();
-  if (!state.settings.baseUrl) settings.open('Welcome! Enter your LiteLLM base URL and API key.');
-  else refreshModels();
+  const note = await setUpSignIn(); // sign-in
+  if (!state.settings.baseUrl) openSettings(note || 'Welcome! Enter your LiteLLM base URL and API key.');
+  else if (!canAuth()) openSettings(note || (state.auth ? `Welcome! ${state.auth.label} to start, or enter an API key.` : 'Enter your API key to start.'));
+  else {
+    if (note) notify(note);
+    refreshModels();
+  }
+}
+
+// sign-in: config.json (optional) can pre-fill the base URL and turn on signing in. Returns a message
+// to show when something went wrong, '' otherwise.
+async function setUpSignIn() {
+  try {
+    const config = await loadConfig();
+    if (config?.baseUrl && !state.settings.baseUrl) {
+      state.settings.baseUrl = config.baseUrl;
+      await store.saveSettings(state.settings);
+    }
+    if (!config?.oidc) return '';
+    state.auth = createAuth(config.oidc);
+    useSignIn((options) => state.auth.getToken(options));
+    signInBox = renderSignIn($('signin'), state.auth, { onSignOut: refreshModels });
+    return await state.auth.handleCallback();
+  } catch (e) {
+    return e.message;
+  }
 }
 
 init();

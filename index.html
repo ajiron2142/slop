@@ -50,6 +50,7 @@
   <link rel="modulepreload" href="app/copy.js">
   <link rel="modulepreload" href="app/mini.js">
   <link rel="modulepreload" href="app/viewer.js">
+  <link rel="modulepreload" href="app/oidc.js">
   <link rel="modulepreload" href="vendor/marked.esm.js">
   <link rel="modulepreload" href="vendor/purify.es.js">
   <link rel="modulepreload" href="vendor/idb-keyval.js">
@@ -106,6 +107,7 @@
     <label>LiteLLM base URL
       <input id="set-base-url" type="url" autofocus placeholder="https://litellm.example.com" autocomplete="off" spellcheck="false">
     </label>
+    <div id="signin" class="signin" hidden></div><!-- sign-in: filled by app/oidc.js when config.json sets it up -->
     <label>API key
       <input id="set-api-key" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false">
     </label>

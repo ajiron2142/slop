@@ -79,6 +79,8 @@ Done.`;
 //   anything else: the long reply
 export async function startMock() {
   const requests = []; // every chat request received, newest last
+  const auths = []; // the Authorization header of every request, newest last
+  const rejected = new Set(); // bearer tokens answered with 401, like an expired one
   const sse = (res, data) => res.write(`data: ${JSON.stringify(data)}\n\n`);
   const usage = (body, text) => {
     const huge = String(body.messages.at(-1).content).startsWith('huge');
@@ -90,6 +92,8 @@ export async function startMock() {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', '*');
     if (req.method === 'OPTIONS') return res.end();
+    auths.push(req.headers.authorization);
+    if (rejected.has(req.headers.authorization?.slice(7))) return res.writeHead(401, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { message: 'token expired' } }));
     if (req.url === '/v1/models') return res.end(JSON.stringify({ data: Array.from({ length: 40 }, (_, i) => ({ id: MODELS[i % 8] + (i >= 8 ? `-v${Math.floor(i / 8)}` : '') })) }));
     // Like the deployments where only the v2 endpoint has the data.
     if (req.url === '/v2/model/info') return res.end(JSON.stringify({ data: INFO }));
@@ -210,5 +214,68 @@ export async function startMock() {
       res.end('data: [DONE]\n\n');
     });
   });
-  return { url: await listen(server), requests, close: () => server.close() };
+  return { url: await listen(server), requests, auths, rejected, close: () => server.close() };
+}
+
+// A fake OpenID Connect provider for the sign-in tests: discovery, an authorize page that signs
+// "alice" in straight away, and a token endpoint that checks PKCE and rotates refresh tokens.
+// Access tokens are at-1, at-2, …; `expiresIn` sets how long the next ones last (seconds).
+export async function startIdp() {
+  const crypto = await import('node:crypto');
+  const codes = new Map(); // code -> { challenge, nonce, redirect }
+  let n = 0;
+  let refresh = null; // the only refresh token that still works
+  const idp = { url: '', expiresIn: 3600, grants: [] };
+  const b64 = (v) => Buffer.from(JSON.stringify(v)).toString('base64url');
+  const tokens = (nonce) => {
+    n++;
+    refresh = `rt-${n}`;
+    const idToken = `${b64({ alg: 'none' })}.${b64({ iss: idp.url, sub: 'u1', preferred_username: 'alice', nonce, exp: Math.floor(Date.now() / 1000) + idp.expiresIn })}.`;
+    return { access_token: `at-${n}`, id_token: idToken, refresh_token: refresh, expires_in: idp.expiresIn, token_type: 'Bearer' };
+  };
+  const server = http.createServer((req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    if (req.method === 'OPTIONS') return res.end();
+    const url = new URL(req.url, idp.url);
+    if (url.pathname === '/.well-known/openid-configuration') {
+      return res.end(JSON.stringify({ issuer: idp.url, authorization_endpoint: `${idp.url}/authorize`, token_endpoint: `${idp.url}/token` }));
+    }
+    if (url.pathname === '/authorize') {
+      const p = url.searchParams;
+      if (p.get('code_challenge_method') !== 'S256' || p.get('response_type') !== 'code') return res.writeHead(400).end('bad request');
+      const code = `code-${codes.size + 1}`;
+      codes.set(code, { challenge: p.get('code_challenge'), nonce: p.get('nonce'), redirect: p.get('redirect_uri') });
+      const back = new URL(p.get('redirect_uri'));
+      back.searchParams.set('code', code);
+      back.searchParams.set('state', p.get('state'));
+      return res.writeHead(302, { Location: back.href }).end();
+    }
+    if (url.pathname === '/token' && req.method === 'POST') {
+      let raw = '';
+      req.on('data', (c) => (raw += c));
+      req.on('end', () => {
+        const p = new URLSearchParams(raw);
+        idp.grants.push(p.get('grant_type'));
+        const fail = (error) => res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error }));
+        if (p.get('grant_type') === 'authorization_code') {
+          const c = codes.get(p.get('code'));
+          codes.delete(p.get('code'));
+          const hash = c && crypto.createHash('sha256').update(p.get('code_verifier') ?? '').digest('base64url');
+          if (!c || hash !== c.challenge || p.get('redirect_uri') !== c.redirect) return fail('invalid_grant');
+          return res.end(JSON.stringify(tokens(c.nonce)));
+        }
+        if (p.get('grant_type') === 'refresh_token') {
+          if (p.get('refresh_token') !== refresh) return fail('invalid_grant');
+          return res.end(JSON.stringify(tokens(undefined)));
+        }
+        fail('unsupported_grant_type');
+      });
+      return;
+    }
+    res.writeHead(404).end();
+  });
+  idp.url = await listen(server);
+  idp.close = () => server.close();
+  return idp;
 }

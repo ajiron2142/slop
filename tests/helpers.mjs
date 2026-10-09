@@ -9,7 +9,8 @@ export async function openApp({ browser, site, mock }, { viewport = { width: 128
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  page.on('console', (m) => { if (m.type() === 'error' && !/status of 400/.test(m.text())) errors.push(m.text()); });
+  // A missing config.json is normal (nginx answers 204 there; the test server answers 404).
+  page.on('console', (m) => { if (m.type() === 'error' && !/status of 400/.test(m.text()) && !m.location().url?.endsWith('/config.json')) errors.push(m.text()); });
   await page.goto(site);
   await page.waitForSelector('#settings[open]');
   if (connect) {

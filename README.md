@@ -23,6 +23,51 @@ docker run -p 8080:8080 chat
 
 The image is `nginx-unprivileged`, so it runs under OpenShift's arbitrary UIDs. `nginx.conf` turns on gzip, has the browser re-check app files on each load (so a new release is never mixed with old cached files), caches fonts for a month, and stops other sites from embedding the page.
 
+## Sign-in (optional)
+
+Instead of pasting an API key, people can sign in with your organisation's identity provider (Microsoft Entra ID, GitLab, Keycloak or any other OpenID Connect provider). It runs entirely in the browser (authorization code with PKCE, no backend and no secret), and it only turns on when the web root has a `config.json`. Without one, the app is exactly as described above. The repo never contains your provider's details: `config.json` is in `.gitignore` and isn't copied into the image.
+
+```json
+{
+  "baseUrl": "https://llm.example.com",
+  "oidc": {
+    "label": "Sign in",
+    "issuer": "https://idp.example.com",
+    "clientId": "CLIENT_ID",
+    "scope": "openid profile offline_access API_SCOPE",
+    "token": "access"
+  }
+}
+```
+
+- `baseUrl` fills in the LiteLLM base URL for new users; they can still change it.
+- `issuer` is the provider's address; the app reads `{issuer}/.well-known/openid-configuration` to find the rest.
+- `token` is the token sent to LiteLLM: `"access"` (the default) or `"id"`, whichever your LiteLLM accepts.
+- `label` is the button's text.
+
+**Register the app with your provider** as a single-page application (a *public* client: no secret), with the redirect URI set to the exact address people open, including the trailing slash (e.g. `https://chat.example.com/`).
+
+- **Entra ID:** App registrations, then Authentication, then add a *Single-page application* platform with that redirect URI. The issuer is `https://login.microsoftonline.com/<tenant-id>/v2.0`. Put the API's scope (e.g. `api://<api-app-id>/access`) in `scope`. Its refresh tokens for single-page apps last about a day, so expect to click Sign in daily (usually without a password).
+- **GitLab:** User Settings (or Admin), then Applications; untick *Confidential*, tick `openid` and `profile`. The issuer is your GitLab address.
+- **Keycloak:** a client with *Client authentication* off and *Standard flow* on, the redirect URI under *Valid redirect URIs*, and the app's address under *Web origins*. The issuer is `https://<keycloak>/realms/<realm>`.
+
+**LiteLLM has to accept the token.** By default it expects its own `sk-` keys; it needs its JWT authentication set up for your provider, or a gateway in front of it that checks the token. Check before rolling out: `curl -H "Authorization: Bearer <token>" https://<litellm>/v1/models` should list models.
+
+**Provide `config.json`** (copy `config.example.json` and fill it in):
+
+```sh
+# Locally
+docker run -p 8080:8080 -v "$PWD/config.json:/usr/share/nginx/html/config.json:ro" chat
+
+# Kubernetes / OpenShift: a ConfigMap mounted as that one file
+oc create configmap chat-config --from-file=config.json
+#   in the Deployment:
+#   volumes:      [{ name: config, configMap: { name: chat-config } }]
+#   volumeMounts: [{ name: config, mountPath: /usr/share/nginx/html/config.json, subPath: config.json }]
+```
+
+How it behaves: the sign-in lasts while the tab is open (it's kept in that tab's session storage, not saved with your chats); the token is refreshed a minute before it expires; a 401 gets one fresh token and one retry, then asks you to sign in again; Sign out (in Settings) forgets it. The "Signed in as" name is read from the ID token for display only. The page's security policy already allows any `https://` address, so nothing else needs configuring.
+
 ## How it's organised
 
 ```
@@ -41,6 +86,7 @@ app/                  behaviour
   lines.js            line search and numbered ranges, shared by the folder tools and smart paste
   ignore.js           which files to leave out, read from the folder's .gitignore files (folder tools and git)
   copy.js             Copy reply: formatted HTML for Teams/Outlook plus markdown, in one click
+  oidc.js             sign-in with an identity provider, when config.json sets it up (removable add-on)
   viewer.js           image viewer: click an image to see it large (removable add-on)
   mini.js             mini window: pops the chat into a floating always-on-top window (Chrome/Edge, removable add-on)
   stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)
