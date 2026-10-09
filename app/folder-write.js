@@ -9,7 +9,7 @@
 // remove or simplify each line marked "write mode" in main.js and composer.js.
 
 import { el } from './dom.js';
-import { cleanPath, insidePath } from './folder.js';
+import { fromModel, forModel } from './folder.js';
 import { diffLines } from './diff.js';
 
 export const pickEditableFolder = () => window.showDirectoryPicker({ mode: 'readwrite' });
@@ -32,7 +32,7 @@ export const WRITE_TOOLS = [
       parameters: {
         type: 'object',
         properties: {
-          path: str('File path, e.g. "deploy/route.yaml".'),
+          path: str('File path, starting with the folder\'s name like every path.'),
           old_text: str('The exact current text to replace, without line numbers. Must appear exactly once.'),
           new_text: str('The text to put in its place.'),
         },
@@ -47,7 +47,7 @@ export const WRITE_TOOLS = [
       description: 'Create a new file, or replace the whole content of a small one. The user reviews it first.',
       parameters: {
         type: 'object',
-        properties: { path: str('File path, e.g. "scripts/check-db.sh".'), content: str('The complete file content.') },
+        properties: { path: str('File path, starting with the folder\'s name. Folders in it are created as needed.'), content: str('The complete file content.') },
         required: ['path', 'content'],
       },
     },
@@ -135,9 +135,10 @@ export function createWriter({ onChange }) {
     const name = call.function.name;
     try {
       args = JSON.parse(call.function.arguments || '{}');
-      const path = await insidePath(root, args.path);
-      if (!path || path.split('/').includes('..')) throw new Error('give a path inside the folder');
-      const before = await readText(root, path);
+      const file = fromModel(root, args.path); // inside the folder
+      if (!file) throw new Error('give a file path, not the folder itself');
+      const path = forModel(root, file); // as the model and you see it
+      const before = await readText(root, file);
       let after;
       if (name === 'edit_file') {
         if (before == null) throw new Error(`${path} doesn't exist; use write_file to create it`);
@@ -153,7 +154,7 @@ export function createWriter({ onChange }) {
       if (after === before) return { label: `Left ${path} as is`, result: 'No change needed: the file already has that content.' };
 
       reply.root = root;
-      const change = { path, before, after, lines: diffLines(before ?? '', after, before == null), status: 'waiting' };
+      const change = { path, file, before, after, lines: diffLines(before ?? '', after, before == null), status: 'waiting' };
       reply.changes.push(change);
 
       let decision = { choice: 'apply', note: '' };
@@ -173,7 +174,7 @@ export function createWriter({ onChange }) {
           : `The user skipped this change to ${path}. Don't make it again unless they ask.`;
         return { label: `Skipped ${path}`, result };
       }
-      await writeText(root, path, after);
+      await writeText(root, file, after);
       change.status = before == null ? 'created' : 'applied';
       changed();
       const { add, del } = change.lines.stats;
@@ -182,7 +183,7 @@ export function createWriter({ onChange }) {
         : { label: `Edited ${path} (+${add} −${del})`, result: `Applied the change to ${path}.` };
     } catch (e) {
       if (e.name === 'AbortError') throw e;
-      return { label: `Couldn't change ${cleanPath(args.path) || name}`, result: `Error: ${e.message}` };
+      return { label: `Couldn't change ${args.path || name}`, result: `Error: ${e.message}` };
     }
   }
 
@@ -192,11 +193,11 @@ export function createWriter({ onChange }) {
     if (!r || r.undone) return;
     const done = r.changes.filter((c) => c.status === 'applied' || c.status === 'created').reverse();
     const edited = [];
-    for (const c of done) if ((await readText(r.root, c.path)) !== c.after) edited.push(c.path);
+    for (const c of done) if ((await readText(r.root, c.file)) !== c.after) edited.push(c.path);
     if (edited.length && !confirm(`Changed since the AI edited them:\n${edited.join('\n')}\n\nUndo anyway and lose those edits?`)) return;
     for (const c of done) {
-      if (c.before == null) await removeFile(r.root, c.path);
-      else await writeText(r.root, c.path, c.before);
+      if (c.before == null) await removeFile(r.root, c.file);
+      else await writeText(r.root, c.file, c.before);
     }
     r.undone = true;
     changed();

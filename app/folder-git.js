@@ -7,7 +7,7 @@
 // their lines in index.html and tests/run.mjs, and the lines marked "git" in main.js and
 // composer.js. (diff.js stays: write mode uses it too.)
 
-import { cleanPath } from './folder.js';
+import { fromModel, forModel } from './folder.js';
 import { diffLines, unifiedText } from './diff.js';
 
 export const gitPrompt =
@@ -21,14 +21,14 @@ const tool = (name, description, properties) =>
 export const GIT_TOOLS = [
   tool('git_log', 'List commits, newest first: short hash, date, author, subject, and the branches and tags that point at them.', {
     range: str('A branch, tag or commit like "main", "v1.2" or "HEAD~5", or a range "main..feature" (commits in feature that main lacks). Default: the current branch.'),
-    path: str('Only commits that changed this file or folder.'),
+    path: str('Only commits that changed this file or folder (starting with the folder\'s name, like every path).'),
     search: str('Only commits whose message or author contains this text.'),
     limit: { type: 'integer', description: 'How many commits (default 20, at most 100).' },
   }),
   tool('git_diff', "Show changes as a unified diff. Without from: the uncommitted changes (staged or not, and new files) compared with the last commit. With only from: that commit's message and changes. With from and to: the changes between them.", {
     from: str('A commit, branch or tag, e.g. "a1b2c3d", "HEAD~1" or "main".'),
     to: str('A second commit, branch or tag to compare with from.'),
-    path: str('Only this file or folder.'),
+    path: str('Only this file or folder (starting with the folder\'s name).'),
   }),
 ];
 
@@ -121,7 +121,7 @@ export async function runGitTool(root, name, argsJson) {
 }
 
 async function log(repo, { range, path, search, limit }) {
-  path = cleanPath(path);
+  path = path ? fromModel(repo.root, path) : '';
   limit = Math.min(Math.max(Number(limit) || 20, 1), 100);
   if (!range && !(await resolveRef(repo, 'HEAD'))) return { label: 'Read git log', result: 'No commits yet.' };
   const [a, b] = String(range || 'HEAD').split('..');
@@ -139,15 +139,15 @@ async function log(repo, { range, path, search, limit }) {
       return lines.length < limit;
     },
   });
-  const label = `Read git log${range ? ` ${range}` : ''}${path ? ` for ${path}` : ''}`;
+  const label = `Read git log${range ? ` ${range}` : ''}${path ? ` for ${forModel(repo.root, path)}` : ''}`;
   if (!lines.length) return { label, result: capped ? `No matching commits in the newest ${MAX_WALK}.` : 'No matching commits.' };
   const more = lines.length === limit ? `\n(showing ${limit}; ask for more with limit, or narrow it with path, search or range)` : '';
   return { label, result: lines.join('\n') + more };
 }
 
 async function diff(repo, { from, to, path }) {
-  path = cleanPath(path);
-  const where = path ? ` in ${path}` : '';
+  path = path ? fromModel(repo.root, path) : '';
+  const where = path ? ` in ${forModel(repo.root, path)}` : '';
   if (!from && !to) {
     const head = await resolveRef(repo, 'HEAD');
     const changes = await workingChanges(repo, head && (await readCommit(repo, head)).tree, path);
@@ -178,18 +178,19 @@ async function describe(repo, changes, what) {
   let add = 0;
   let del = 0;
   for (const c of changes.sort((x, y) => (x.path < y.path ? -1 : 1))) {
+    const shown = forModel(repo.root, c.path); // with the folder's name, like every path the model sees
     const before = await content(repo, c.before);
     const after = await content(repo, c.after);
     if (before === undefined || after === undefined) {
-      listed.push(`${c.path} (binary or larger than 1 MB, not shown)`);
+      listed.push(`${shown} (binary or larger than 1 MB, not shown)`);
       continue;
     }
     if (before !== null && after !== null && before.replace(/\r\n/g, '\n') === after.replace(/\r\n/g, '\n')) continue; // only line endings differ
     const lines = diffLines(before ?? '', after ?? '', before === null);
     add += lines.stats.add;
     del += lines.stats.del;
-    const text = `--- ${before === null ? '/dev/null' : `a/${c.path}`}\n+++ ${after === null ? '/dev/null' : `b/${c.path}`}\n${after === null ? '(deleted)' : unifiedText(lines)}`;
-    if (size + text.length > MAX_OUT) { listed.push(`${c.path} (+${lines.stats.add} −${lines.stats.del}, not shown: ask with path)`); continue; }
+    const text = `--- ${before === null ? '/dev/null' : `a/${shown}`}\n+++ ${after === null ? '/dev/null' : `b/${shown}`}\n${after === null ? '(deleted)' : unifiedText(lines)}`;
+    if (size + text.length > MAX_OUT) { listed.push(`${shown} (+${lines.stats.add} −${lines.stats.del}, not shown: ask with path)`); continue; }
     size += text.length;
     parts.push(text);
   }

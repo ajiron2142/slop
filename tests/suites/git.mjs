@@ -120,7 +120,7 @@ export default async function ({ browser, site, mock, check }) {
   const upstream = (await tool('git_log', { range: 'main..origin/main' })).result;
   check('git_log can show the upstream side', hashes(upstream).join() === repo.git('log', '--format=%h', 'main..origin/main'));
   check('git_log names tags and remote branches', log.includes('Say hello (tag: v1.0)') && upstream.includes('Upstream change (origin/main)'));
-  check('git_log filters by path', hashes((await tool('git_log', { path: 'src/long.txt' })).result).join() === repo.git('log', '--format=%h', '--', 'src/long.txt').split('\n').join());
+  check('git_log filters by path', hashes((await tool('git_log', { path: 'work/src/long.txt' })).result).join() === repo.git('log', '--format=%h', '--', 'src/long.txt').split('\n').join());
   check('git_log filters by text', hashes((await tool('git_log', { search: 'tweak' })).result).length === 3);
   check('git_log takes a tag and a limit', hashes((await tool('git_log', { range: 'v1.0', limit: 2 })).result).join() === repo.git('log', '--format=%h', '-n', '2', 'v1.0').split('\n').join());
 
@@ -132,11 +132,11 @@ export default async function ({ browser, site, mock, check }) {
   check('packed objects stored as deltas read correctly', deltas.includes('-changed 1\n+changed 2') && deltas.includes('@@ -148 +148 @@'));
   const between = (await tool('git_diff', { from: 'v1.0', to: 'main' })).result;
   const expected = repo.git('diff', '--name-only', 'v1.0', 'main').split('\n');
-  check('git_diff compares two revisions like git', expected.every((f) => between.includes(`+++ b/${f}`)) && between.startsWith(`${expected.length} files changed`));
+  check('git_diff compares two revisions like git', expected.every((f) => between.includes(`+++ b/work/${f}`)) && between.startsWith(`${expected.length} files changed`));
   const work = (await tool('git_diff')).result;
-  check('uncommitted changes include edits, deletions, staged and new files', work.includes('+More words.') && work.includes('--- a/deploy/route.yaml\n+++ /dev/null') && work.includes('+++ b/staged.txt') && work.includes('+++ b/new.txt'));
+  check('uncommitted changes include edits, deletions, staged and new files', work.includes('+More words.') && work.includes('--- a/work/deploy/route.yaml\n+++ /dev/null') && work.includes('+++ b/work/staged.txt') && work.includes('+++ b/work/new.txt'));
   check('ignored files are left out', !work.includes('out.js') && !work.includes('debug.log'));
-  check('a path narrows the diff', (await tool('git_diff', { path: 'README.md' })).result.startsWith('1 file changed, +2 −0'));
+  check('a path narrows the diff', (await tool('git_diff', { path: 'work/README.md' })).result.startsWith('1 file changed, +2 −0'));
   check('short ids, ~ and ^ work', (await tool('git_diff', { from: repo.git('rev-parse', '--short=5', 'HEAD^') })).result.includes('Local change one'));
   check('unknown revisions are an error, not a crash', (await tool('git_log', { range: 'nope' })).result === 'Error: unknown revision "nope"');
   check('other .git files are never read as refs', (await tool('git_log', { range: 'config' })).result.startsWith('Error: unknown revision'));

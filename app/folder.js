@@ -20,7 +20,7 @@ export const folderPrompt = (handle) =>
   'To find something, use search_files first, then read_file with start_line/end_line around the matches ' +
   'instead of reading whole files. Use list_files to see how the folder is laid out. ' +
   'You can call several tools at once. ' +
-  `Paths start inside the folder: "src/app.js", not "${handle.name}/src/app.js".`;
+  `Every path starts with the folder's name, like "${handle.name}/src/app.js"; "${handle.name}" alone is the whole folder.`;
 
 const str = (description) => ({ type: 'string', description });
 const int = (description) => ({ type: 'integer', description });
@@ -29,17 +29,17 @@ const tool = (name, description, properties, required = []) =>
 
 export const FOLDER_TOOLS = [
   tool('list_files', 'List file paths in the connected folder or a subfolder, including subfolders.', {
-    path: str('Subfolder, e.g. "src". Empty for the whole folder.'),
-    pattern: str('Only names matching this glob, e.g. "*.yaml" or "src/**/*.test.js".'),
+    path: str('Subfolder, starting with the folder\'s name like every path. Empty for the whole folder.'),
+    pattern: str('Only names matching this glob, e.g. "*.yaml". A pattern with "/" matches the whole path, folder name included.'),
   }),
   tool('search_files', 'Search file contents, like grep. Returns matching lines with line numbers, grouped by file. Case-insensitive unless the query has capitals.', {
     query: str('Text to find, or a regular expression when regex is true.'),
-    path: str('Subfolder to search. Empty for the whole folder.'),
+    path: str('Subfolder to search, starting with the folder\'s name. Empty for the whole folder.'),
     pattern: str('Only files matching this glob, e.g. "*.py".'),
     regex: { type: 'boolean', description: 'Treat query as a JavaScript regular expression.' },
   }, ['query']),
   tool('read_file', `Read a text file. Long files come back ${1000} lines at a time; ask for the next part with start_line.`, {
-    path: str('File path, e.g. "src/app.js".'),
+    path: str('File path, starting with the folder\'s name.'),
     start_line: int('First line to read (from 1).'),
     end_line: int('Last line to read.'),
   }, ['path']),
@@ -59,26 +59,28 @@ export async function runTool(root, name, argsJson) {
   let args = {};
   try {
     args = JSON.parse(argsJson || '{}');
-    const path = await insidePath(root, args.path);
-    if (name === 'list_files') return { label: `Listed ${path || root.name}`, result: await list(root, path, args.pattern) };
-    if (name === 'search_files') return { label: `Searched "${args.query}"${path ? ` in ${path}` : ''}`, result: await search(root, path, args) };
+    const path = args.path ? fromModel(root, args.path) : '';
+    if (name === 'list_files') return { label: `Listed ${forModel(root, path)}`, result: await list(root, path, args.pattern) };
+    if (name === 'search_files') return { label: `Searched "${args.query}"${path ? ` in ${forModel(root, path)}` : ''}`, result: await search(root, path, args) };
     if (name === 'read_file') return await read(root, path, args);
     throw new Error(`unknown tool ${name}`);
   } catch (e) {
-    return { label: `Couldn't ${name === 'search_files' ? 'search' : 'open'} ${cleanPath(args.path) || args.query || name}`, result: `Error: ${e.message}` };
+    return { label: `Couldn't ${name === 'search_files' ? 'search' : 'open'} ${args.path || args.query || name}`, result: `Error: ${e.message}` };
   }
 }
 
-export const cleanPath = (path) => String(path ?? '').split('/').filter((p) => p && p !== '.').join('/');
-
-// A path from the model, inside the folder. Models often start it with the folder's own name
-// ("test/hello.txt" in a folder called test); that's dropped unless a subfolder really has that name.
-export async function insidePath(root, path) {
-  const clean = cleanPath(path);
-  const [first, ...rest] = clean.split('/');
-  if (first !== root.name) return clean;
-  try { await root.getDirectoryHandle(first); return clean; } catch { return rest.join('/'); }
+// Paths between the app and the model always start with the folder's name: "test/src/app.js" in a
+// folder called test, and "test" for the folder itself. (The browser never says where the folder is
+// on disk, so that's as full as a path can be.) Inside the app, paths are relative to the folder.
+// One fixed rule both ways, so nothing is guessed.
+export function fromModel(root, path) {
+  const parts = String(path ?? '').split('/').filter((p) => p && p !== '.');
+  if (parts.includes('..')) throw new Error('paths must stay inside the folder');
+  if (parts[0] !== root.name) throw new Error(`paths start with the folder's name, like "${root.name}/${parts.join('/') || '…'}"`);
+  return parts.slice(1).join('/');
 }
+
+export const forModel = (root, path) => (path ? `${root.name}/${path}` : root.name);
 
 async function resolve(root, path, kind) {
   const parts = path.split('/').filter(Boolean);
@@ -116,7 +118,7 @@ async function walk(dir, prefix, limit, out = []) {
 
 async function list(root, path, pattern) {
   const test = globTest(pattern);
-  const files = (await walk(await resolve(root, path, 'dir'), path, Infinity)).map(([p]) => p).filter(test);
+  const files = (await walk(await resolve(root, path, 'dir'), path, Infinity)).map(([p]) => forModel(root, p)).filter(test);
   if (!files.length) return pattern ? `No files match ${pattern}.` : '(empty folder)';
   const more = files.length > MAX_FILES ? `\n…and ${files.length - MAX_FILES} more. Narrow it with path or pattern.` : '';
   return files.slice(0, MAX_FILES).join('\n') + more;
@@ -126,7 +128,7 @@ async function search(root, path, { query, pattern, regex }) {
   const re = queryRegex(query, regex);
 
   const test = globTest(pattern);
-  const files = (await walk(await resolve(root, path, 'dir'), path, MAX_SCAN)).filter(([p]) => test(p) && !NOISE.test(p));
+  const files = (await walk(await resolve(root, path, 'dir'), path, MAX_SCAN)).filter(([p]) => test(forModel(root, p)) && !NOISE.test(p));
   const out = [];
   let total = 0;
   let hitFiles = 0;
@@ -139,7 +141,7 @@ async function search(root, path, { query, pattern, regex }) {
       const hits = [];
       for (let n = 0; n < lines.length && hits.length < PER_FILE + 1; n++) if (re.test(lines[n])) hits.push(n);
       const shown = hits.slice(0, Math.min(PER_FILE, MAX_MATCHES - total));
-      out.push(files[i + j][0], ...shown.map((n) => `  ${n + 1}: ${excerpt(lines[n], re)}`));
+      out.push(forModel(root, files[i + j][0]), ...shown.map((n) => `  ${n + 1}: ${excerpt(lines[n], re)}`));
       if (hits.length > shown.length) out.push('  …more in this file');
       total += shown.length;
       hitFiles++;
@@ -175,8 +177,8 @@ async function read(root, path, { start_line, end_line }) {
   const lines = splitLines(text);
   const ranged = start_line != null || end_line != null;
   // A short file asked for whole comes back as is: line numbers would only add tokens.
-  if (!ranged && lines.length <= MAX_LINES && text.length <= MAX_CHARS) return { label: `Read ${path}`, result: text };
+  if (!ranged && lines.length <= MAX_LINES && text.length <= MAX_CHARS) return { label: `Read ${forModel(root, path)}`, result: text };
 
   const { from, last, text: result } = numberedRange(lines, start_line, end_line);
-  return { label: `Read ${path}${ranged ? `:${from}–${last}` : ''}`, result };
+  return { label: `Read ${forModel(root, path)}${ranged ? `:${from}–${last}` : ''}`, result };
 }

@@ -138,11 +138,11 @@ export async function startMock() {
         const call = (id, name, args) => ({ index: Number(id.slice(1)), id, type: 'function', function: { name, arguments: JSON.stringify(args) } });
         if (results.length === 0) {
           sse(res, { choices: [{ delta: { content: 'Making two changes.', tool_calls: [
-            call('e0', 'edit_file', { path: 'src/app.js', old_text: '"hi"', new_text: '"hello"' }),
-            call('e1', 'write_file', { path: 'wproject/notes/new.txt', content: 'fresh\n' }), // models often start with the folder's name
+            call('e0', 'edit_file', { path: 'wproject/src/app.js', old_text: '"hi"', new_text: '"hello"' }),
+            call('e1', 'write_file', { path: 'wproject/notes/new.txt', content: 'fresh\n' }),
           ] } }] });
         } else if (results.length === 2) {
-          sse(res, { choices: [{ delta: { tool_calls: [call('e0', 'edit_file', { path: 'src/app.js', old_text: 'nope', new_text: 'x' })] } }] });
+          sse(res, { choices: [{ delta: { tool_calls: [call('e0', 'edit_file', { path: 'wproject/src/app.js', old_text: 'nope', new_text: 'x' })] } }] });
         } else {
           sse(res, { choices: [{ delta: { content: `EDIT[${results[0].content}] CREATE[${results[1].content}] BAD[${results[2].content}]` } }] });
         }
@@ -176,8 +176,8 @@ export async function startMock() {
           sse(res, { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: 'th":""}' } }] } }] });
         } else if (results.length === 1) {
           sse(res, { choices: [{ delta: { tool_calls: [
-            { index: 0, id: 'c2', type: 'function', function: { name: 'read_file', arguments: '{"path":"src/app.js"}' } },
-            { index: 1, id: 'c3', type: 'function', function: { name: 'read_file', arguments: '{"path":"../secret.txt"}' } },
+            { index: 0, id: 'c2', type: 'function', function: { name: 'read_file', arguments: '{"path":"project/src/app.js"}' } },
+            { index: 1, id: 'c3', type: 'function', function: { name: 'read_file', arguments: '{"path":"project/../secret.txt"}' } },
           ] } }] });
         } else {
           sse(res, { choices: [{ delta: { content: `FILES[${results[0].content.replace(/\n/g, ',')}] APP[${results[1].content}] ESCAPE[${results[2].content.slice(0, 60)}]` } }] });

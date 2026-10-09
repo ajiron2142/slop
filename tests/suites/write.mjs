@@ -44,21 +44,21 @@ export default async function ({ browser, site, mock, check }) {
   await waiting();
   const sent = mock.requests.at(-1);
   check('edit mode sends the write tools and says how to use them', sent.toolNames.includes('edit_file') && sent.toolNames.includes('write_file') && sent.system.includes('change files'));
-  check('the model is told to use the tools, not ask first, and where paths start', sent.system.includes("don't ask in the chat first") && sent.system.includes('not "wproject/src/app.js"'));
-  check('the change shows in the reply, open, with its diff', (await waitingPath()) === 'src/app.js' && (await p.textContent('.change.waiting .diff')).includes('+ console.log("hello")') && (await p.textContent('.change.waiting .diff')).startsWith('@@ line 1'));
+  check('the model is told to use the tools, not ask first, and where paths start', sent.system.includes("don't ask in the chat first") && sent.system.includes('starts with the folder\'s name, like "wproject/src/app.js"'));
+  check('the change shows in the reply, open, with its diff', (await waitingPath()) === 'wproject/src/app.js' && (await p.textContent('.change.waiting .diff')).includes('+ console.log("hello")') && (await p.textContent('.change.waiting .diff')).startsWith('@@ line 1'));
   check('the side panel stays closed', await p.isHidden('#panel'));
-  check('the chat says what is waiting', (await p.textContent('.write-log')).includes('Waiting for you: src/app.js'));
+  check('the chat says what is waiting', (await p.textContent('.write-log')).includes('Waiting for you: wproject/src/app.js'));
   check('nothing is written before you choose', (await file('src/app.js')) === 'console.log("hi")');
   await footButton('Apply');
-  await p.waitForFunction(() => document.querySelector('.change.waiting .change-path')?.textContent === 'notes/new.txt');
+  await p.waitForFunction(() => document.querySelector('.change.waiting .change-path')?.textContent === 'wproject/notes/new.txt');
   check('the next change opens and the applied one closes', (await p.textContent('.change.waiting .diff')).includes('+ fresh') && (await p.$$('.write-review .diff')).length === 1);
   await footButton('Skip');
   await idle(p);
   const reply = await p.textContent('.msg.assistant:last-of-type .body');
-  check('the model hears what was applied, skipped and refused', reply.includes('EDIT[Applied the change to src/app.js.]') && reply.includes('CREATE[The user skipped this change') && reply.includes("BAD[Error: old_text wasn't found in src/app.js"));
+  check('the model hears what was applied, skipped and refused', reply.includes('EDIT[Applied the change to wproject/src/app.js.]') && reply.includes('CREATE[The user skipped this change') && reply.includes("BAD[Error: old_text wasn't found in wproject/src/app.js"));
   check('applied changes are written', (await file('src/app.js')) === 'console.log("hello")');
   check('skipped changes are not', (await file('notes/new.txt')) === null && (await file('wproject/notes/new.txt')) === null);
-  check('the reply lists what happened', (await p.textContent('.msg.assistant:last-of-type .tool-log')) === "Edited src/app.js (+1 −1) · Skipped notes/new.txt · Couldn't change src/app.js");
+  check('the reply lists what happened', (await p.textContent('.msg.assistant:last-of-type .tool-log')) === "Edited wproject/src/app.js (+1 −1) · Skipped wproject/notes/new.txt · Couldn't change wproject/src/app.js");
   check('the reply offers Undo', (await p.textContent('.write-log')).includes('1 changed') && (await p.isVisible('.write-log button:text-is("↶ Undo")')));
 
   await p.click('.write-log button:text-is("↶ Undo")');
@@ -129,7 +129,7 @@ export default async function ({ browser, site, mock, check }) {
   await waiting();
   await p.fill('#input', 'make it say howdy instead');
   await p.press('#input', 'Enter');
-  await p.waitForFunction(() => document.querySelector('.change.waiting .change-path')?.textContent === 'notes/new.txt');
+  await p.waitForFunction(() => document.querySelector('.change.waiting .change-path')?.textContent === 'wproject/notes/new.txt');
   check('typing while a change waits skips it and shows your note', (await p.inputValue('#input')) === '' && (await p.textContent('.msg.assistant:last-of-type .change >> nth=0 >> .change-note')) === 'You: make it say howdy instead' && (await file('src/app.js')) === 'console.log("hi")');
   await footButton('Skip');
   await idle(p);
@@ -149,7 +149,7 @@ export default async function ({ browser, site, mock, check }) {
   await p.click(`#chat-list li[data-id="${editChat}"] .chat-open`);
   await waiting();
   await footButton('Skip');
-  await p.waitForFunction(() => document.querySelector('.change.waiting .change-path')?.textContent === 'notes/new.txt');
+  await p.waitForFunction(() => document.querySelector('.change.waiting .change-path')?.textContent === 'wproject/notes/new.txt');
   await footButton('Skip');
   await idle(p);
   check('going back, the waiting change is there to review', (await file('src/app.js')) === 'console.log("hi")');
