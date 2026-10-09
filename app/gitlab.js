@@ -5,7 +5,8 @@
 //
 // Rules, all fixed: the token must not grant more than the scopes in ALLOWED, or it's refused and
 // never kept; paths start with the project's path ("team/app/src/main.js"); the branch is the one
-// picked when connecting the project. Settings (address and Client ID) are stored with the other
+// the project's default branch unless you pick another on the chip; GitLab gets 30 seconds per
+// request, then the tool says it didn't answer. Settings (address and Client ID) are stored with the other
 // settings; the token lives in this tab only, like sign-in's.
 //
 // To remove it: delete this file, styles/components/gitlab.css and tests/suites/gitlab.mjs, their
@@ -23,6 +24,7 @@ const MAX_FILES = 500; // per listing
 const MAX_MATCHES = 100; // lines per search
 const LOG_LINES = 200; // from the end of a job's log
 const MAX_BYTES = 4 * 1024 * 1024;
+const WAIT = 30; // seconds GitLab gets to answer one request
 
 const str = (description) => ({ type: 'string', description });
 const int = (description) => ({ type: 'integer', description });
@@ -71,11 +73,13 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
 
   // ---- reading GitLab: only ever GET ----
 
-  async function get(path, { text = false } = {}) {
+  // Each request (with its body) gets WAIT seconds; Stop (`signal`) ends it at once.
+  async function get(path, { text = false, signal } = {}) {
     for (let force = false; ; force = true) {
       const token = await auth?.getToken({ force });
       if (!token) throw new Error('GitLab is not connected. Connect it again in Settings.');
-      const res = await fetch(`${address()}/api/v4${path}`, { headers: { Authorization: `Bearer ${token}` } });
+      const limit = AbortSignal.any([AbortSignal.timeout(WAIT * 1000), ...(signal ? [signal] : [])]);
+      const res = await fetch(`${address()}/api/v4${path}`, { headers: { Authorization: `Bearer ${token}` }, signal: limit });
       if (res.status === 401 && !force) continue; // one fresh token, then give up
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -197,59 +201,79 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
     try { user = (await get('/user')).username ?? ''; } catch { user = ''; }
   }
 
-  // ---- picking a project for a chat ----
+  // ---- picking a project for a chat, and its branch ----
 
-  function pick() {
+  // A searchable list in a dialog: `load(query)` gives the items, `row(item)` its [name, note, disabled], and
+  // picking one closes the dialog with it (Esc or a click outside closes it with null).
+  function choose({ className, placeholder, load, row, anchor = null }) {
     return new Promise((resolve) => {
-      const dialog = el('dialog', 'gitlab-picker');
+      const dialog = el('dialog', `gitlab-picker ${className}`);
       const q = el('input');
-      Object.assign(q, { placeholder: 'Search your projects', spellcheck: false, autocomplete: 'off' });
+      Object.assign(q, { placeholder, spellcheck: false, autocomplete: 'off' });
       const list = el('div', 'gitlab-projects');
-      const branch = el('input');
-      Object.assign(branch, { placeholder: 'branch', spellcheck: false, autocomplete: 'off' });
-      const connect = el('button', 'btn primary', 'Connect');
-      connect.type = 'button';
-      connect.disabled = true;
-      const foot = el('div', 'gitlab-row');
-      foot.append(el('span', 'gitlab-note', 'Branch'), branch, connect);
-      dialog.append(q, list, foot);
-      let chosen = null;
+      dialog.append(q, list);
       let timer = 0;
       let asked = 0;
 
       const show = async () => {
         const n = ++asked;
-        let projects = [];
+        let items = [];
         try {
-          projects = await get(`/projects?membership=true&simple=true&order_by=last_activity_at&per_page=20${q.value.trim() ? `&search=${encodeURIComponent(q.value.trim())}` : ''}`);
+          items = await load(q.value.trim());
         } catch (e) {
           if (n === asked) list.replaceChildren(el('div', 'gitlab-note', e.message));
           return;
         }
         if (n !== asked) return;
-        list.replaceChildren(...(projects.length ? projects.map((p) => {
-          const row = el('button', 'gitlab-project');
-          row.type = 'button';
-          row.append(el('span', '', p.path_with_namespace), el('small', '', p.default_branch ?? ''));
-          row.addEventListener('click', () => {
-            chosen = p;
-            for (const r of list.children) r.classList.toggle('on', r === row);
-            branch.value = p.default_branch || 'main';
-            connect.disabled = false;
-          });
-          return row;
-        }) : [el('div', 'gitlab-note', 'No projects match.')]));
+        list.replaceChildren(...(items.length ? items.map((item) => {
+          const [name, note, off = false] = row(item);
+          const button = el('button', 'gitlab-project');
+          button.type = 'button';
+          button.disabled = off;
+          button.append(el('span', '', name), ...(note ? [note] : []));
+          button.addEventListener('click', () => done(item));
+          return button;
+        }) : [el('div', 'gitlab-note', 'Nothing matches.')]));
       };
-      const done = (project) => { dialog.close(); dialog.remove(); resolve(project); };
+      const done = (item) => { dialog.close(); dialog.remove(); resolve(item); };
       q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(show, 250); });
-      connect.addEventListener('click', () => done({ id: chosen.id, path: chosen.path_with_namespace, ref: branch.value.trim() || chosen.default_branch || 'main' }));
       dialog.addEventListener('cancel', () => done(null));
-      dialog.addEventListener('click', (e) => { if (e.target === dialog) done(null); }); // the dimmed area
+      dialog.addEventListener('click', (e) => { if (e.target === dialog) done(null); }); // outside it
       chat.append(dialog); // inside the chat, so it has the chat's theme
+      if (anchor) { // just above what was clicked
+        const r = anchor.getBoundingClientRect();
+        Object.assign(dialog.style, { left: `${r.left}px`, bottom: `${innerHeight - r.top + 6}px` });
+      }
       dialog.showModal();
       q.focus();
       show();
     });
+  }
+
+  // Picking a project connects it straight away, on its default branch.
+  async function pick() {
+    const p = await choose({
+      className: 'projects',
+      placeholder: 'Search your projects',
+      load: (query) => get(`/projects?membership=true&simple=true&order_by=last_activity_at&per_page=20${query ? `&search=${encodeURIComponent(query)}` : ''}`),
+      row: (p) => [p.path_with_namespace, el('small', '', p.default_branch ?? 'no branches yet'), !p.default_branch],
+    });
+    return p ? { id: p.id, path: p.path_with_namespace, ref: p.default_branch } : null;
+  }
+
+  // The branch list from the chip: the default branch first, then the rest by name (GitLab's order).
+  async function pickBranch(project, anchor) {
+    const b = await choose({
+      className: 'branches',
+      placeholder: 'Find a branch',
+      anchor,
+      load: async (query) => {
+        const all = await get(`/projects/${project.id}/repository/branches?per_page=20${query ? `&search=${encodeURIComponent(query)}` : ''}`);
+        return [...all.filter((x) => x.default), ...all.filter((x) => !x.default)];
+      },
+      row: (b) => [b.name, b.default ? el('span', 'gitlab-tag', 'default') : null],
+    });
+    return b ? { ...project, ref: b.name } : null;
   }
 
   // ---- the tools ----
@@ -264,7 +288,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
   }
   const shown = (project, path) => (path ? `${project.path}/${path}` : project.path);
 
-  async function run(project, name, argsJson) {
+  async function run(project, name, argsJson, signal) {
     let args = {};
     try {
       args = JSON.parse(argsJson || '{}');
@@ -276,7 +300,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         const test = globTest(args.pattern);
         const files = [];
         for (let page = 1; page <= 5 && files.length < MAX_FILES; page++) {
-          const items = await get(`${p}/repository/tree?recursive=true&per_page=100&page=${page}&ref=${ref}${path ? `&path=${encodeURIComponent(path)}` : ''}`);
+          const items = await get(`${p}/repository/tree?recursive=true&per_page=100&page=${page}&ref=${ref}${path ? `&path=${encodeURIComponent(path)}` : ''}`, { signal });
           files.push(...items.filter((i) => i.type === 'blob').map((i) => shown(project, i.path)).filter(test));
           if (items.length < 100) break;
         }
@@ -286,7 +310,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
 
       if (name === 'gitlab_search') {
         if (!args.query) throw new Error('no query given');
-        const hits = await get(`${p}/search?scope=blobs&ref=${ref}&search=${encodeURIComponent(args.query)}&per_page=50`);
+        const hits = await get(`${p}/search?scope=blobs&ref=${ref}&search=${encodeURIComponent(args.query)}&per_page=50`, { signal });
         const needle = String(args.query).toLowerCase();
         const out = [];
         let total = 0;
@@ -303,24 +327,24 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
       if (name === 'gitlab_read') {
         const path = inside(project, args.path);
         if (!path) throw new Error('give a file path, not the project itself');
-        const text = await get(`${p}/repository/files/${encodeURIComponent(path)}/raw?ref=${ref}`, { text: true });
+        const text = await get(`${p}/repository/files/${encodeURIComponent(path)}/raw?ref=${ref}`, { text: true, signal });
         if (text.length > MAX_BYTES) throw new Error('file is larger than 4 MB');
         if (text.includes('\0')) throw new Error('not a text file');
         const lines = splitLines(text);
         const ranged = args.start_line != null || args.end_line != null;
-        if (!ranged && lines.length <= MAX_LINES && text.length <= MAX_CHARS) return { label: `Read ${shown(project, path)}`, result: text };
+        if (!ranged && lines.length <= MAX_LINES && text.length <= MAX_CHARS) return { label: `Read ${shown(project, path)}`, result: text || '(empty file)' };
         const { from, last, text: result } = numberedRange(lines, args.start_line, args.end_line);
         return { label: `Read ${shown(project, path)}${ranged ? `:${from}–${last}` : ''}`, result };
       }
 
       if (name === 'gitlab_pipeline') {
-        const [pipeline] = await get(`${p}/pipelines?ref=${ref}&per_page=1`);
+        const [pipeline] = await get(`${p}/pipelines?ref=${ref}&per_page=1`, { signal });
         if (!pipeline) return { label: `Read pipeline ${project.ref}`, result: `No pipelines on ${project.ref}.` };
-        const jobs = await get(`${p}/pipelines/${pipeline.id}/jobs?per_page=100`);
+        const jobs = await get(`${p}/pipelines/${pipeline.id}/jobs?per_page=100`, { signal });
         if (args.job) {
           const job = jobs.find((j) => j.name === args.job);
           if (!job) throw new Error(`no job "${args.job}" in pipeline #${pipeline.id}; its jobs are: ${jobs.map((j) => j.name).join(', ')}`);
-          const lines = splitLines((await get(`${p}/jobs/${job.id}/trace`, { text: true })).replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').replace(/\r/g, ''));
+          const lines = splitLines((await get(`${p}/jobs/${job.id}/trace`, { text: true, signal })).replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').replace(/\r/g, ''));
           const tail = lines.slice(-LOG_LINES);
           return { label: `Read job log ${job.name}`, result: `Job ${job.name} (${job.status}), last ${tail.length} of ${lines.length} lines:\n${tail.join('\n')}` };
         }
@@ -329,6 +353,8 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
       }
       throw new Error(`unknown tool ${name}`);
     } catch (e) {
+      if (e.name === 'AbortError') throw e; // Stop
+      if (e.name === 'TimeoutError') e = new Error(`GitLab didn't answer within ${WAIT} seconds`);
       return { label: `Couldn't ${name.replace('gitlab_', '')} in GitLab`, result: `Error: ${e.message}` };
     }
   }
@@ -347,6 +373,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
     draw: (message) => { if (menuItem) menuItem.hidden = !auth?.signedIn(); draw(message); },
     disconnect,
     pick,
+    pickBranch,
     run,
   };
 }

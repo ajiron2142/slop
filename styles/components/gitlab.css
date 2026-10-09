@@ -29,10 +29,19 @@
 .gitlab-picker::backdrop { background: rgba(0, 0, 0, 0.35); }
 .gitlab-picker input { box-sizing: border-box; width: 100%; padding: 8px 10px; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; outline: none; }
 .gitlab-picker input:focus { border-color: var(--accent); }
-.gitlab-picker .gitlab-row input { flex: 1; width: auto; }
 .gitlab-projects { display: grid; gap: 2px; max-height: 50vh; margin: 8px 0; overflow-y: auto; }
 .gitlab-project { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; font: inherit; font-size: 13px; color: var(--ink); text-align: left; background: none; border: 0; border-radius: 6px; cursor: pointer; }
 .gitlab-project span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-code); font-size: 12.5px; }
 .gitlab-project small { color: var(--muted); }
-.gitlab-project:hover, .gitlab-project.on { background: var(--surface); }
+.gitlab-project:hover:not(:disabled), .gitlab-project:focus-visible { background: var(--surface); outline: none; }
+.gitlab-project:disabled { cursor: default; opacity: 0.55; }
+.gitlab-tag { padding: 0 6px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; }
+.gitlab-picker.branches { position: fixed; width: min(280px, calc(100vw - 32px)); margin: 0; top: auto; }
+.gitlab-picker.branches::backdrop { background: transparent; }
+.gitlab-picker.branches .gitlab-projects { max-height: 40vh; margin-bottom: 0; }
+.tray-chip.gitlab { max-width: 380px; }
+.tray-chip.gitlab .tray-name { min-width: 6ch; }
+.tray-chip .gitlab-branch { display: inline-flex; flex-shrink: 0; gap: 4px; max-width: 170px; padding: 0 4px; font: inherit; color: inherit; background: none; border: 0; border-radius: 6px; cursor: pointer; }
+.gitlab-caret { color: var(--muted); }
+.tray-chip .gitlab-branch:hover, .tray-chip .gitlab-branch:focus-visible { background: var(--bg); outline: 1px solid var(--line); }
 .tray-chip.gitlab .icon { width: 16px; height: 16px; color: var(--muted); }

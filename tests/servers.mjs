@@ -77,6 +77,7 @@ Done.`;
 //                tries an edit that can't match, then reports the three results
 //   "git …"      (with git tools) reads the log and the uncommitted changes, then reports both
 //   "gitlab …"   (with GitLab tools) uses every GitLab tool once (and one path without the project), then reports
+//   "slowgitlab …" (with GitLab tools) a GitLab search that never answers, to check Stop
 //   anything else: the long reply
 export async function startMock() {
   const requests = []; // every chat request received, newest last
@@ -176,6 +177,12 @@ export async function startMock() {
         }
         sse(res, { choices: [{ delta: {}, finish_reason: results.length < 3 ? 'tool_calls' : 'stop' }] });
         if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
+        return res.end('data: [DONE]\n\n');
+      }
+
+      if (body.tools && text.startsWith('slowgitlab')) { // a GitLab search that never answers, to check Stop
+        sse(res, { choices: [{ delta: { tool_calls: [{ index: 0, id: 'gs', type: 'function', function: { name: 'gitlab_search', arguments: '{"query":"hang"}' } }] } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: 'tool_calls' }] });
         return res.end('data: [DONE]\n\n');
       }
 
@@ -321,14 +328,16 @@ export async function startGitlab() {
   const projects = [
     { id: 7, path_with_namespace: 'platform/route-service', default_branch: 'main', last_activity_at: '2026-10-09T10:00:00Z' },
     { id: 8, path_with_namespace: 'alice/notes', default_branch: 'master', last_activity_at: '2026-10-01T10:00:00Z' },
+    { id: 9, path_with_namespace: 'alice/empty', last_activity_at: '2026-09-01T10:00:00Z' }, // no branches yet
   ];
+  const branches = [{ name: 'feat/sso' }, { name: 'main', default: true }, { name: 'release/2.4' }]; // GitLab sorts by name
   const tree = [
     { type: 'blob', path: 'README.md' }, { type: 'tree', path: 'src' }, { type: 'blob', path: 'src/handler.js' },
     { type: 'tree', path: 'deploy' }, { type: 'blob', path: 'deploy/route.yaml' },
   ];
   const files = { 'src/handler.js': 'export function handle() {\n  const timeout = 30_000;\n  return timeout;\n}\n', 'README.md': '# Route service\n' };
   const log = Array.from({ length: 250 }, (_, i) => (i === 249 ? '\x1b[31mFAIL handler.test.js: expected 30000, got 120000\x1b[0m' : `\x1b[32mstep ${i + 1}\x1b[0m`)).join('\n');
-  const gitlab = { methods: [] };
+  const gitlab = { methods: [], refs: [] };
   const json = (res, body) => res.end(JSON.stringify(body));
   const api = (req, res, url) => {
     if (!url.pathname.startsWith('/api/v4/')) return false;
@@ -338,6 +347,9 @@ export async function startGitlab() {
     const q = url.searchParams;
     if (p === '/user') return json(res, { username: 'alice' }), true;
     if (p === '/projects') return json(res, projects.filter((x) => x.path_with_namespace.includes(q.get('search') ?? ''))), true;
+    if (q.get('ref')) gitlab.refs.push(q.get('ref'));
+    if (p === '/projects/7/repository/branches') return json(res, branches.filter((b) => b.name.includes(q.get('search') ?? ''))), true;
+    if (p === '/projects/7/search' && q.get('search') === 'hang') return (gitlab.searches = 1), true; // never answers
     if (p === '/projects/7/repository/tree') {
       const under = q.get('path');
       return json(res, q.get('page') > 1 ? [] : tree.filter((t) => !under || t.path.startsWith(`${under}/`))), true;

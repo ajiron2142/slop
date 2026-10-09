@@ -2,7 +2,7 @@
 // to use), connecting with a token that may only read, a project per chat, the four read-only
 // tools, and refusing a token that could write. Runs against a fake GitLab (startGitlab).
 import { startGitlab } from '../servers.mjs';
-import { openApp, send } from '../helpers.mjs';
+import { openApp, send, idle } from '../helpers.mjs';
 
 export default async function ({ browser, site, mock, check }) {
   const gitlab = await startGitlab();
@@ -35,13 +35,41 @@ export default async function ({ browser, site, mock, check }) {
   check('the attach menu offers a GitLab project once connected', await p.isVisible('#attach-menu [data-action="gitlab"]'));
   await p.click('#attach-menu [data-action="gitlab"]');
   await p.waitForSelector('dialog.gitlab-picker[open] .gitlab-project');
-  await p.fill('dialog.gitlab-picker input >> nth=0', 'route');
+  check('a project with no branches yet can\'t be picked', await p.isDisabled('dialog.gitlab-picker .gitlab-project:has-text("alice/empty")'));
+  await p.fill('dialog.gitlab-picker input', 'route');
   await p.waitForFunction(() => document.querySelectorAll('dialog.gitlab-picker .gitlab-project').length === 1);
   await p.click('dialog.gitlab-picker .gitlab-project');
-  check('picking a project fills in its default branch', (await p.inputValue('dialog.gitlab-picker .gitlab-row input')) === 'main');
-  await p.click('dialog.gitlab-picker button:text-is("Connect")');
   await p.waitForSelector('.tray-chip.gitlab');
-  check('the chip shows the project and branch', (await p.textContent('.tray-chip.gitlab')).startsWith('platform/route-service·main'));
+  check('picking a project connects it at once, on its default branch', !(await p.$('dialog.gitlab-picker')) && (await p.textContent('.tray-chip.gitlab')).startsWith('platform/route-service·main'));
+
+  // Another branch, from the chip.
+  await p.click('.tray-chip.gitlab .gitlab-branch');
+  await p.waitForSelector('dialog.gitlab-picker.branches[open] .gitlab-project');
+  const names = await p.$$eval('dialog.gitlab-picker.branches .gitlab-project', (rows) => rows.map((r) => r.textContent));
+  check('the branch list comes from GitLab, the default branch first', names.join(',') === 'maindefault,feat/sso,release/2.4');
+  const [chipBox, listBox] = await Promise.all([p.locator('.tray-chip.gitlab .gitlab-branch').boundingBox(), p.locator('dialog.gitlab-picker.branches').boundingBox()]);
+  check('and opens just above the chip', listBox.y + listBox.height <= chipBox.y && Math.abs(listBox.x - chipBox.x) < 2);
+  await p.keyboard.press('Escape');
+  check('Esc closes it without changing the branch', !(await p.$('dialog.gitlab-picker')) && (await p.textContent('.tray-chip.gitlab')).includes('·main'));
+  await p.click('.tray-chip.gitlab .gitlab-branch');
+  await p.fill('dialog.gitlab-picker.branches input', 'rel');
+  await p.waitForFunction(() => document.querySelectorAll('dialog.gitlab-picker.branches .gitlab-project').length === 1);
+  await p.click('dialog.gitlab-picker.branches .gitlab-project');
+  await p.waitForFunction(() => document.querySelector('.tray-chip.gitlab')?.textContent.includes('release/2.4'));
+  const refsBefore = gitlab.refs.length;
+  await send(p, 'gitlab: on another branch');
+  check('the chat then reads that branch', mock.requests.at(-1).system.includes('(branch release/2.4)') && gitlab.refs.slice(refsBefore).every((r) => r === 'release/2.4') && gitlab.refs.length > refsBefore);
+  await p.click('.tray-chip.gitlab .gitlab-branch');
+  await p.click('dialog.gitlab-picker.branches .gitlab-project:has-text("main")');
+  await p.waitForFunction(() => document.querySelector('.tray-chip.gitlab')?.textContent.includes('·main'));
+
+  // Stop ends a GitLab request that never answers.
+  await p.fill('#input', 'slowgitlab: search');
+  await p.press('#input', 'Enter');
+  for (let i = 0; i < 100 && !gitlab.searches; i++) await p.waitForTimeout(50); // until GitLab has the search
+  await p.click('#send-btn');
+  await idle(p);
+  check('Stop ends a GitLab request that never answers', !(await p.evaluate(() => document.getElementById('send-btn').classList.contains('stop'))));
 
   const methodsBefore = gitlab.methods.length;
   await send(p, 'gitlab: why did the pipeline fail?');

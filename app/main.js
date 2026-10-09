@@ -108,6 +108,11 @@ const composer = createComposer({
   onDisconnectFolder: () => setFolder(null),
   onConnectGitlab: async () => { const project = await gitlab.pick(); if (project) setGitlabProject(project); }, // gitlab
   onDisconnectGitlab: () => setGitlabProject(null), // gitlab
+  onPickGitlabBranch: async (anchor) => { // gitlab
+    const current = state.active ? state.active.meta.gitlab : state.draftGitlab;
+    const project = current && await gitlab.pickBranch(current, anchor);
+    if (project) setGitlabProject(project);
+  },
   onSend: send,
   onStop: () => state.streaming?.controller.abort(),
   onReplyNote: (text) => writer.instead(text), // write mode: typed instead of Skip
@@ -331,7 +336,7 @@ async function complete(chat) {
         const { label, result } = writer.handles(name) ? await writer.run(folder, call, controller.signal) // write mode
           : isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
           : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
-          : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments) // gitlab
+          : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments, controller.signal) // gitlab
           : await runTool(folder, name, call.function.arguments);
         if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
         (msg.tools ??= []).push(label);

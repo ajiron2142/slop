@@ -20,7 +20,7 @@ const readAs = (file, how) => new Promise((resolve, reject) => {
 // The message box: Enter to send, Shift+Enter for a new line, Send/Stop button,
 // and attachments from the button, paste or drag-and-drop (all the same path).
 // Where folders are supported, the attach button opens a menu: Attach files or Connect folder.
-export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onConnectGitlab, onDisconnectGitlab, onSend, onStop, onReplyNote = () => false, notify }) {
+export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onConnectGitlab, onDisconnectGitlab, onPickGitlabBranch, onSend, onStop, onReplyNote = () => false, notify }) {
   let files = [];
   let folderName = null;
   let folderEditable = false; // write mode
@@ -84,7 +84,12 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     const chip = el('span', 'tray-chip gitlab');
     chip.title = `GitLab project ${gitlabProject.path} on ${gitlabProject.ref} (read-only)`;
     chip.innerHTML = GITLAB_ICON;
-    chip.append(el('span', 'tray-name', gitlabProject.path), el('span', 'git-sep', '·'), el('span', 'git-branch', gitlabProject.ref), removeButton(`Disconnect GitLab project ${gitlabProject.path}`, onDisconnectGitlab));
+    const branch = el('button', 'gitlab-branch');
+    branch.type = 'button';
+    branch.append(el('span', 'git-branch', gitlabProject.ref), el('span', 'gitlab-caret', '▾'));
+    branch.setAttribute('aria-label', `Branch ${gitlabProject.ref}, pick another`);
+    branch.addEventListener('click', () => onPickGitlabBranch?.(branch));
+    chip.append(el('span', 'tray-name', gitlabProject.path), el('span', 'git-sep', '·'), branch, removeButton(`Disconnect GitLab project ${gitlabProject.path}`, onDisconnectGitlab));
     return chip;
   }
 
