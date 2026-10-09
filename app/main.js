@@ -108,9 +108,9 @@ const composer = createComposer({
   onDisconnectFolder: () => setFolder(null),
   onConnectGitlab: async () => { const project = await gitlab.pick(); if (project) setGitlabProject(project); }, // gitlab
   onDisconnectGitlab: () => setGitlabProject(null), // gitlab
-  onPickGitlabBranch: async (anchor) => { // gitlab
+  onPickGitlabBranch: async (chipEl) => { // gitlab
     const current = state.active ? state.active.meta.gitlab : state.draftGitlab;
-    const project = current && await gitlab.pickBranch(current, anchor);
+    const project = current && await gitlab.pickBranch(current, chipEl);
     if (project) setGitlabProject(project);
   },
   onSend: send,

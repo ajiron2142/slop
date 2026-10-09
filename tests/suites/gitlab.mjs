@@ -46,11 +46,14 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('.tray-chip.gitlab .gitlab-branch');
   await p.waitForSelector('dialog.gitlab-picker.branches[open] .gitlab-project');
   const names = await p.$$eval('dialog.gitlab-picker.branches .gitlab-project', (rows) => rows.map((r) => r.textContent));
-  check('the branch list comes from GitLab, the default branch first', names.join(',') === 'maindefault,feat/sso,release/2.4');
-  const [chipBox, listBox] = await Promise.all([p.locator('.tray-chip.gitlab .gitlab-branch').boundingBox(), p.locator('dialog.gitlab-picker.branches').boundingBox()]);
-  check('and opens just above the chip', listBox.y + listBox.height <= chipBox.y && Math.abs(listBox.x - chipBox.x) < 2);
+  check('the branch list comes from GitLab: default first, then the latest pushed, with how long ago, the current one ticked', names.join(',') === '✓maindefault2h,release/2.45h,feat/sso2d');
+  const [chipBox, listBox] = await Promise.all([p.locator('.tray-chip.gitlab:not(.gitlab-head-chip)').boundingBox(), p.locator('dialog.gitlab-picker.branches').boundingBox()]);
+  check('and grows up out of the chip, flush with it', Math.abs(listBox.y + listBox.height - (chipBox.y + chipBox.height)) < 2 && Math.abs(listBox.x - chipBox.x) < 2 && listBox.width >= chipBox.width - 1);
   await p.keyboard.press('Escape');
   check('Esc closes it without changing the branch', !(await p.$('dialog.gitlab-picker')) && (await p.textContent('.tray-chip.gitlab')).includes('·main'));
+  await p.click('.tray-chip.gitlab .gitlab-branch');
+  await p.click('dialog.gitlab-picker.branches .gitlab-head-chip');
+  check('clicking the chip again closes it', !(await p.$('dialog.gitlab-picker')));
   await p.click('.tray-chip.gitlab .gitlab-branch');
   await p.fill('dialog.gitlab-picker.branches input', 'rel');
   await p.waitForFunction(() => document.querySelectorAll('dialog.gitlab-picker.branches .gitlab-project').length === 1);
@@ -60,7 +63,7 @@ export default async function ({ browser, site, mock, check }) {
   await send(p, 'gitlab: on another branch');
   check('the chat then reads that branch', mock.requests.at(-1).system.includes('(branch release/2.4)') && gitlab.refs.slice(refsBefore).every((r) => r === 'release/2.4') && gitlab.refs.length > refsBefore);
   await p.click('.tray-chip.gitlab .gitlab-branch');
-  await p.click('dialog.gitlab-picker.branches .gitlab-project:has-text("main")');
+  await p.click('dialog.gitlab-picker.branches .gitlab-project:has-text("main") >> nth=0');
   await p.waitForFunction(() => document.querySelector('.tray-chip.gitlab')?.textContent.includes('·main'));
 
   // Stop ends a GitLab request that never answers.

@@ -332,7 +332,10 @@ export async function startGitlab() {
     { id: 8, path_with_namespace: 'alice/notes', default_branch: 'master', last_activity_at: '2026-10-01T10:00:00Z' },
     { id: 9, path_with_namespace: 'alice/empty', last_activity_at: '2026-09-01T10:00:00Z' }, // no branches yet
   ];
-  const branches = [{ name: 'feat/sso' }, { name: 'main', default: true }, { name: 'release/2.4' }]; // GitLab sorts by name
+  const hoursAgo = (h) => ({ committed_date: new Date(Date.now() - h * 3600_000).toISOString() });
+  const branches = [ // by name, as GitLab gives them unless asked to sort
+    { name: 'feat/sso', commit: hoursAgo(50) }, { name: 'main', default: true, commit: hoursAgo(2) }, { name: 'release/2.4', commit: hoursAgo(5) },
+  ];
   const tree = [
     { type: 'blob', path: 'README.md' }, { type: 'tree', path: 'src' }, { type: 'blob', path: 'src/handler.js' },
     { type: 'tree', path: 'deploy' }, { type: 'blob', path: 'deploy/route.yaml' },
@@ -350,7 +353,11 @@ export async function startGitlab() {
     if (p === '/user') return json(res, { username: 'alice' }), true;
     if (p === '/projects') return json(res, projects.filter((x) => x.path_with_namespace.includes(q.get('search') ?? ''))), true;
     if (p.startsWith('/projects/7/repository/') && q.get('ref')) gitlab.refs.push(q.get('ref')); // the files' branch
-    if (p === '/projects/7/repository/branches') return json(res, branches.filter((b) => b.name.includes(q.get('search') ?? ''))), true;
+    if (p === '/projects/7/repository/branches') {
+      const found = branches.filter((b) => b.name.includes(q.get('search') ?? ''));
+      if (q.get('sort') === 'updated_desc') found.sort((x, y) => y.commit.committed_date.localeCompare(x.commit.committed_date));
+      return json(res, found), true;
+    }
     if (p === '/projects/7/search' && q.get('search') === 'hang') return (gitlab.searches = 1), true; // never answers
     if (p === '/projects/7/repository/tree') {
       const under = q.get('path');

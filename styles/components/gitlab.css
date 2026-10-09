@@ -35,10 +35,18 @@
 .gitlab-project small { color: var(--muted); }
 .gitlab-project:hover:not(:disabled), .gitlab-project:focus-visible { background: var(--surface); outline: none; }
 .gitlab-project:disabled { cursor: default; opacity: 0.55; }
-.gitlab-tag { padding: 0 6px; font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; }
-.gitlab-picker.branches { position: fixed; width: min(280px, calc(100vw - 32px)); margin: 0; top: auto; }
+.gitlab-picker.branches { position: fixed; top: auto; width: 290px; max-width: calc(100vw - 32px); margin: 0; padding: 0; overflow: hidden; border-radius: min(var(--radius), 12px); box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.45); }
 .gitlab-picker.branches::backdrop { background: transparent; }
-.gitlab-picker.branches .gitlab-projects { max-height: 40vh; margin-bottom: 0; }
+.gitlab-picker.branches input { padding: 7px 10px; font-size: 12px; background: none; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+.gitlab-picker.branches .gitlab-projects { gap: 0; max-height: 40vh; margin: 0; padding: 4px; }
+.gitlab-picker.branches .gitlab-project { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 5px; }
+.gitlab-picker.branches .gitlab-note { padding: 6px 8px; font-size: 12px; }
+.gitlab-tick { font-size: 11px; color: var(--accent); }
+.gitlab-branch-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-code); font-size: 11.5px; }
+.gitlab-branch-name small { margin-left: 6px; font-family: var(--font-body); font-size: 10.5px; color: var(--muted); }
+.gitlab-ago { font-size: 11px; font-variant-numeric: tabular-nums; }
+.tray-chip.gitlab-head-chip { display: flex; max-width: none; padding-right: 10px; border: 0; border-top: 1px solid var(--line); border-radius: 0; cursor: pointer; }
+.tray-chip.gitlab-head-chip .gitlab-branch { background: var(--bg); outline: 1px solid var(--line); }
 .tray-chip.gitlab { max-width: 380px; }
 .tray-chip.gitlab .tray-name { min-width: 6ch; }
 .tray-chip .gitlab-branch { display: inline-flex; flex-shrink: 0; gap: 4px; max-width: 170px; padding: 0 4px; font: inherit; color: inherit; background: none; border: 0; border-radius: 6px; cursor: pointer; }

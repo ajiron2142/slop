@@ -88,7 +88,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     branch.type = 'button';
     branch.append(el('span', 'git-branch', gitlabProject.ref), el('span', 'gitlab-caret', '▾'));
     branch.setAttribute('aria-label', `Branch ${gitlabProject.ref}, pick another`);
-    branch.addEventListener('click', () => onPickGitlabBranch?.(branch));
+    branch.addEventListener('click', () => onPickGitlabBranch?.(chip));
     chip.append(el('span', 'tray-name', gitlabProject.path), el('span', 'git-sep', '·'), branch, removeButton(`Disconnect GitLab project ${gitlabProject.path}`, onDisconnectGitlab));
     return chip;
   }

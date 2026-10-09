@@ -27,6 +27,16 @@ const MAX_MATCHES = 100; // lines per search
 const MAX_BYTES = 4 * 1024 * 1024;
 const WAIT = 30; // seconds GitLab gets to answer one request
 
+// How long ago, in the largest whole unit: "now", "5m", "3h", "2d", "3w", "4mo", "2y". Unknown: "".
+export function ago(date, now = Date.now()) {
+  const s = (now - Date.parse(date)) / 1000;
+  if (!(s >= 0)) return '';
+  for (const [unit, size] of [['y', 31_536_000], ['mo', 2_592_000], ['w', 604_800], ['d', 86_400], ['h', 3600], ['m', 60]]) {
+    if (s >= size) return `${Math.floor(s / size)}${unit}`;
+  }
+  return 'now';
+}
+
 const str = (description) => ({ type: 'string', description });
 const int = (description) => ({ type: 'integer', description });
 const tool = (name, description, properties, required = []) =>
@@ -208,8 +218,9 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
   // ---- picking a project for a chat, and its branch ----
 
   // A searchable list in a dialog: `load(query)` gives the items, `row(item)` its [name, note, disabled], and
-  // picking one closes the dialog with it (Esc or a click outside closes it with null).
-  function choose({ className, placeholder, load, row, anchor = null }) {
+  // picking one closes the dialog with it (Esc or a click outside closes it with null). With `chip`, the
+  // list grows up out of that chip: a copy of it is the dialog's bottom edge, right where it was.
+  function choose({ className, placeholder, load, row, chip: from = null }) {
     return new Promise((resolve) => {
       const dialog = el('dialog', `gitlab-picker ${className}`);
       const q = el('input');
@@ -234,7 +245,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
           const button = el('button', 'gitlab-project');
           button.type = 'button';
           button.disabled = off;
-          button.append(el('span', '', name), ...(note ? [note] : []));
+          button.append(...(typeof name === 'string' ? [el('span', '', name)] : name), ...(note ? [note] : []));
           button.addEventListener('click', () => done(item));
           return button;
         }) : [el('div', 'gitlab-note', 'Nothing matches.')]));
@@ -244,9 +255,16 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
       dialog.addEventListener('cancel', () => done(null));
       dialog.addEventListener('click', (e) => { if (e.target === dialog) done(null); }); // outside it
       chat.append(dialog); // inside the chat, so it has the chat's theme
-      if (anchor) { // just above what was clicked
-        const r = anchor.getBoundingClientRect();
-        Object.assign(dialog.style, { left: `${r.left}px`, bottom: `${innerHeight - r.top + 6}px` });
+      if (from) {
+        const head = from.cloneNode(true);
+        head.querySelector('.tray-remove')?.remove();
+        const caret = head.querySelector('.gitlab-caret');
+        if (caret) caret.textContent = '▴';
+        head.classList.add('gitlab-head-chip');
+        head.addEventListener('click', () => done(null));
+        dialog.append(head);
+        const r = from.getBoundingClientRect();
+        Object.assign(dialog.style, { left: `${r.left}px`, bottom: `${innerHeight - r.bottom}px`, minWidth: `${r.width}px` });
       }
       dialog.showModal();
       q.focus();
@@ -265,17 +283,22 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
     return p ? { id: p.id, path: p.path_with_namespace, ref: p.default_branch } : null;
   }
 
-  // The branch list from the chip: the default branch first, then the rest by name (GitLab's order).
-  async function pickBranch(project, anchor) {
+  // The branch list, grown out of the chip: the default branch first, then the most recently pushed,
+  // each with how long ago its last commit was. The one in use is ticked.
+  async function pickBranch(project, chipEl) {
     const b = await choose({
       className: 'branches',
       placeholder: 'Find a branch',
-      anchor,
+      chip: chipEl,
       load: async (query) => {
-        const all = await get(`/projects/${project.id}/repository/branches?per_page=20${query ? `&search=${encodeURIComponent(query)}` : ''}`);
+        const all = await get(`/projects/${project.id}/repository/branches?per_page=20&sort=updated_desc${query ? `&search=${encodeURIComponent(query)}` : ''}`);
         return [...all.filter((x) => x.default), ...all.filter((x) => !x.default)];
       },
-      row: (b) => [b.name, b.default ? el('span', 'gitlab-tag', 'default') : null],
+      row: (b) => {
+        const name = el('span', 'gitlab-branch-name', b.name);
+        if (b.default) name.append(el('small', '', 'default'));
+        return [[el('span', 'gitlab-tick', b.name === project.ref ? '✓' : ''), name], el('small', 'gitlab-ago', ago(b.commit?.committed_date))];
+      },
     });
     return b ? { ...project, ref: b.name } : null;
   }
