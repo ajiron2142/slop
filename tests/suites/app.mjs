@@ -194,7 +194,8 @@ export default async function ({ browser, site, mock, check }) {
       check('bauhaus: Send\'s arrow sits in the middle of its circle', await p.$eval('#send-btn', (b) => {
         const r = b.getBoundingClientRect();
         const a = getComputedStyle(b, '::before');
-        return a.maskImage !== 'none' && a.width === '20px' && Math.abs(r.width - r.height) < 1;
+        const gap = `${(r.height - 20) / 2}px`; // the same space above and beside it
+        return a.maskImage !== 'none' && a.marginTop === gap && a.marginBottom === gap && a.marginLeft === `${(r.width - 20) / 2}px`;
       }));
     }
   }
