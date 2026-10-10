@@ -32,6 +32,8 @@
 .theme-monokai .chat-title::before { content: "❯ "; color: var(--highlight); }
 .theme-monokai .who { color: var(--muted); }
 .theme-monokai .user .body { border-right: 3px solid var(--muted); }
+/* Your latest message stands out: blue bar and a faint blue wash. */
+.theme-monokai .msg.user:not(:has(~ .msg.user)) .body { background: color-mix(in srgb, var(--accent) 12%, var(--user-bg)); border-right-color: var(--accent); }
 .theme-monokai .body a { color: var(--accent); text-decoration: none; }
 .theme-monokai .body a:hover { text-decoration: underline; }
 .theme-monokai .body code { color: #d7dae0; }

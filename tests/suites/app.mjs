@@ -153,6 +153,9 @@ export default async function ({ browser, site, mock, check }) {
   await p.waitForTimeout(200);
   check('theme applies to sidebar, chat and settings', await p.evaluate(() => [...document.querySelectorAll('.themed')].every((n) => n.classList.contains('theme-monokai'))));
   await p.click('#close-settings');
+  await send(p, 'echo a second message');
+  const bars = await p.$$eval('.msg.user .body', (bodies) => bodies.map((b) => getComputedStyle(b).borderRightColor));
+  check('in Monokai only your latest message has the blue bar', bars.length > 1 && bars.at(-1) === 'rgb(97, 175, 239)' && bars.slice(0, -1).every((c) => c !== bars.at(-1)));
   await p.click('#collapse-btn');
   await p.waitForTimeout(300);
   await p.reload();
