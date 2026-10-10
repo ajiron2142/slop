@@ -68,6 +68,7 @@ const sidebar = createSidebar({
   collapseButton: $('collapse-btn'),
   scrim: $('scrim'),
   onOpen: openChat,
+  onRename: renameChat,
   onDelete: removeChat,
   onSearch: reloadChatList,
   onCollapse: (collapsed) => {
@@ -395,8 +396,9 @@ async function complete(chat) {
 // chat titles: once per chat, after its first finished reply; the first-message title stays if it fails.
 async function nameChat(chat) {
   chat.meta.titled = true;
+  const before = chat.meta.title;
   const title = await autoTitle(state.settings, withoutErrors(chat.messages));
-  if (!title || chat.deleted) return;
+  if (!title || chat.deleted || chat.meta.title !== before) return; // renamed meanwhile: yours stays
   chat.meta.title = title;
   await store.saveMeta(chat.meta);
   await reloadChatList();
@@ -436,6 +438,15 @@ async function openChat(id) {
   render({ toBottom: true });
   composer.focus();
   if (state.active.folder) refreshGit(state.active.folder).then(() => render()); // git
+}
+
+// A name you give a chat is kept, and the chat is never titled automatically after that.
+async function renameChat(id, title) {
+  const metas = [state.active?.meta, state.streaming?.chat.meta, state.chats.find((c) => c.id === id)].filter((m) => m?.id === id);
+  if (!metas.length) return;
+  for (const meta of metas) Object.assign(meta, { title, titled: true });
+  await store.saveMeta(metas[0]);
+  await reloadChatList();
 }
 
 async function removeChat(id) {

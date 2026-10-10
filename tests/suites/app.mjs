@@ -145,6 +145,25 @@ export default async function ({ browser, site, mock, check }) {
   await p.fill('#search', '');
   await p.waitForTimeout(400);
 
+  // Renaming: double-click a title.
+  const names = () => p.$$eval('#chat-list .chat-open', (xs) => xs.map((x) => x.textContent));
+  const before = await names();
+  await p.dblclick('#chat-list li:nth-child(2) .chat-open');
+  check('double-clicking a chat\'s title edits it, with the old name selected', await p.evaluate(() => {
+    const input = document.querySelector('#chat-list .chat-rename');
+    return Boolean(input) && input.value.length > 0 && input.selectionStart === 0 && input.selectionEnd === input.value.length;
+  }));
+  await p.keyboard.press('Escape');
+  check('Esc keeps the old name', !(await p.$('.chat-rename')) && (await names()).join() === before.join());
+  await p.dblclick('#chat-list li:nth-child(2) .chat-open');
+  await p.keyboard.press('Backspace');
+  await p.keyboard.press('Enter');
+  check('an empty name isn\'t saved; it stays open for one', await p.isVisible('.chat-rename'));
+  await p.keyboard.type('Renamed chat');
+  await p.keyboard.press('Enter');
+  await p.waitForFunction(() => [...document.querySelectorAll('#chat-list .chat-open')].some((x) => x.textContent === 'Renamed chat'));
+  check('Enter saves the new name', (await names())[1] === 'Renamed chat' && (await names())[0] === before[0]);
+
   // Themes and persistence.
   await p.click('#settings-btn');
   await p.click('#theme-picker .model');
@@ -162,6 +181,7 @@ export default async function ({ browser, site, mock, check }) {
   await p.waitForSelector('#chat-list li[data-id]', { state: 'attached' });
   check('collapsed sidebar is remembered', await p.evaluate(() => document.getElementById('app').classList.contains('collapsed')));
   check('theme and chats are remembered', await p.evaluate(() => document.getElementById('chat').classList.contains('theme-monokai')) && (await p.$$('#chat-list li[data-id]')).length === 2);
+  check('and so is a chat\'s new name', (await p.textContent('#chat-list')).includes('Renamed chat'));
 
   // Phone layout.
   await p.setViewportSize({ width: 390, height: 844 });

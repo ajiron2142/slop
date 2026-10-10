@@ -97,7 +97,7 @@ app/                  behaviour
   theme.js            theme list, switching, font warm-up
   dom.js              tiny DOM helpers ($, el, click-outside-to-close)
   components/         one file per piece of UI
-    sidebar.js        chat list, search, mobile menu
+    sidebar.js        chat list, search, rename, mobile menu
     messages.js       message rendering, code copy, retry, per-reply Stats card
     meter.js          usage meter in the header, next to the model (context and cost)
     composer.js       text box, send/stop, attachments (button, paste, drop), folder chip
@@ -121,7 +121,7 @@ tests/                browser tests; not part of the deployed app (see tests/REA
 2. `main.js` loads your settings and chats from the browser (`storage.js`), applies your theme, and fetches the model list (`api.js`).
 3. When you send, the **composer** hands the text and attachments to `main.js`, which saves the message and streams the reply from LiteLLM.
 4. As the reply streams in, **messages** renders it (markdown via `markdown.js`, always sanitised), and the chat is saved again when it finishes.
-5. The **sidebar** lists saved chats; **settings** edits the connection, system prompt and theme.
+5. The **sidebar** lists saved chats (double-click one to rename it); **settings** edits the connection, system prompt and theme.
 
 **Today's date.** Models don't know the date, so the system prompt starts with one line from your computer: "Today is Thursday, October 8, 2026. The user's time zone is America/Denver (UTC-06:00)." There's no time of day, so the line changes only once a day and providers can keep caching the request; if the exact time matters (say, for fresh logs), mention it in your message. Your messages are sent exactly as you typed them.
 

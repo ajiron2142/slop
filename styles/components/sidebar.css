@@ -66,6 +66,7 @@
 }
 .chat-list li:hover .chat-delete, .chat-list li.active .chat-delete, .chat-delete:focus-visible { visibility: visible; }
 .chat-delete:hover { color: var(--ink); background: var(--line); }
+.chat-rename { flex: 1; min-width: 0; margin: 3px 4px; padding: 4px 6px; font: inherit; font-size: 13.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--accent); border-radius: 6px; outline: none; }
 .chat-empty { padding: 8px 10px; font-size: 13px; color: var(--muted); }
 
 @media (max-width: 760px) {
