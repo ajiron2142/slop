@@ -1,6 +1,6 @@
 # Plan: a bare-minimum JS sandbox (prototype)
 
-Status: phases 1 and 2 built (the runner; the + menu, the chip, pictures and Copy reply). Next is phase 3, the helpers.
+Status: phases 1 to 3 built (the runner; the + menu, the chip, pictures and Copy reply; the helpers). Phase 4 is a maybe for later.
 
 ## What it's for
 
@@ -133,6 +133,18 @@ now (thinking, reading a file, running code). Lighter than the reply tree; to be
 - On is saved per chat (`meta.sandbox`), like a GitLab project; a new chat starts with it off.
 - A run that ends in an error is a failed step (✕): its result starts `Error: the run failed.`, then the
   output and the error as before.
+
+## Phase 3 as built
+
+- The helpers live in `sandbox/helpers.js` (about 150 lines), loaded by `sandbox.html` and made part of each
+  Worker's source by the runner, so they run inside the sandbox like the model's code.
+- `chart.bar` and `chart.line` take rows like `[['Mon', 3], ['Tue', 5]]`, or more numbers per row with
+  `options.names` (at most 5 series, a legend when named). The axis always includes 0, in steps of 1, 2 or
+  5 × a power of ten. Rows that break the form are refused with a message showing it.
+- `el()` escapes text and attribute values; markup made by `el()` or `svg()` is kept as it is. `svg()` puts
+  a white background in every picture.
+- Instead of a separate system-prompt note, the tool's own description lists the helpers: it's only sent
+  when the sandbox is on, so the note costs nothing in other chats.
 
 ## To remove it
 

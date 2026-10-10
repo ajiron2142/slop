@@ -92,6 +92,21 @@ export default async function ({ browser, site, mock, check }) {
   r = await run('postMessage({ done: true, length: 0, pictures: ["<b>not a picture</b>"], error: "" })');
   check('code that posts its own result gets no further than show()', r.pictures.length === 0 && /^show\(\) takes one SVG element/.test(r.error));
 
+  // Helpers: charts, SVG building, markdown tables, a seeded random.
+  r = await run(`show(chart.bar([['W1', 4], ['W2', 7]], { title: 'Deploys <per> week' }))`);
+  check('chart.bar() makes a picture show() takes', !r.error && r.pictures.length === 1 && r.pictures[0].startsWith('<svg xmlns="http://www.w3.org/2000/svg" width="480" height="260"') && r.pictures[0].includes('>Deploys &lt;per&gt; week</text>'));
+  r = await run(`show(chart.line([['Mon', 3, 4], ['Tue', 5, 1], ['Wed', -2, 6]], { names: ['a', 'b'], width: 300 }))`);
+  check('chart.line() draws one line per series, with a legend', !r.error && (r.pictures[0].match(/<polyline/g) ?? []).length === 2 && r.pictures[0].includes('>a</text>') && r.pictures[0].includes('>-2</text>'));
+  check('a chart refuses rows that break the form, and shows it', /^Error: chart\.bar\(\) takes rows like \[\['Mon', 3\], \['Tue', 5\]\]/.test((await run(`chart.bar([['Mon', '3']])`)).error));
+  check('and names that don\'t match the series', /needs one name per series: 1 here/.test((await run(`chart.bar([['Mon', 3]], { names: ['a', 'b'] })`)).error));
+  r = await run(`svg(40, 20, el('text', { x: 2, y: 14, title: 'a"b' }, '1 < 2 & 3'))`);
+  check('svg() and el() build markup, escaping text and attributes', r.out === '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20" font-family="system-ui, -apple-system, Segoe UI, sans-serif"><rect width="40" height="20" fill="#ffffff"/><text x="2" y="14" title="a&quot;b">1 &lt; 2 &amp; 3</text></svg>');
+  r = await run(`table([{ Service: 'route', Deploys: 9, 'Fail | rate': '2%' }, { Service: 'auth', Deploys: 4 }])`);
+  check('table() makes a markdown table', r.out === '| Service | Deploys | Fail \\| rate |\n| --- | --- | --- |\n| route | 9 | 2% |\n| auth | 4 |  |');
+  r = await run('const a = random(42), b = random(42);\n[a(), a(), a()].join() === [b(), b(), b()].join() && a() !== random(43)()');
+  check('random(seed) gives the same numbers for the same seed', r.out === 'true');
+  check('random() refuses a seed that isn\'t a whole number', /takes a whole number as its seed, like random\(42\)/.test((await run('random(0.5)')).error));
+
   // A reply posted from anywhere but the iframe is ignored, even with the right id.
   await frame.evaluate(() => addEventListener('message', (e) => { window.lastJob = e.data.id; }));
   const slow = run('const end = Date.now() + 800;\nwhile (Date.now() < end) {}\n"real"');

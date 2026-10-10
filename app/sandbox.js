@@ -23,7 +23,12 @@ export const SANDBOX_TOOLS = [{
     name: 'run_js',
     description: 'Run JavaScript in a sandbox with no network, page or storage, to work something out exactly (maths, dates, parsing, reshaping data). ' +
       'Returns what console.log printed, then the value of the last expression, cut at 20,000 characters. Stopped after 5 seconds. ' +
-      'show(svgText) shows an SVG picture in your reply (at most 3 per run, 200 KB each), on a white background.',
+      'show(svgText) shows an SVG picture in your reply (at most 3 per run, 200 KB each), on a white background. ' +
+      'Helpers: chart.bar(rows, options) and chart.line(rows, options) return a chart for show(); rows are like [[\'Mon\', 3], [\'Tue\', 5]], ' +
+      'or [[\'Mon\', 3, 4], …] with options.names for up to 5 series; options.title, width, height. ' +
+      'svg(width, height, ...children) and el(tag, attrs, ...children) build your own picture (text is escaped). ' +
+      'table(rows) returns a markdown table (first row the header, or objects); print it and use it in your reply. ' +
+      'random(seed) gives repeatable random numbers.',
     parameters: { type: 'object', properties: { code: { type: 'string', description: 'The JavaScript to run.' } }, required: ['code'] },
   },
 }];

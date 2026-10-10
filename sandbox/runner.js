@@ -25,13 +25,15 @@ function svgProblem(svg, count, maxPictures, maxBytes) {
 
 // Runs inside the Worker. Kept as a function so it is checked like the rest of this file, then
 // turned into the Worker's source.
-function worker(svgProblem, MAX_OUT, MAX_PICTURES, MAX_PICTURE_BYTES) {
+function worker(svgProblem, MAX_OUT, MAX_PICTURES, MAX_PICTURE_BYTES, sandboxHelpers) {
   const post = postMessage.bind(self);
+  const Markup = sandboxHelpers(self); // el, svg, chart, table, random (helpers.js)
   const pictures = [];
   let length = 0; // characters written so far, including any past the limit
 
   const format = (v) => {
     if (typeof v === 'string') return v;
+    if (v instanceof Markup) return v.text;
     if (v instanceof Error) return `${v.name}: ${v.message}`;
     if (typeof v === 'bigint') return `${v}n`;
     if (v === undefined || typeof v === 'function' || typeof v === 'symbol') return String(v);
@@ -45,6 +47,7 @@ function worker(svgProblem, MAX_OUT, MAX_PICTURES, MAX_PICTURE_BYTES) {
   for (const name of ['log', 'info', 'warn', 'error', 'debug']) console[name] = log;
 
   self.show = (svg) => {
+    if (svg instanceof Markup) svg = svg.text;
     const problem = svgProblem(svg, pictures.length, MAX_PICTURES, MAX_PICTURE_BYTES);
     if (problem) throw new Error(problem);
     pictures.push(svg.trim());
@@ -71,7 +74,7 @@ function worker(svgProblem, MAX_OUT, MAX_PICTURES, MAX_PICTURE_BYTES) {
   };
 }
 
-const source = `(${worker})(${svgProblem}, ${MAX_OUT}, ${MAX_PICTURES}, ${MAX_PICTURE_BYTES});`;
+const source = `(${worker})(${svgProblem}, ${MAX_OUT}, ${MAX_PICTURES}, ${MAX_PICTURE_BYTES}, ${sandboxHelpers});`; // sandboxHelpers: helpers.js
 const workerUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
 
 // A picture must also be well-formed XML whose only element at the top is <svg>.
