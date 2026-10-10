@@ -1,0 +1,55 @@
+/* The reply's tree (optional add-on to activity): beside the opened steps, or above them below 640px.
+   The steps keep their own grid; the tree takes one more column on the right. */
+.activity.has-flow { grid-template-columns: 12px auto auto minmax(0, 1fr) auto max-content; }
+.activity.has-flow .act-head .act-time { grid-column: 5 / -1; }
+.activity.has-flow .act-list:not([hidden]) { grid-column: 1 / 6; grid-row: 2; display: grid; grid-template-columns: subgrid; align-content: start; }
+.act-flow { grid-column: 6; grid-row: 2; align-self: start; margin-left: 14px; padding: 10px; background: var(--code-bg); border: 1px solid var(--line); border-radius: min(var(--radius), 8px); }
+.act-flow[hidden] { display: none; }
+@media (max-width: 640px) {
+  .activity.has-flow { grid-template-columns: 12px auto auto minmax(0, 1fr) auto; }
+  .activity.has-flow .act-head .act-time { grid-column: 5; }
+  .act-flow { grid-column: 1 / -1; margin: 4px 0 6px; }
+  .activity.has-flow .act-list:not([hidden]) { grid-row: 3; }
+}
+
+.flow-tree { position: relative; display: grid; gap: 8px; justify-items: start; }
+.flow-kids { display: grid; gap: 8px; justify-items: start; margin-left: 28px; }
+.flow-wires { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.flow-wires path { fill: none; stroke: var(--line); stroke-width: 1.5; transition: opacity 0.2s; }
+.flow-wires path.done { stroke: color-mix(in srgb, var(--add) 60%, var(--line)); }
+.flow-wires path.on { stroke: var(--accent); stroke-dasharray: 7 6; animation: flow-march 0.7s linear infinite; }
+@keyframes flow-march { to { stroke-dashoffset: -13; } }
+
+.flow-box { position: relative; display: grid; gap: 1px; min-width: 120px; max-width: 230px; padding: 6px 10px; font-size: 12.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; transition: border-color 0.3s, opacity 0.2s; }
+.flow-box.wait { color: var(--muted); border-style: dashed; }
+.flow-box.done { border-color: var(--add); }
+.flow-box.on { border-color: var(--accent); }
+.flow-box.stopped { color: var(--muted); border-style: dashed; }
+.flow-box.bad { border-color: var(--del); }
+.flow-kind { font-family: var(--font-meta); font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+.flow-name { font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
+.flow-meta { font-family: var(--font-code); font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+.flow-meta[hidden], .flow-marks[hidden] { display: none; }
+.flow-badge { position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; padding: 0 5px; font: 600 10.5px/18px var(--font-code); text-align: center; color: var(--bg); background: var(--del); border-radius: 9px; }
+.flow-badge:empty { display: none; }
+
+/* One ring per call, in order. */
+.flow-marks { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.flow-mk { width: 10px; height: 10px; border: 2px solid var(--add); border-radius: 50%; }
+.flow-mk.bad { border-color: var(--del); }
+.flow-mk.think { border-color: color-mix(in srgb, var(--muted) 60%, transparent); }
+.flow-mk.run { border: 0; }
+.flow-mk svg { display: block; width: 10px; height: 10px; transform: rotate(-90deg); }
+.flow-mk circle { fill: none; stroke-width: 2; }
+.flow-track { stroke: color-mix(in srgb, var(--accent) 22%, transparent); }
+.flow-fill { stroke: var(--accent); stroke-dasharray: 25.2; stroke-dashoffset: 25.2; animation: flow-fill 1.6s linear infinite; }
+@keyframes flow-fill { to { stroke-dashoffset: 0; } }
+
+/* Everything but what's picked, or what's happening now, fades. */
+.flow-dim { opacity: 0.3; }
+.act-step, .act-box { transition: opacity 0.2s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-wires path.on { animation: none; }
+  .flow-fill { animation: none; stroke-dashoffset: 12.6; }
+}

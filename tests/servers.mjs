@@ -263,6 +263,24 @@ export async function startMock() {
         return res.end('data: [DONE]\n\n');
       }
 
+      if (body.tools && text.startsWith('flow')) { // the tree: two places, a slow second round, one failed call
+        const results = body.messages.filter((m) => m.role === 'tool');
+        const id = JSON.stringify(body.messages).match(/pasted id=\\"(\w+)\\"/)?.[1];
+        const call = (i, name, args) => ({ index: i, id: `f${results.length}${i}`, type: 'function', function: { name, arguments: JSON.stringify(args) } });
+        if (results.length === 0) {
+          sse(res, { choices: [{ delta: { reasoning_content: 'Look at the folder and the paste.' } }] });
+          sse(res, { choices: [{ delta: { tool_calls: [call(0, 'list_files', { path: '' }), call(1, 'search_paste', { id, query: 'ERROR' })] } }] });
+        } else if (results.length === 2) {
+          await new Promise((r) => setTimeout(r, 900)); // the model takes a while, so the tests can see it waiting
+          sse(res, { choices: [{ delta: { tool_calls: [call(0, 'read_file', { path: 'proj/missing.txt' })] } }] });
+        } else {
+          sse(res, { choices: [{ delta: { content: 'Done looking.' } }] });
+        }
+        sse(res, { choices: [{ delta: {}, finish_reason: results.length < 3 ? 'tool_calls' : 'stop' }] });
+        if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
+        return res.end('data: [DONE]\n\n');
+      }
+
       if (body.tools && text.startsWith('folder')) {
         const results = body.messages.filter((m) => m.role === 'tool');
         if (results.length === 0) {

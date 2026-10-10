@@ -23,6 +23,7 @@ import { loadConfig, createAuth, renderSignIn } from './oidc.js'; // sign-in
 import { autoTitle } from './autotitle.js'; // chat titles
 import { createGitlab, GITLAB_TOOLS, gitlabPrompt, isGitlabTool } from './gitlab.js'; // gitlab
 import { createActivity } from './activity.js'; // activity
+import { createFlow } from './flow.js'; // flow
 import { patchPrompt, patchBlock } from './patch.js'; // patch
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 
@@ -90,7 +91,7 @@ const gitlab = createGitlab({
   onChange: () => render(),
 });
 
-const activity = createActivity(); // activity
+const activity = createActivity({ flow: createFlow() }); // activity, flow
 const messages = createMessages($('messages'), {
   onRetry: retry,
   activity: (m) => activity.node(state.active?.meta.id, m), // activity
@@ -315,6 +316,8 @@ async function complete(chat) {
     // Tools only for what this chat has: a folder, a git repo, a GitLab project, a paste still in memory.
     const offered = [...(folder ? FOLDER_TOOLS : []), ...(repo ? GIT_TOOLS : []), ...(project ? GITLAB_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : [])]; // git, gitlab, smart paste
     tools = offered.length ? offered : undefined;
+    const names = (list) => list.map((t) => t.function.name); // flow: which place each tool reaches
+    act.places([folder && { id: 'folder', kind: 'Folder', name: folder.name, tools: names([...FOLDER_TOOLS, ...(repo ? GIT_TOOLS : [])]) }, project && { id: 'gitlab', kind: 'GitLab project', name: project.path, sub: `branch ${project.ref}`, tools: names(GITLAB_TOOLS) }, hasPastes(chat.messages) && { id: 'paste', kind: 'Pasted text', name: 'Pastes in this chat', tools: names(PASTE_TOOLS) }].filter(Boolean)); // flow, git, gitlab, smart paste
     const system = [today(), s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, project && gitlabPrompt(project), (folder || project) && patchPrompt([folder?.name, project?.path].filter(Boolean))].filter(Boolean).join('\n\n'); // git, gitlab, patch
     history.unshift({ role: 'system', content: system });
     // With a folder connected the model may ask to read files first: run those and ask again.

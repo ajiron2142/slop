@@ -90,6 +90,7 @@ app/                  behaviour
   gitlab.js           GitLab, read-only: self-service connect in Settings, a project per chat, four tools (removable add-on)
   autotitle.js        names a chat after its first reply with one short request (removable add-on)
   activity.js         what a reply is doing and did, foldable under it (removable add-on)
+  flow.js             the reply's tree beside its steps: where it went, one ring per call, what failed (removable, builds on activity)
   viewer.js           image viewer: click an image to see it large (removable add-on)
   mini.js             mini window: pops the chat into a floating always-on-top window (Chrome/Edge, removable add-on)
   stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)

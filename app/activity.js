@@ -14,11 +14,11 @@ import { el } from './dom.js';
 //
 // To remove it: delete this file and styles/components/activity.css, their lines in index.html and
 // tests/run.mjs, tests/suites/activity.mjs, and the lines marked "activity" in main.js, api.js and
-// components/messages.js.
+// components/messages.js. The reply's tree (flow.js) builds on this one; remove it first.
 
 const MAX_BOX = 200; // px, an opened step's most height
 
-export function createActivity({ now = () => performance.now() } = {}) {
+export function createActivity({ now = () => performance.now(), flow = null } = {}) { // flow
   const replies = new Map(); // `${chat id}:${message ts}` → what that reply did
   let timer = 0;
 
@@ -45,6 +45,7 @@ export function createActivity({ now = () => performance.now() } = {}) {
     r.ui.head.setAttribute('aria-expanded', String(r.open));
     r.ui.list.hidden = !r.open;
     r.steps.forEach((s, i) => drawStep(r, s, i, t));
+    r.flow?.draw(); // flow
   }
 
   function drawStep(r, s, i, t) {
@@ -97,10 +98,12 @@ export function createActivity({ now = () => performance.now() } = {}) {
       const node = el('div', 'activity');
       const head = el('button', 'act-row act-head');
       head.type = 'button';
-      const r = { model, t0: now(), since: now(), state: 'wait', ended: null, finish: null, open: false, steps: [], node };
+      const r = { model, t0: now(), since: now(), state: 'wait', ended: null, finish: null, open: false, steps: [], node, places: [] }; // flow: places
       r.ui = { head, tw: el('span', 'act-tw'), spin: el('span', 'act-mark act-spin'), text: el('span', 'act-name'), time: el('span', 'act-time'), list: el('div', 'act-list') };
       head.append(r.ui.tw, r.ui.spin, r.ui.text, r.ui.time);
       node.append(head, r.ui.list);
+      r.flow = flow?.(r); // flow
+      if (r.flow) node.append(r.flow.node); // flow
       node.addEventListener('click', (e) => {
         const row = e.target.closest('.act-row');
         if (!row) return;
@@ -114,6 +117,7 @@ export function createActivity({ now = () => performance.now() } = {}) {
       const set = (state) => { if (r.state !== state) { r.state = state; r.since = now(); } };
       const closeThinking = () => { const s = r.steps.at(-1); if (s?.kind === 'think' && s.t1 == null) s.t1 = now(); };
       return {
+        places(list) { r.places = list; draw(r); }, // flow: what this reply can reach, for the tree
         asking() { closeThinking(); set('wait'); draw(r); },
         thinking(delta) {
           let s = r.steps.at(-1);
