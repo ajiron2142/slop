@@ -10,8 +10,10 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 
 ## Fixed rules
 
-- One tool, `run_js`, with `{ "code": "…" }`. It's offered only when **Settings → Let the model run code
-  (in a sandbox)** is on. Off by default.
+- One tool, `run_js`, with `{ "code": "…" }`. It's turned on per chat, like a folder or GitLab: the
+  paperclip menu gets a **Run code** item, which adds a **Sandbox** chip under the message box (× turns
+  it off again). It's offered to the model only in chats where that chip is on, so ordinary chats still
+  send no tools, and they keep working with models that don't support tools.
 - The code runs in a Worker inside a sandboxed iframe. It's stopped after **5 seconds**. If it hasn't
   finished, the result says so and shows the right form: keep it under 5 s.
 - What comes back to the model: everything passed to `console.log`, then the value of the last
@@ -63,9 +65,10 @@ could be considered then, but the hand-written helpers should cover bars, lines 
    - output is cut at 20,000 characters;
    - `show()` refuses anything that isn't a single `<svg>`;
    - a reply posted from anywhere but the iframe is ignored.
-2. **The tool and the setting.** Offer `run_js` when the setting is on, and record its step in the
-   activity. The reply tree shows it as a place called "Sandbox". Mock up how a picture looks in a reply
-   (on a phone and on a desktop) before building that part.
+2. **The tool and the chip.** Add a **Run code** item to the paperclip menu and a **Sandbox** chip in the
+   tray, each marked `// sandbox`. Offer `run_js` only while the chip is on, and record its step in the
+   activity. The reply tree shows it as a place called "Sandbox". Mock up the chip and how a picture
+   looks in a reply (on a phone and on a desktop) before building that part.
 3. **Helpers** (`svg`, `chart.bar`, `chart.line`, `table`, `random`) with checks, and a short note in the
    system prompt saying what the tool can do.
 4. **Later, maybe:** read-only data from slop's own tools inside the sandbox (for example a folder file
@@ -74,4 +77,4 @@ could be considered then, but the hand-written helpers should cover bars, lines 
 ## To remove it (when built)
 
 Delete `sandbox/`, `app/sandbox.js`, its CSS and test suite, and the lines marked "sandbox" in main.js,
-index.html, nginx.conf and tests/run.mjs.
+components/composer.js, index.html, nginx.conf and tests/run.mjs.
