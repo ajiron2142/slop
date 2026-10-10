@@ -264,7 +264,8 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         head.addEventListener('click', () => done(null));
         dialog.append(head);
         const r = from.getBoundingClientRect();
-        Object.assign(dialog.style, { left: `${r.left}px`, bottom: `${innerHeight - r.bottom}px`, minWidth: `${r.width}px` });
+        const view = from.ownerDocument.defaultView; // the tab, or the mini window when the chat is there
+        Object.assign(dialog.style, { left: `${r.left}px`, bottom: `${view.innerHeight - r.bottom}px`, minWidth: `${r.width}px` });
       }
       dialog.showModal();
       q.focus();

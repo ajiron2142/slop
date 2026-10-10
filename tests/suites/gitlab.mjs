@@ -66,7 +66,24 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('dialog.gitlab-picker.branches .gitlab-project:has-text("main") >> nth=0');
   await p.waitForFunction(() => document.querySelector('.tray-chip.gitlab')?.textContent.includes('·main'));
 
-  // Stop ends a GitLab request that never answers.
+  // The same in the mini window, which is a smaller window of its own.
+  await p.click('#mini-btn');
+  await p.waitForFunction(() => documentPictureInPicture.window?.document.getElementById('chat'));
+  await p.setViewportSize({ width: 1280, height: 500 }); // headless opens it at the tab's size; make them differ
+  await p.evaluate(() => documentPictureInPicture.window.document.querySelector('.tray-chip.gitlab .gitlab-branch').click());
+  await p.waitForFunction(() => documentPictureInPicture.window.document.querySelector('dialog.gitlab-picker.branches[open] .gitlab-project'));
+  const gap = await p.evaluate(() => {
+    const doc = documentPictureInPicture.window.document;
+    const chip = doc.querySelector('.tray-chip.gitlab:not(.gitlab-head-chip)').getBoundingClientRect();
+    const list = doc.querySelector('dialog.gitlab-picker.branches').getBoundingClientRect();
+    return Math.abs(list.bottom - chip.bottom) + Math.abs(list.left - chip.left);
+  });
+  check('in the mini window the branch list also grows out of the chip', gap < 2);
+  await p.evaluate(() => documentPictureInPicture.window.close());
+  await p.waitForSelector('#chat');
+  await p.setViewportSize({ width: 1280, height: 800 });
+
+
   await p.fill('#input', 'slowgitlab: search');
   await p.press('#input', 'Enter');
   for (let i = 0; i < 100 && !gitlab.searches; i++) await p.waitForTimeout(50); // until GitLab has the search
