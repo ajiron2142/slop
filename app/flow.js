@@ -1,19 +1,21 @@
 import { el } from './dom.js';
 
 // The reply's tree (optional add-on to the activity add-on): beside the opened steps, a small tree of
-// where the reply went: you, the model, each place this chat has connected (a folder, a GitLab
-// project, pasted text), and the reply last. Each place shows one ring per call, in order: green
-// worked, red failed, filling while it runs, grey for the model's thinking; a red badge counts a
-// place's failures. While the reply runs, the line to the place in use moves and everything but
-// what's happening now is faded. Point at, click or tap a box, ring or step to pick out its partners;
-// click it again, or empty space, to show everything. It draws only what activity.js already
-// recorded, so it lives and goes with that: memory only, nothing sent to the model.
+// where the reply went: you, the model, each place it used (a folder, a GitLab project, pasted text),
+// and the reply last. It grows downward as the reply works. Each place shows one ring per call, in
+// order: green worked, red failed, filling while it runs, grey for the model's thinking; a red badge
+// counts a place's failures. While the reply runs, the line to the place in use moves and everything
+// but what's happening now is faded. Point at, click or tap a box, ring or step to pick out its
+// partners; click it again, or empty space, to show everything. It draws only what activity.js
+// already recorded, so it lives and goes with that: memory only, nothing sent to the model.
 //
-// Rules, all fixed: a call belongs to the place whose tools include its name, or to the model when
-// none does; places are listed in the order first used, unused ones last; a call failed when its
-// result starts with "Error:", and a place's badge counts them up to 9, then says 9+ (it's always a
-// circle); the reply box says how the reply ended, never what a tool did. Below 640px wide the tree
-// goes above the steps.
+// Rules, all fixed: it's shown only when the chat has something connected (otherwise the model has
+// no tools, so there's nowhere to go); a call belongs to the place whose tools include its name, or to
+// the model when none does; a place appears when it's first used, so places are always in that order
+// and one the model never used isn't drawn; the reply box appears once the model starts writing or
+// the reply ends, and says how the reply ended, never what a tool did; a call failed when its result
+// starts with "Error:"; a place's badge counts failures up to 9, then says 9+, so it's always a
+// circle. Below 640px wide the tree goes above the steps.
 //
 // To remove it: delete this file and styles/components/flow.css, their lines in index.html and
 // tests/run.mjs, tests/suites/flow.mjs, and the lines marked "flow" in activity.js and main.js.
@@ -67,11 +69,10 @@ export function createFlow({ now = () => performance.now() } = {}) {
       const ended = r.ended != null;
       const at = r.steps.map(placeOf);
 
-      // The places: first used first, the rest in the order they were connected.
-      for (const p of r.places) if (!boxes.has(p.id)) makeBox(p.id, p.kind);
-      if (!boxes.has('reply')) makeBox('reply', 'Reply');
-      const used = r.places.filter((p) => at.includes(p.id)).sort((a, b) => at.indexOf(a.id) - at.indexOf(b.id));
-      const ids = [...used, ...r.places.filter((p) => !used.includes(p))].map((p) => p.id).concat('reply');
+      // The places it has used so far, in the order first used, then the reply once it's writing.
+      const ids = r.places.filter((p) => at.includes(p.id)).sort((a, b) => at.indexOf(a.id) - at.indexOf(b.id)).map((p) => p.id);
+      if (r.state === 'write' || ended) ids.push('reply');
+      for (const id of ids) if (!boxes.has(id)) makeBox(id, r.places.find((p) => p.id === id)?.kind ?? 'Reply');
       if (ids.join() !== order) { order = ids.join(); kids.replaceChildren(...ids.map((id) => boxes.get(id).node)); }
 
       const focus = hover ?? pick ?? current();
@@ -83,7 +84,7 @@ export function createFlow({ now = () => performance.now() } = {}) {
         const failed = calls.filter((s) => s.failed).length;
         const busy = !ended && mine.some((s) => s.t1 == null) || (!ended && ((id === 'model' && r.state === 'wait') || (id === 'reply' && r.state === 'write')));
         const place = r.places.find((p) => p.id === id);
-        let state = busy ? 'on' : mine.length || id === 'you' ? 'done' : 'wait';
+        let state = busy ? 'on' : 'done'; // every box drawn has done something: places appear only once used
         if (id === 'reply' && ended) state = r.finish === 'stopped' ? 'stopped' : r.finish ? 'done' : 'bad';
         stateOf[id] = state;
         ui.node.className = `flow-box ${state}${failed ? ' has-bad' : ''}${fb && fb !== id ? ' flow-dim' : ''}`;
@@ -93,10 +94,10 @@ export function createFlow({ now = () => performance.now() } = {}) {
           const thought = mine.filter((s) => s.kind === 'think').reduce((sum, s) => sum + ((s.t1 ?? t) - s.t0), 0);
           ui.meta.textContent = thought ? `thought ${secs(thought)}` : '';
         } else if (id === 'reply') {
-          ui.name.textContent = { on: 'Writing', done: 'Written', stopped: 'Stopped', bad: 'Didn\'t finish', wait: 'Not started' }[state];
+          ui.name.textContent = { on: 'Writing', done: 'Written', stopped: 'Stopped', bad: 'Didn\'t finish' }[state];
         } else {
           ui.name.textContent = place.name;
-          ui.meta.textContent = [place.sub, calls.length ? `${calls.length} call${calls.length === 1 ? '' : 's'}` : ended ? 'not used' : ''].filter(Boolean).join(' · ');
+          ui.meta.textContent = [place.sub, `${calls.length} call${calls.length === 1 ? '' : 's'}`].filter(Boolean).join(' · ');
         }
         ui.meta.hidden = !ui.meta.textContent;
         ui.badge.textContent = failed > 9 ? '9+' : failed || ''; // always a circle, so never more than two characters
@@ -137,9 +138,9 @@ export function createFlow({ now = () => performance.now() } = {}) {
         p.setAttribute('class', `${state}${fb && fb !== id ? ' flow-dim' : ''}`);
       };
       line('model', `M${x},${you.b} L${x},${model.t}`, 'done');
-      for (const id of order.split(',')) {
+      for (const id of order ? order.split(',') : []) {
         const q = box(id);
-        line(id, `M${x},${model.b} L${x},${q.m - 6} Q${x},${q.m} ${x + 6},${q.m} L${q.l},${q.m}`, stateOf[id] === 'on' ? 'on' : stateOf[id] === 'wait' ? 'wait' : 'done');
+        line(id, `M${x},${model.b} L${x},${q.m - 6} Q${x},${q.m} ${x + 6},${q.m} L${q.l},${q.m}`, stateOf[id] === 'on' ? 'on' : 'done');
       }
     }
 

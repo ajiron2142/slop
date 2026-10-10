@@ -47,6 +47,7 @@ export default async function ({ browser, site, mock, check }) {
   check('while the model is asked again, its box is the one running', await has(box('model'), 'on'));
   check('and everything else is faded, its thinking step left as it is', await has(box('folder'), 'flow-dim') && await has(box('paste'), 'flow-dim') && !(await has(`${reply} .act-step >> nth=0`, 'flow-dim')) && await has(`${reply} .act-step >> nth=1`, 'flow-dim'));
   check('the line to it doesn\'t move; only a place in use gets a moving line', (await p.$$(`${reply} .flow-wires path.on`)).length === 0);
+  check('the tree grows as it goes: the places used so far, and no reply box until it writes', (await p.$$eval(`${reply} .flow-kids .flow-kind`, (xs) => xs.map((x) => x.textContent).join(','))) === 'Folder,Pasted text');
   await idle(p);
   await p.waitForTimeout(100);
 
