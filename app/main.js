@@ -522,8 +522,8 @@ async function init() {
   modelPicker.set([], state.settings.model);
   render();
   const note = await setUpSignIn(); // sign-in
-  const gitlabNote = await gitlab.start(); // gitlab: also finishes a connect coming back from GitLab
-  if (gitlabNote) openSettings(gitlabNote);
+  // gitlab: also finishes a connect coming back from GitLab. Models don't wait for it.
+  gitlab.start().then((gitlabNote) => { if (gitlabNote) openSettings(gitlabNote); });
   if (!state.settings.baseUrl) openSettings(note || 'Welcome! Enter your LiteLLM base URL and API key.');
   else if (!canAuth()) openSettings(note || (state.auth ? `Welcome! ${state.auth.label} to start, or enter an API key.` : 'Enter your API key to start.'));
   else {

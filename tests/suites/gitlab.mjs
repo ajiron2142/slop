@@ -30,6 +30,14 @@ export default async function ({ browser, site, mock, check }) {
   check('connecting comes back connected, with who and which scopes', (await box()).includes('Connected as alice') && (await box()).includes('openid read_api'));
   await p.click('#close-settings');
 
+  // GitLab answering slowly never holds up the model list.
+  gitlab.slowUser = true;
+  await p.reload();
+  const started = Date.now();
+  await p.waitForFunction(() => document.querySelector('#model-picker .model')?.textContent !== 'No models', null, { timeout: 10000 });
+  check('the model list doesn\'t wait for GitLab when the page loads', Date.now() - started < 3000);
+  gitlab.slowUser = false;
+
   // A project for this chat.
   await p.click('#attach-btn');
   check('the attach menu offers a GitLab project once connected', await p.isVisible('#attach-menu [data-action="gitlab"]'));

@@ -403,9 +403,9 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
     async start() {
       makeAuth();
       const message = auth ? await auth.handleCallback() : '';
-      if (auth?.signedIn()) await whoAmI();
       if (menuItem) menuItem.hidden = !auth?.signedIn();
       draw(message);
+      if (auth?.signedIn()) whoAmI().then(() => draw(message)); // "Connected as …" fills in when GitLab answers
       return message;
     },
     draw: (message) => { if (menuItem) menuItem.hidden = !auth?.signedIn(); draw(message); },

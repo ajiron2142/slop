@@ -355,6 +355,7 @@ export async function startGitlab() {
   const files = { 'src/handler.js': 'export function handle() {\n  const timeout = 30_000;\n  return timeout;\n}\n', 'README.md': '# Route service\n' };
   const log = Array.from({ length: 250 }, (_, i) => (i === 249 ? '\x1b[31mFAIL handler.test.js: expected 30000, got 120000\x1b[0m' : `\x1b[32mstep ${i + 1}\x1b[0m`)).join('\n');
   const gitlab = { methods: [], refs: [] };
+  let server = null; // what the test holds: its flags (slowUser) are read from there, and searches are counted there
   const json = (res, body) => res.setHeader('Content-Type', 'application/json').end(JSON.stringify(body));
   const api = (req, res, url) => {
     if (!url.pathname.startsWith('/api/v4/')) return false;
@@ -362,7 +363,7 @@ export async function startGitlab() {
     if (!/^Bearer at-\d+$/.test(req.headers.authorization ?? '')) { res.writeHead(401).end(JSON.stringify({ message: '401 Unauthorized' })); return true; }
     const p = url.pathname.slice(7);
     const q = url.searchParams;
-    if (p === '/user') return json(res, { username: 'alice' }), true;
+    if (p === '/user') return (server.slowUser ? setTimeout(() => json(res, { username: 'alice' }), 5000) : json(res, { username: 'alice' })), true;
     if (p === '/projects') return json(res, projects.filter((x) => x.path_with_namespace.includes(q.get('search') ?? ''))), true;
     if (p.startsWith('/projects/7/repository/') && q.get('ref')) gitlab.refs.push(q.get('ref')); // the files' branch
     if (p === '/projects/7/repository/branches') {
@@ -370,7 +371,7 @@ export async function startGitlab() {
       if (q.get('sort') === 'updated_desc') found.sort((x, y) => y.commit.committed_date.localeCompare(x.commit.committed_date));
       return json(res, found), true;
     }
-    if (p === '/projects/7/search' && q.get('search') === 'hang') return (gitlab.searches = 1), true; // never answers
+    if (p === '/projects/7/search' && q.get('search') === 'hang') return (server.searches = 1), true; // never answers
     if (p === '/projects/7/repository/tree') {
       const under = q.get('path');
       return json(res, q.get('page') > 1 ? [] : tree.filter((t) => !under || t.path.startsWith(`${under}/`))), true;
@@ -389,5 +390,6 @@ export async function startGitlab() {
     return true;
   };
   const idp = await startIdp({ scope: 'openid read_api', api });
-  return Object.assign(idp, gitlab);
+  server = Object.assign(idp, gitlab);
+  return server;
 }
