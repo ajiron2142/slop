@@ -13,10 +13,18 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 - One tool, `run_js`, with `{ "code": "…" }`. It's turned on per chat, like a folder or GitLab: the
   paperclip button becomes a **+** button, and its menu lists each item with an icon: Attach files, then
   Connect folder, Connect GitLab project and **Sandbox**. The Sandbox row says Off, or **Enabled** in
-  green. When it's switched on, its icon plays a short one-time animation, then part of the icon stays
-  lit green. The icon is still to pick from https://claude.ai/artifact/HqhgLYAVgKayBQ8sijdmTd; the cube
-  is the front runner. It also adds a **Sandbox** chip, with the same lit icon, under the message box
-  (× turns it off again). It's offered to the model only in chats where that chip is on, so ordinary chats still
+  green (how the row shows "on" is still open: the word, a dot, a tick, or a changing second line; see
+  https://claude.ai/artifact/LgqwkqcwB4uuLuaRkuNE81). It also adds a **Sandbox** chip under the message
+  box (× turns it off again).
+- **The icon is Peek**, a little box with a lid:
+  - **Off:** a grey outline, still.
+  - **Enabled, idle:** the same box glowing green, still.
+  - **Running code:** the lid lifts, two eyes look left, then right, blink, and the lid settles back. Each
+    round takes 4 seconds, slow enough to follow. A variant still to decide adds a little escape attempt:
+    the box scoots to one side, wobbles, gives a tiny hop, and settles.
+  - The chip shows the same icon in the same state.
+  - With "reduce motion" on, it doesn't move: while running, it shows the lid open a crack with the eyes
+    looking out. It's offered to the model only in chats where that chip is on, so ordinary chats still
   send no tools, and they keep working with models that don't support tools.
 - The code runs in a Worker inside a sandboxed iframe. It's stopped after **5 seconds**. If it hasn't
   finished, the result says so and shows the right form: keep it under 5 s.
