@@ -5,4 +5,5 @@ COPY app/ /usr/share/nginx/html/app/
 COPY styles/ /usr/share/nginx/html/styles/
 COPY fonts/ /usr/share/nginx/html/fonts/
 COPY vendor/ /usr/share/nginx/html/vendor/
+COPY sandbox/ /usr/share/nginx/html/sandbox/
 EXPOSE 8080

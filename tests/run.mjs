@@ -20,8 +20,9 @@ import git from './suites/git.mjs';
 import activity from './suites/activity.mjs';
 import patch from './suites/patch.mjs';
 import flow from './suites/flow.mjs';
+import sandbox from './suites/sandbox.mjs'; // sandbox
 
-const SUITES = { app, folder, git, paste, patch, activity, flow, mini, viewer, signin, titles, gitlab, stats, speed };
+const SUITES = { app, folder, git, paste, patch, activity, flow, sandbox, mini, viewer, signin, titles, gitlab, stats, speed };
 const only = process.argv.slice(2); // e.g. `npm test -- stats` runs one suite
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));

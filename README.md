@@ -93,6 +93,7 @@ app/                  behaviour
   flow.js             the reply's tree beside its steps: where it went, one ring per call, what failed (removable, builds on activity)
   viewer.js           image viewer: click an image to see it large (removable add-on)
   mini.js             mini window: pops the chat into a floating always-on-top window (Chrome/Edge, removable add-on)
+  sandbox.js          runs the model's JavaScript in the sandbox below; not wired into the UI yet (removable add-on)
   stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)
   markdown.js         markdown to sanitised HTML
   highlight.js        syntax colours for code blocks; loads highlight.js on first use (lists the languages)
@@ -110,6 +111,7 @@ styles/
   base.css            tokens, the chat column's layout, app shell, shared buttons
   components/         one file per component, same names as app/components (plus one per add-on: folder-git.css, gitlab.css, patch.css, …)
   themes/             one self-contained file per theme (see its README)
+sandbox/              sandbox.html + runner.js: a hidden, sandboxed iframe with no network, page or storage (see docs/plans/sandbox.md)
 fonts/                self-hosted fonts; fonts.css declares them
 vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
 tests/                browser tests; not part of the deployed app (see tests/README.md)
@@ -177,7 +179,7 @@ Or with Node.js: `npm ci`, `npx playwright install chromium`, then `npm test`. P
 
 ## Security
 
-- A strict Content-Security-Policy in `index.html`: only this site's own scripts, styles, fonts and images, and connections only to `https://` URLs.
+- A strict Content-Security-Policy in `index.html`: only this site's own scripts, styles, fonts and images, connections only to `https://` URLs, and frames only from this site (the sandbox).
 - Model replies are rendered as markdown and always sanitised with DOMPurify; links open in a new tab without access to this page. Remote images in replies are blocked.
 - Everything else (titles, your messages, file names) is inserted as plain text, never as HTML.
 - Your API key and chats live only in this browser's IndexedDB and are sent nowhere except your LiteLLM URL. Settings has **Forget key** and **Delete all local data**.

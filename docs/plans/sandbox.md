@@ -1,6 +1,6 @@
 # Plan: a bare-minimum JS sandbox (prototype)
 
-Status: planned, nothing built. Next step is phase 1 below. Design changes still need a mockup first (CLAUDE.md).
+Status: phase 1 built (the runner, no UI). Next step is phase 2 below. Design changes still need a mockup first (CLAUDE.md).
 
 ## What it's for
 
@@ -74,7 +74,24 @@ could be considered then, but the hand-written helpers should cover bars, lines 
 4. **Later, maybe:** read-only data from slop's own tools inside the sandbox (for example a folder file
    read into the code), sent in by slop. Never a way for the code to reach anything itself.
 
-## To remove it (when built)
+## Phase 1 as built
 
-Delete `sandbox/`, `app/sandbox.js`, its CSS and test suite, and the lines marked "sandbox" in main.js,
-components/composer.js, index.html, nginx.conf and tests/run.mjs.
+- Each job gets a fresh Worker, so nothing carries over between runs. The code runs with indirect `eval`
+  (the sandbox's policy allows `'unsafe-eval'`, which only reaches the Worker and the empty sandbox page),
+  so the last expression's value can come back; a promise as the last value is waited for.
+- The runner checks again whatever the Worker posts (pictures, output length), so code that calls
+  `postMessage` itself gets no further than `console.log` and `show()`.
+- `show()` refuses, with the right form: a non-string, text not starting with `<svg` and ending with
+  `</svg>`, a 4th call, a picture over 200 KB. The runner then refuses anything that isn't well-formed XML
+  with one `<svg>` in the SVG namespace at the top.
+- A syntax error gets its line by loading the code once more as a script with `throw 0;` in front, so it
+  can't run.
+- `app/sandbox.js` gives up after 10 s if the sandbox never answers (for example when it can't load).
+- `app/sandbox.js` already has `SANDBOX_TOOLS`, `isSandboxTool`, `runJs`, `sandboxResult` and
+  `runSandboxTool` for phase 2; nothing calls them yet.
+
+## To remove it
+
+Delete `sandbox/`, `app/sandbox.js` and `tests/suites/sandbox.mjs`, the lines marked "sandbox" in
+index.html, nginx.conf and tests/run.mjs, the Dockerfile's `sandbox/` line and the README's mentions.
+After phase 2, also its CSS and the lines marked "sandbox" in main.js and components/composer.js.
