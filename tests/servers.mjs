@@ -263,6 +263,17 @@ export async function startMock() {
         return res.end('data: [DONE]\n\n');
       }
 
+      if (body.tools && text.startsWith('sandboxreads')) { // sandbox: searches the paste, then runs code over what came back
+        const results = body.messages.filter((m) => m.role === 'tool');
+        const id = JSON.stringify(body.messages).match(/pasted id=\\"(\w+)\\"/)?.[1];
+        const code = 'reads.map((r) => `${r.tool} ${r.args.query} ${r.text.split("\\n").length}`).join("; ")';
+        if (results.length === 0) sse(res, { choices: [{ delta: { tool_calls: [{ index: 0, id: 'r1', type: 'function', function: { name: 'search_paste', arguments: JSON.stringify({ id, query: 'ERROR' }) } }] } }] });
+        else if (results.length === 1) sse(res, { choices: [{ delta: { tool_calls: [{ index: 0, id: 'r2', type: 'function', function: { name: 'run_js', arguments: JSON.stringify({ code }) } }] } }] });
+        else sse(res, { choices: [{ delta: { content: `RESULT[${results[1].content}]` } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: results.length < 2 ? 'tool_calls' : 'stop' }] });
+        return res.end('data: [DONE]\n\n');
+      }
+
       if (body.tools && text.startsWith('sandbox:')) { // sandbox: runs the code after "sandbox:", then says what came back
         const results = body.messages.filter((m) => m.role === 'tool');
         if (!results.length) sse(res, { choices: [{ delta: { content: 'Let me work it out.', tool_calls: [{ index: 0, id: 's1', type: 'function', function: { name: 'run_js', arguments: JSON.stringify({ code: text.slice('sandbox:'.length) }) } }] } }] });

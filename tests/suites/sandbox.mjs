@@ -107,6 +107,13 @@ export default async function ({ browser, site, mock, check }) {
   check('random(seed) gives the same numbers for the same seed', r.out === 'true');
   check('random() refuses a seed that isn\'t a whole number', /takes a whole number as its seed, like random\(42\)/.test((await run('random(0.5)')).error));
 
+  // reads: what the other tools returned in this reply, given to the code as is.
+  r = await p.evaluate(async () => (await import('./app/sandbox.js')).runJs('reads.map((x) => x.tool + " " + x.args.path + " " + x.text.length).join()',
+    [{ tool: 'read_file', args: '{"path":"proj/a.txt"}', text: 'hello' }, { tool: 'bad' }, { tool: 'list_files', args: 'not json', text: '' }]));
+  check('the code gets what the other tools returned, with their arguments', r.out === 'read_file proj/a.txt 5,list_files undefined 0');
+  check('and can\'t change it', (await run('"use strict"; reads.push(1)')).error.startsWith('TypeError'));
+  check('with nothing read, reads is empty', (await run('reads.length')).out === '0');
+
   // A reply posted from anywhere but the iframe is ignored, even with the right id.
   await frame.evaluate(() => addEventListener('message', (e) => { window.lastJob = e.data.id; }));
   const slow = run('const end = Date.now() + 800;\nwhile (Date.now() < end) {}\n"real"');
@@ -217,11 +224,22 @@ async function inTheApp({ browser, site, mock, check }) {
   check('the sandbox stays on for the chat after a reload', await p.isVisible(chip));
   check('and its pictures are still there', (await p.$$('.msg.assistant .picture img')).length === 1);
 
+  // In a reply: a paste is searched, then code works on that result as is.
+  await p.evaluate((text) => {
+    const dt = new DataTransfer();
+    dt.setData('text/plain', text);
+    document.getElementById('input').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, Array.from({ length: 900 }, (_, i) => (i % 300 === 7 ? `line ${i} ERROR timeout` : `line ${i} ok`)).join('\n'));
+  await ask('sandboxreads');
+  await idle(p);
+  const sentTools = JSON.parse(mock.requests.at(-1).sent).filter((m) => m.role === 'tool').map((m) => m.content);
+  check('code in a reply gets what the other tools returned before it, as is', sentTools[1] === `search_paste ERROR ${sentTools[0].split('\n').length}`);
+
   await p.click(`${chip} .tray-remove`);
   check('the chip\'s × switches it off', await p.isHidden(chip) && (await p.getAttribute(row, 'aria-checked')) === 'false');
   await ask('hello again');
   await idle(p);
-  check('and run_js is no longer offered', !mock.requests.at(-1).hasTools);
+  check('and run_js is no longer offered', !mock.requests.at(-1).toolNames.includes('run_js'));
 
   await p.click('#attach-btn');
   await p.click(row);

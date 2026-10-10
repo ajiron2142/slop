@@ -1,6 +1,6 @@
 # Plan: a bare-minimum JS sandbox (prototype)
 
-Status: phases 1 to 3 built (the runner; the + menu, the chip, pictures and Copy reply; the helpers). Phase 4 is a maybe for later.
+Status: built (the runner; the + menu, the chip, pictures and Copy reply; the helpers; `reads`).
 
 ## What it's for
 
@@ -103,8 +103,8 @@ could be considered then, but the hand-written helpers should cover bars, lines 
    looks in a reply (on a phone and on a desktop) before building that part.
 3. **Helpers** (`svg`, `chart.bar`, `chart.line`, `table`, `random`) with checks, and a short note in the
    system prompt saying what the tool can do.
-4. **Later, maybe:** read-only data from slop's own tools inside the sandbox (for example a folder file
-   read into the code), sent in by slop. Never a way for the code to reach anything itself.
+4. **`reads`:** what slop's other tools returned in this reply, given to the code as is (see below). Never
+   a way for the code to reach anything itself.
 
 **Idea for later, not part of this plan:** a small always-on figure that shows what's happening right
 now (thinking, reading a file, running code). Lighter than the reply tree; to be mocked up on its own.
@@ -145,6 +145,18 @@ now (thinking, reading a file, running code). Lighter than the reply tree; to be
   a white background in every picture.
 - Instead of a separate system-prompt note, the tool's own description lists the helpers: it's only sent
   when the sandbox is on, so the note costs nothing in other chats.
+
+## Phase 4 as built: `reads`
+
+- The code sees `reads`: every other tool call in this reply so far, oldest first, as
+  `{ tool, args, text }` (the tool's name, its arguments as an object, its result). It's frozen.
+- main.js collects them in the tool loop (a line marked "sandbox") and passes them with each run. The
+  sandbox never knows where they came from, so no add-on depends on another: remove the folder add-on and
+  its results just stop appearing; a new tool's results appear without any wiring.
+- This reply only, like what the model itself saw. It's no more than the tools returned, which they already
+  cap; big files are a separate question.
+- Why: the model no longer copies numbers from a result into its code, which costs tokens and invites
+  mistakes. The sandbox still can't send anything anywhere.
 
 ## To remove it
 

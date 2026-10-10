@@ -1,5 +1,5 @@
 // sandbox: runs one piece of the model's code per job, inside sandbox.html.
-// slop posts { id, code }; the runner starts a fresh Worker for it, ends that Worker after 5 s
+// slop posts { id, code, reads }; the runner starts a fresh Worker for it, ends that Worker after 5 s
 // (which stops even an endless loop without freezing anything), and posts back
 // { id, out, pictures, error }. The Worker takes this page's policy, so it has no network either.
 //
@@ -60,8 +60,9 @@ function worker(svgProblem, MAX_OUT, MAX_PICTURES, MAX_PICTURE_BYTES, sandboxHel
     return line ? `${text} (line ${line})` : text;
   };
 
-  self.onmessage = async ({ data: code }) => {
+  self.onmessage = async ({ data: { code, reads } }) => {
     self.onmessage = null;
+    self.reads = Object.freeze(reads.map((r) => Object.freeze(r)));
     let error = '';
     try {
       let value = (0, eval)(`${code}\n//# sourceURL=code.js`);
@@ -101,7 +102,14 @@ function syntaxLine(code) {
   });
 }
 
-function run(id, code) {
+// What the other tools returned in this reply, as { tool, args, text }: the tool's name, the arguments
+// it was called with (an object) and its result. Anything else is left out.
+const parsed = (json) => { try { const v = JSON.parse(json); return v && typeof v === 'object' ? v : {}; } catch { return {}; } };
+const cleanReads = (reads) => (Array.isArray(reads) ? reads : [])
+  .filter((r) => typeof r?.tool === 'string' && typeof r.text === 'string')
+  .map((r) => ({ tool: r.tool, args: parsed(r.args), text: r.text }));
+
+function run(id, code, reads) {
   const w = new Worker(workerUrl);
   let out = '';
   let finished = false;
@@ -139,13 +147,13 @@ function run(id, code) {
     e.preventDefault();
     finish({ out, pictures: [], error: `Error: ${e.message || 'the code could not run'}` });
   };
-  w.postMessage(String(code));
+  w.postMessage({ code: String(code), reads: cleanReads(reads) });
 }
 
 // Jobs are taken only from the page that holds this frame.
 addEventListener('message', (e) => {
   if (e.source !== parent || typeof e.data?.id !== 'string' || typeof e.data.code !== 'string') return;
-  run(e.data.id, e.data.code);
+  run(e.data.id, e.data.code, e.data.reads);
 });
 
 parent.postMessage({ ready: true }, '*');

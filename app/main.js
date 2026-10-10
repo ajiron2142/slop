@@ -330,6 +330,7 @@ async function complete(chat) {
     act.places([folder && { id: 'folder', kind: 'Folder', name: folder.name, tools: names([...FOLDER_TOOLS, ...(repo ? GIT_TOOLS : [])]) }, project && { id: 'gitlab', kind: 'GitLab project', name: project.path, sub: `branch ${project.ref}`, tools: names(GITLAB_TOOLS) }, hasPastes(chat.messages) && { id: 'paste', kind: 'Pasted text', name: 'Pastes in this chat', tools: names(PASTE_TOOLS) }, sandbox && { id: 'sandbox', kind: 'Sandbox', name: 'JavaScript, offline', tools: names(SANDBOX_TOOLS) }].filter(Boolean)); // flow, git, gitlab, smart paste, sandbox
     const system = [today(), s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, project && gitlabPrompt(project), (folder || project) && patchPrompt([folder?.name, project?.path].filter(Boolean))].filter(Boolean).join('\n\n'); // git, gitlab, patch
     history.unshift({ role: 'system', content: system });
+    const reads = []; // sandbox: what the other tools returned in this reply, for the code to use as is
     // With a folder connected the model may ask to read files first: run those and ask again.
     for (let round = 1; ; round++) {
       let text = '';
@@ -370,12 +371,13 @@ async function complete(chat) {
         const name = call.function.name;
         const stepDone = act.tool(call); // activity
         const { label, result, pictures } = unreadable(call) ?? (isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
-          : isSandboxTool(name) ? await runCode(chat, call.function.arguments) // sandbox
+          : isSandboxTool(name) ? await runCode(chat, call.function.arguments, reads) // sandbox
           : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
           : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments, controller.signal) // gitlab
           : await runTool(folder, name, call.function.arguments));
         if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
         if (pictures?.length) (msg.pictures ??= []).push(...pictures); // sandbox
+        if (!isSandboxTool(name)) reads.push({ tool: name, args: call.function.arguments, text: result }); // sandbox
         stepDone(label, result); // activity
         (msg.tools ??= []).push(label);
         history.push({ role: 'tool', tool_call_id: call.id, content: result });
@@ -439,11 +441,11 @@ async function nameChat(chat) {
 }
 
 // sandbox: runs the model's code; the chip's box peeks out meanwhile.
-async function runCode(chat, args) {
+async function runCode(chat, args, reads) {
   state.sandboxRunning = chat;
   drawSandbox();
   try {
-    return await runSandboxTool(args);
+    return await runSandboxTool(args, reads);
   } finally {
     state.sandboxRunning = null;
     drawSandbox();

@@ -28,7 +28,8 @@ export const SANDBOX_TOOLS = [{
       'or [[\'Mon\', 3, 4], …] with options.names for up to 5 series; options.title, width, height. ' +
       'svg(width, height, ...children) and el(tag, attrs, ...children) build your own picture (text is escaped). ' +
       'table(rows) returns a markdown table (first row the header, or objects); print it and use it in your reply. ' +
-      'random(seed) gives repeatable random numbers.',
+      'random(seed) gives repeatable random numbers. ' +
+      'reads holds what the other tools returned earlier in this reply, oldest first, as [{ tool, args, text }]: use reads[i].text to work on that data as is instead of copying it into your code.',
     parameters: { type: 'object', properties: { code: { type: 'string', description: 'The JavaScript to run.' } }, required: ['code'] },
   },
 }];
@@ -66,8 +67,9 @@ function open() {
   return ready;
 }
 
-// Runs the code and resolves to { out, pictures, error }.
-export function runJs(code) {
+// Runs the code and resolves to { out, pictures, error }. `reads` is what the other tools returned in
+// this reply ([{ tool, args, text }]); the code sees it as `reads`. Where it came from isn't the sandbox's business.
+export function runJs(code, reads = []) {
   const id = crypto.randomUUID();
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
@@ -76,7 +78,7 @@ export function runJs(code) {
     }, NO_ANSWER);
     waiting.set(id, (run) => { clearTimeout(timer); resolve(run); });
     open().then(() => {
-      if (waiting.has(id)) frame.contentWindow.postMessage({ id, code: String(code) }, '*'); // an opaque origin can only be addressed as '*'
+      if (waiting.has(id)) frame.contentWindow.postMessage({ id, code: String(code), reads }, '*'); // an opaque origin can only be addressed as '*'
     });
   });
 }
@@ -92,7 +94,7 @@ export function sandboxResult({ out, pictures, error }) {
 }
 
 // For the tool loop: { label, result, pictures }. A run that ends in an error is a failed step.
-export async function runSandboxTool(argsJson) {
+export async function runSandboxTool(argsJson, reads = []) {
   let code;
   try {
     code = JSON.parse(argsJson || '{}').code;
@@ -102,7 +104,7 @@ export async function runSandboxTool(argsJson) {
   if (typeof code !== 'string' || !code.trim()) {
     return { label: "Couldn't run code", result: 'Error: run_js needs { "code": "…" } with the JavaScript to run.', pictures: [] };
   }
-  const run = await runJs(code);
+  const run = await runJs(code, reads);
   return run.error
     ? { label: 'Ran code (failed)', result: `Error: the run failed.\n${sandboxResult(run)}`, pictures: run.pictures }
     : { label: 'Ran code', result: sandboxResult(run), pictures: run.pictures };
