@@ -3,8 +3,9 @@
 // Opens the app in a fresh browser profile (empty storage) and connects it to the fake LiteLLM.
 // The app's security policy only allows https connections, and the fake server is plain
 // http on this machine, so the tests switch that one rule off.
-export async function openApp({ browser, site, mock }, { viewport = { width: 1280, height: 800 }, init, connect = true } = {}) {
-  const context = await browser.newContext({ viewport, bypassCSP: true, permissions: ['clipboard-read', 'clipboard-write'] });
+// `phone: true` makes it a touch screen, like a phone's browser.
+export async function openApp({ browser, site, mock }, { viewport = { width: 1280, height: 800 }, init, connect = true, phone = false } = {}) {
+  const context = await browser.newContext({ viewport, bypassCSP: true, permissions: ['clipboard-read', 'clipboard-write'], ...(phone && { isMobile: true, hasTouch: true }) });
   if (init) await context.addInitScript(init);
   const page = await context.newPage();
   const errors = [];

@@ -202,4 +202,36 @@ export default async function ({ browser, site, mock, check }) {
   check('no errors in the browser console', errors.length === 0);
   if (errors.length) console.log('    ', errors.join('\n     '));
   await context.close();
+
+  await onAPhone({ browser, site, mock, check });
+}
+
+// On a phone: Settings fits the visible screen, a picker opens without the keyboard and stays open
+// while the keyboard comes and goes (the height changes), and taps don't flash a tinted box.
+async function onAPhone({ browser, site, mock, check }) {
+  const { page: p, context, errors } = await openApp({ browser, site, mock }, { viewport: { width: 390, height: 560 }, connect: false, phone: true });
+  const box = await p.locator('#settings').boundingBox();
+  check('on a phone, Settings fits the screen, its top and bottom both in view', box.y >= 0 && box.y + box.height <= 560 && box.x >= 0 && box.x + box.width <= 390);
+  await p.$eval('#settings', (d) => { d.scrollTop = d.scrollHeight; });
+  check('and scrolls to its last line', await p.$eval('#settings .hint', (h) => h.getBoundingClientRect().bottom <= innerHeight));
+  // Theme near the bottom of the screen, as on a phone.
+  await p.$eval('#settings', (d) => { d.scrollTop += document.querySelector('#theme-picker .model').getBoundingClientRect().bottom - 540; });
+  await p.tap('#theme-picker .model');
+  const pop = await p.locator('#theme-picker .picker-pop').boundingBox();
+  check('near the bottom of the screen, a picker opens upward, all of it in view', pop.y >= 0 && pop.y + pop.height <= (await p.locator('#theme-picker .model').boundingBox()).y);
+  check('a picker opens without bringing up the keyboard', await p.isVisible('#theme-picker .picker-pop') && !(await p.$eval('#theme-picker .picker-search', (s) => s === document.activeElement)));
+  await p.setViewportSize({ width: 390, height: 300 });
+  await p.waitForTimeout(100);
+  check('it stays open when the keyboard changes the height', await p.isVisible('#theme-picker .picker-pop'));
+  await p.setViewportSize({ width: 390, height: 560 }); // the keyboard goes away
+  const before = await p.textContent('#theme-picker .model');
+  await p.tap('#theme-picker .picker-option >> nth=1');
+  check('and a theme can be picked', await p.isHidden('#theme-picker .picker-pop') && (await p.textContent('#theme-picker .model')) !== before);
+  await p.tap('#theme-picker .model');
+  await p.setViewportSize({ width: 600, height: 560 });
+  await p.waitForTimeout(100);
+  check('a picker still closes when the width changes', await p.isHidden('#theme-picker .picker-pop'));
+  check('taps don\'t flash a tinted box', await p.$eval('#settings button', (b) => getComputedStyle(b).webkitTapHighlightColor === 'rgba(0, 0, 0, 0)'));
+  check('no errors on the phone', errors.length === 0);
+  await context.close();
 }

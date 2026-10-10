@@ -1,4 +1,4 @@
-import { el, onClickOutside } from '../dom.js';
+import { el, onClickOutside, onWidthChange } from '../dom.js';
 import { isBigPaste, createPaste } from '../paste.js'; // smart paste
 
 const MAX_IMAGE = 10 * 1024 * 1024;
@@ -214,7 +214,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     menu.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closeMenu(); attach.focus(); }
     });
-    window.addEventListener('resize', closeMenu);
+    onWidthChange(closeMenu);
   }
 
   const hasFiles = (e) => e.dataTransfer?.types?.includes('Files');

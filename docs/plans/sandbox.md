@@ -20,13 +20,14 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
   tools, and they keep working with models that don't support tools.
 - **The icon is Peek**, a little box with a lid:
   - **Off:** a grey outline, still.
-  - **On, idle:** the same box glowing green, still.
+  - **On, idle:** in the menu, the same box glowing green. The chip itself shows it's on, so its box stays
+    grey like every other chip's icon.
   - **Running code:** the lid lifts, two eyes look left, then right, blink, and the lid settles back. Each
     round takes 4 seconds, slow enough to follow. It moves only while code runs, so movement always means
     the sandbox is working. (A variant with a little escape attempt was mocked up and set aside.)
   - **It moves only in the chip** (option A in https://claude.ai/artifact/JzVVDgQTvGpKrPNotncEFL). The
     sandbox's step is drawn like every other tool's step (spinner, ✓, grey text), so the steps keep one
-    pattern, and green stays in the chip and the menu.
+    pattern, and green stays in the menu.
   - With "reduce motion" on, it doesn't move: while running, it shows the lid open a crack with the eyes
     looking out.
 - The code runs in a Worker inside a sandboxed iframe. It's stopped after **5 seconds**. If it hasn't

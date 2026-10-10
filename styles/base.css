@@ -131,6 +131,9 @@ button, input, textarea, select { font: inherit; color: inherit; }
 .btn.primary:hover { opacity: 0.9; }
 .btn.danger { color: #c0392b; border-color: currentColor; }
 
+/* Phones flash a tinted box over whatever is tapped; buttons show their own hover and focus instead. */
+button, a { -webkit-tap-highlight-color: transparent; }
+
 .icon-btn {
   display: inline-grid;
   place-items: center;

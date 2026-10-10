@@ -1,4 +1,4 @@
-import { el, onClickOutside } from '../dom.js';
+import { el, onClickOutside, onWidthChange } from '../dom.js';
 
 // A searchable dropdown: a button that opens a filterable list.
 // Used for the model picker and the theme picker.
@@ -79,9 +79,16 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
 
   let stopOutside = null;
 
+  // Opens below the button, or above it when there's more room there (a button near the bottom of the
+  // screen, as on a phone); the list is never taller than that room.
   function place() {
     const r = button.getBoundingClientRect();
-    pop.style.top = `${r.bottom + 6}px`;
+    const height = root.ownerDocument.defaultView.innerHeight;
+    const below = height - r.bottom - 18;
+    const above = r.top - 18;
+    pop.style.top = below >= above ? `${r.bottom + 6}px` : '';
+    pop.style.bottom = below >= above ? '' : `${height - r.top + 6}px`;
+    list.style.maxHeight = `${Math.max(80, Math.min(320, Math.max(below, above) - 44))}px`; // 44: the search box
     if (root.classList.contains('block')) {
       pop.style.left = `${r.left}px`;
       pop.style.width = `${r.width}px`;
@@ -98,7 +105,9 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
     stopOutside = onClickOutside(root, () => close(false));
     search.value = '';
     renderList();
-    search.focus();
+    // With a mouse or trackpad you can type to filter straight away. On a touch screen that would pop up
+    // the keyboard over the list, so you tap the search box when you want it.
+    if (root.ownerDocument.defaultView.matchMedia('(pointer: fine)').matches) search.focus();
   }
 
   function close(focusButton = true) {
@@ -132,7 +141,7 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
     const li = e.target.closest('.picker-option');
     if (li) choose(visible[+li.dataset.index]);
   });
-  addEventListener('resize', () => close(false));
+  onWidthChange(() => close(false));
 
   return {
     set(newItems, newValue, newRecent = []) {

@@ -1,12 +1,12 @@
 /* Sandbox (optional add-on): its row in the + menu, its chip, and pictures in a reply.
-   On, the box glows green; while code runs, the chip's box lifts its lid and peeks out. */
+   On, the menu row's box glows green and the chip shows it's on; while code runs, the chip's box lifts
+   its lid and peeks out. */
 
-.attach-menu [data-action="sandbox"][aria-checked="true"] .icon,
-.tray-chip.sandbox .icon {
+.attach-menu [data-action="sandbox"][aria-checked="true"] .icon {
   color: var(--add);
   filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--add) 55%, transparent));
 }
-.tray-chip.sandbox .icon { width: 18px; height: 18px; overflow: visible; }
+.tray-chip.sandbox .icon { width: 18px; height: 18px; overflow: visible; color: var(--muted); }
 
 /* Peek: the lid lifts, two eyes look left, then right, blink, and the lid settles. 4 s a round. */
 .peek .peek-eyes { opacity: 0; fill: currentColor; stroke: none; }

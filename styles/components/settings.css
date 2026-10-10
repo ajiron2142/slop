@@ -1,9 +1,11 @@
 /* Settings dialog. dialog.settings keeps it a centred modal whatever a theme sets on its root. */
 dialog.settings {
   position: fixed;
+  box-sizing: border-box; /* the size limits below include the padding, so it never runs off the screen */
   overflow: auto;
   width: min(460px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px); /* what's visible now: on phones 100vh is taller than the screen while the address bar shows */
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
