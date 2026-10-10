@@ -16,6 +16,7 @@ import { el } from './dom.js';
 // lines in index.html and tests/run.mjs, and the lines marked "patch" in main.js and messages.js.
 
 export const MARKER = 'END_OF_PATCH';
+const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
 
 // For the system prompt. `roots` are the prefixes the model's paths start with in this chat (the
 // folder's name, the GitLab project's path); a patch's paths start at the repo's root instead.
@@ -80,17 +81,21 @@ export function patchBlock(lang, text) {
   const adds = files.reduce((n, f) => n + f.adds, 0);
   const dels = files.reduce((n, f) => n + f.dels, 0);
 
-  const copy = el('button', 'patch-copy', 'Copy for terminal');
+  // Like a code block's Copy: the icon and a label.
+  const copy = el('button', 'patch-copy');
   copy.type = 'button';
+  copy.innerHTML = COPY_ICON;
+  const label = el('span', '', 'Copy for terminal');
+  copy.append(label);
   copy.title = `Copies a git apply command for ${files.length === 1 ? 'this file' : `these ${files.length} files`}. Paste it in your repo folder and press Enter.`;
   copy.addEventListener('click', async () => {
     try {
       await copy.ownerDocument.defaultView.navigator.clipboard.writeText(patchCommand(text));
-      copy.textContent = 'Copied';
+      label.textContent = 'Copied';
     } catch {
-      copy.textContent = 'Copy failed';
+      label.textContent = 'Copy failed';
     }
-    setTimeout(() => { copy.textContent = 'Copy for terminal'; }, 1200);
+    setTimeout(() => { label.textContent = 'Copy for terminal'; }, 1200);
   });
   const head = el('div', 'patch-head');
   head.append(el('b', '', 'Patch'), counts(`${files.length} file${files.length === 1 ? '' : 's'} · `, adds, dels), el('span', 'patch-space'), copy);

@@ -45,7 +45,7 @@ export default async function ({ browser, site, mock, check }) {
   check('clicking a row opens that file', await p.isVisible(`${reply} .patch-file:nth-of-type(2) .patch-diff`));
 
   // Copy for terminal: one readable command that really applies the patch.
-  check('the button says what it does', (await p.textContent(`${reply} .patch-copy`)) === 'Copy for terminal');
+  check('the button says what it does, with the same copy icon as a code block', (await p.textContent(`${reply} .patch-copy`)) === 'Copy for terminal' && Boolean(await p.$(`${reply} .patch-copy svg.icon`)));
   await p.click(`${reply} .patch-copy`);
   await p.waitForFunction((sel) => document.querySelector(sel)?.textContent === 'Copied', `${reply} .patch-copy`);
   check('and says when it worked', true);
