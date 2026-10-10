@@ -12,8 +12,11 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 
 - One tool, `run_js`, with `{ "code": "…" }`. It's turned on per chat, like a folder or GitLab: the
   paperclip button becomes a **+** button, and its menu lists each item with an icon: Attach files, then
-  Connect folder, Connect GitLab project and **Enable sandbox** (a cube icon). Enabling it adds a
-  **Sandbox** chip under the message box (× turns it off again). It's offered to the model only in chats where that chip is on, so ordinary chats still
+  Connect folder, Connect GitLab project and **Sandbox**. The Sandbox row says Off, or **Enabled** in
+  green. When it's switched on, its icon plays a short one-time animation, then part of the icon stays
+  lit green. The icon is still to pick from https://claude.ai/artifact/HqhgLYAVgKayBQ8sijdmTd; the cube
+  is the front runner. It also adds a **Sandbox** chip, with the same lit icon, under the message box
+  (× turns it off again). It's offered to the model only in chats where that chip is on, so ordinary chats still
   send no tools, and they keep working with models that don't support tools.
 - The code runs in a Worker inside a sandboxed iframe. It's stopped after **5 seconds**. If it hasn't
   finished, the result says so and shows the right form: keep it under 5 s.
@@ -27,9 +30,11 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
   back to the model.
 - Each picture is in a block with the same frame and tinted header as a code block: "Picture 1 · SVG"
   on the left and **Copy SVG** (copy icon) on the right, which copies the SVG text.
-- **Copy reply** adds each picture to the copied markdown as a plain image,
-  `![Picture 1](data:image/svg+xml;base64,…)`. The HTML copy is made from that markdown, so it carries
-  the picture as an image with no special handling. Still to check: whether Teams keeps pasted data-URI
+- **Copy reply** follows one fixed rule, with nothing asked of the model: the reply's text exactly as
+  written, then one short line per picture, `![Picture 1][picture-1]`, then at the very bottom the
+  definitions, `[picture-1]: data:image/svg+xml;base64,…`. This is standard markdown, so the text stays
+  readable and the encoded pictures stay out of the way. The HTML copy is made from that markdown, so it
+  carries the pictures as images with no special handling. Still to check: whether Teams keeps pasted data-URI
   images. Outlook and Word do. GitHub's markdown drops them.
 - No network, no `importScripts`, no `fetch`, no WebSocket: the sandbox's own policy forbids them.
 - An error in the code comes back as `Error: <message> (line N)`.
