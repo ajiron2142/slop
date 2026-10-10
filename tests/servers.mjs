@@ -340,6 +340,7 @@ export async function startGitlab() {
     { id: 7, path_with_namespace: 'platform/route-service', default_branch: 'main', last_activity_at: '2026-10-09T10:00:00Z' },
     { id: 8, path_with_namespace: 'alice/notes', default_branch: 'master', last_activity_at: '2026-10-01T10:00:00Z' },
     { id: 9, path_with_namespace: 'alice/empty', last_activity_at: '2026-09-01T10:00:00Z' }, // no branches yet
+    { id: 10, path_with_namespace: 'data-engineering/pipelines/nightly/warehouse-ingest-and-reconciliation', default_branch: 'main', last_activity_at: '2026-08-01T10:00:00Z' },
   ];
   const hoursAgo = (h) => ({ committed_date: new Date(Date.now() - h * 3600_000).toISOString() });
   const branches = [ // by name, as GitLab gives them unless asked to sort

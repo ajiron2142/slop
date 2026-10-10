@@ -33,6 +33,10 @@
 .gitlab-project { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; font: inherit; font-size: 13px; color: var(--ink); text-align: left; background: none; border: 0; border-radius: 6px; cursor: pointer; }
 .gitlab-project span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-code); font-size: 12.5px; }
 .gitlab-project small { color: var(--muted); }
+.gitlab-picker.projects .gitlab-project { display: grid; justify-content: stretch; gap: 1px; }
+.gitlab-picker.projects .gitlab-project span { overflow: visible; white-space: normal; overflow-wrap: anywhere; }
+.gitlab-project-name { font-weight: 500; }
+.gitlab-picker.projects .gitlab-project .gitlab-project-group { font-family: var(--font-body); font-size: 11.5px; color: var(--muted); }
 .gitlab-project:hover:not(:disabled), .gitlab-project:focus-visible { background: var(--surface); outline: none; }
 .gitlab-project:disabled { cursor: default; opacity: 0.55; }
 .gitlab-picker.branches { position: fixed; top: auto; width: 290px; max-width: calc(100vw - 32px); margin: 0; padding: 0; overflow: hidden; border-radius: min(var(--radius), 12px); box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.45); }

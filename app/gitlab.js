@@ -279,7 +279,12 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
       className: 'projects',
       placeholder: 'Search your projects',
       load: (query) => get(`/projects?membership=true&simple=true&order_by=last_activity_at&per_page=20${query ? `&search=${encodeURIComponent(query)}` : ''}`),
-      row: (p) => [p.path_with_namespace, el('small', '', p.default_branch ?? 'no branches yet'), !p.default_branch],
+      // The project's name, and its group underneath: "route-service" over "platform/backend".
+      row: (p) => {
+        const at = p.path_with_namespace.lastIndexOf('/');
+        const group = p.path_with_namespace.slice(0, at) + (p.default_branch ? '' : ' · no branches yet');
+        return [[el('span', 'gitlab-project-name', p.path_with_namespace.slice(at + 1)), el('span', 'gitlab-project-group', group)], null, !p.default_branch];
+      },
     });
     return p ? { id: p.id, path: p.path_with_namespace, ref: p.default_branch } : null;
   }

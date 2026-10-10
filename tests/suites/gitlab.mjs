@@ -35,7 +35,8 @@ export default async function ({ browser, site, mock, check }) {
   check('the attach menu offers a GitLab project once connected', await p.isVisible('#attach-menu [data-action="gitlab"]'));
   await p.click('#attach-menu [data-action="gitlab"]');
   await p.waitForSelector('dialog.gitlab-picker[open] .gitlab-project');
-  check('a project with no branches yet can\'t be picked', await p.isDisabled('dialog.gitlab-picker .gitlab-project:has-text("alice/empty")'));
+  check('a project with no branches yet can\'t be picked', await p.isDisabled('dialog.gitlab-picker .gitlab-project:has-text("no branches yet")'));
+  check('each project shows its name, then its group', (await p.textContent('dialog.gitlab-picker .gitlab-project .gitlab-project-name')) === 'route-service' && (await p.textContent('dialog.gitlab-picker .gitlab-project .gitlab-project-group')) === 'platform');
   await p.fill('dialog.gitlab-picker input', 'route');
   await p.waitForFunction(() => document.querySelectorAll('dialog.gitlab-picker .gitlab-project').length === 1);
   await p.click('dialog.gitlab-picker .gitlab-project');
