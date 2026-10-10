@@ -11,8 +11,9 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 ## Fixed rules
 
 - One tool, `run_js`, with `{ "code": "…" }`. It's turned on per chat, like a folder or GitLab: the
-  paperclip menu gets a **Run code** item, which adds a **Sandbox** chip under the message box (× turns
-  it off again). It's offered to the model only in chats where that chip is on, so ordinary chats still
+  paperclip button becomes a **+** button, and its menu lists each item with an icon: Attach files, then
+  Connect folder, Connect GitLab project and **Enable sandbox** (a cube icon). Enabling it adds a
+  **Sandbox** chip under the message box (× turns it off again). It's offered to the model only in chats where that chip is on, so ordinary chats still
   send no tools, and they keep working with models that don't support tools.
 - The code runs in a Worker inside a sandboxed iframe. It's stopped after **5 seconds**. If it hasn't
   finished, the result says so and shows the right form: keep it under 5 s.
@@ -22,7 +23,14 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
   Anything that isn't one `<svg …>…</svg>` element is refused with a message that shows the right form.
   The model gets "Showed 1 picture (12 KB)".
 - Pictures are shown as `<img src="data:image/svg+xml,…">`, so nothing inside them can run. They're
-  saved with the chat as part of the reply, under its text, in order.
+  saved with the chat as part of the reply (`msg.pictures`), under its text, in order. They're never sent
+  back to the model.
+- Each picture is in a block with the same frame and tinted header as a code block: "Picture 1 · SVG"
+  on the left and **Copy SVG** (copy icon) on the right, which copies the SVG text.
+- **Copy reply** adds each picture to the copied markdown as a plain image,
+  `![Picture 1](data:image/svg+xml;base64,…)`. The HTML copy is made from that markdown, so it carries
+  the picture as an image with no special handling. Still to check: whether Teams keeps pasted data-URI
+  images. Outlook and Word do. GitHub's markdown drops them.
 - No network, no `importScripts`, no `fetch`, no WebSocket: the sandbox's own policy forbids them.
 - An error in the code comes back as `Error: <message> (line N)`.
 
@@ -65,8 +73,9 @@ could be considered then, but the hand-written helpers should cover bars, lines 
    - output is cut at 20,000 characters;
    - `show()` refuses anything that isn't a single `<svg>`;
    - a reply posted from anywhere but the iframe is ignored.
-2. **The tool and the chip.** Add a **Run code** item to the paperclip menu and a **Sandbox** chip in the
-   tray, each marked `// sandbox`. Offer `run_js` only while the chip is on, and record its step in the
+2. **The tool and the chip.** Change the paperclip to a **+** with icons in its menu, as mocked up at
+   https://claude.ai/artifact/UUMgQsfc7SLtndSbum1GVz (this part is core, not the add-on), then add the
+   **Enable sandbox** item and the **Sandbox** chip, each marked `// sandbox`. Offer `run_js` only while the chip is on, and record its step in the
    activity. The reply tree shows it as a place called "Sandbox". Mock up the chip and how a picture
    looks in a reply (on a phone and on a desktop) before building that part.
 3. **Helpers** (`svg`, `chart.bar`, `chart.line`, `table`, `random`) with checks, and a short note in the
