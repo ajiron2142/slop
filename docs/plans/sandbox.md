@@ -12,21 +12,23 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 
 - One tool, `run_js`, with `{ "code": "…" }`. It's turned on per chat, like a folder or GitLab: the
   paperclip button becomes a **+** button, and its menu lists each item with an icon: Attach files, then
-  Connect folder, Connect GitLab project and **Sandbox**. The Sandbox row says Off, or **Enabled** in
-  green (how the row shows "on" is still open: the word, a dot, a tick, or a changing second line; try them in
-  https://claude.ai/artifact/CSX32cDaHbXDd1Zo5Su7kA). It also adds a **Sandbox** chip under the message
-  box (× turns it off again).
+  Connect folder, Connect GitLab project and **Sandbox**. Tapping Sandbox switches it on or off. When it's
+  on, the row's box icon glows green; nothing else in the row changes (no word, dot or tick; options tried
+  in https://claude.ai/artifact/CSX32cDaHbXDd1Zo5Su7kA). It also adds a **Sandbox** chip under the message
+  box, whose × switches it off again.
+- `run_js` is offered to the model only in chats where the sandbox is on, so ordinary chats still send no
+  tools, and they keep working with models that don't support tools.
 - **The icon is Peek**, a little box with a lid:
   - **Off:** a grey outline, still.
-  - **Enabled, idle:** the same box glowing green, still.
+  - **On, idle:** the same box glowing green, still.
   - **Running code:** the lid lifts, two eyes look left, then right, blink, and the lid settles back. Each
     round takes 4 seconds, slow enough to follow. It moves only while code runs, so movement always means
-    the sandbox is working. It shows in the step line and in the chip. (A variant with a little escape
-    attempt was mocked up and set aside.)
-  - The chip shows the same icon in the same state.
+    the sandbox is working. (A variant with a little escape attempt was mocked up and set aside.)
+  - **Where it moves** is still open: https://claude.ai/artifact/JzVVDgQTvGpKrPNotncEFL. The
+    recommendation is only in the chip. The sandbox's step is drawn like every other tool's step (spinner,
+    ✓, grey text), so the steps keep one pattern, and green stays in the chip and the menu.
   - With "reduce motion" on, it doesn't move: while running, it shows the lid open a crack with the eyes
-    looking out. It's offered to the model only in chats where that chip is on, so ordinary chats still
-  send no tools, and they keep working with models that don't support tools.
+    looking out.
 - The code runs in a Worker inside a sandboxed iframe. It's stopped after **5 seconds**. If it hasn't
   finished, the result says so and shows the right form: keep it under 5 s.
 - What comes back to the model: everything passed to `console.log`, then the value of the last
@@ -89,7 +91,7 @@ could be considered then, but the hand-written helpers should cover bars, lines 
    - a reply posted from anywhere but the iframe is ignored.
 2. **The tool and the chip.** Change the paperclip to a **+** with icons in its menu, as mocked up at
    https://claude.ai/artifact/UUMgQsfc7SLtndSbum1GVz (this part is core, not the add-on), then add the
-   **Enable sandbox** item and the **Sandbox** chip, each marked `// sandbox`. Offer `run_js` only while the chip is on, and record its step in the
+   **Sandbox** item and the **Sandbox** chip, each marked `// sandbox`. Offer `run_js` only while the chip is on, and record its step in the
    activity. The reply tree shows it as a place called "Sandbox". Mock up the chip and how a picture
    looks in a reply (on a phone and on a desktop) before building that part.
 3. **Helpers** (`svg`, `chart.bar`, `chart.line`, `table`, `random`) with checks, and a short note in the
