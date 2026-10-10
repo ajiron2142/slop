@@ -24,9 +24,9 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
   - **Running code:** the lid lifts, two eyes look left, then right, blink, and the lid settles back. Each
     round takes 4 seconds, slow enough to follow. It moves only while code runs, so movement always means
     the sandbox is working. (A variant with a little escape attempt was mocked up and set aside.)
-  - **Where it moves** is still open: https://claude.ai/artifact/JzVVDgQTvGpKrPNotncEFL. The
-    recommendation is only in the chip. The sandbox's step is drawn like every other tool's step (spinner,
-    ✓, grey text), so the steps keep one pattern, and green stays in the chip and the menu.
+  - **It moves only in the chip** (option A in https://claude.ai/artifact/JzVVDgQTvGpKrPNotncEFL). The
+    sandbox's step is drawn like every other tool's step (spinner, ✓, grey text), so the steps keep one
+    pattern, and green stays in the chip and the menu.
   - With "reduce motion" on, it doesn't move: while running, it shows the lid open a crack with the eyes
     looking out.
 - The code runs in a Worker inside a sandboxed iframe. It's stopped after **5 seconds**. If it hasn't
@@ -98,6 +98,9 @@ could be considered then, but the hand-written helpers should cover bars, lines 
    system prompt saying what the tool can do.
 4. **Later, maybe:** read-only data from slop's own tools inside the sandbox (for example a folder file
    read into the code), sent in by slop. Never a way for the code to reach anything itself.
+
+**Idea for later, not part of this plan:** a small always-on figure that shows what's happening right
+now (thinking, reading a file, running code). Lighter than the reply tree; to be mocked up on its own.
 
 ## Phase 1 as built
 
