@@ -70,6 +70,7 @@ export function createSidebar({ app, list, search, menuButton, collapseButton, s
 
   const api = {
     close,
+    renaming: () => Boolean(editing),
     setCollapsed,
     query: () => search.value.trim(),
     render(chats, activeId) {

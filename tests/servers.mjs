@@ -72,7 +72,8 @@ Done.`;
 //   "folder …"   (with tools) lists the folder, reads two files, then reports what it saw
 //   "notools …"  (with tools) the error LiteLLM gives for a model without tool support
 //   "cuttool …"  (with tools) starts a tool call and is cut off at the length limit
-//   "paste …"    (with paste tools) searches the pasted text for ERROR, reads lines 600–602, reports both
+//   "paste …"    (with paste tools) searches the pasted text for ERROR, reads lines 600–602, reports both;
+//                with "think" in it, also sends reasoning before the search and before the answer
 //   "edit …"     (with write tools) edits src/app.js and creates notes/new.txt in one round, then
 //                tries an edit that can't match, then reports the three results
 //   "git …"      (with git tools) reads the log and the uncommitted changes, then reports both
@@ -156,6 +157,7 @@ export async function startMock() {
         const results = body.messages.filter((m) => m.role === 'tool');
         const id = JSON.stringify(body.messages).match(/pasted id=\\"(\w+)\\"/)?.[1];
         const call = (name, args) => ({ index: 0, id: `c${results.length}`, type: 'function', function: { name, arguments: JSON.stringify(args) } });
+        if (text.includes('think') && results.length !== 1) sse(res, { choices: [{ delta: { reasoning_content: results.length ? 'Line 601 has the error.' : 'I should search for errors first.' } }] });
         if (results.length === 0) sse(res, { choices: [{ delta: { tool_calls: [call('search_paste', { id, query: 'ERROR' })] } }] });
         else if (results.length === 1) sse(res, { choices: [{ delta: { tool_calls: [call('read_paste', { id, start_line: 600, end_line: 602 })] } }] });
         else sse(res, { choices: [{ delta: { content: `SEARCH[${results[0].content.split('\n').slice(0, 2).join(' | ')}] READ[${results[1].content.replace(/\n/g, ' | ')}]` } }] });

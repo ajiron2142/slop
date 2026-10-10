@@ -10,8 +10,9 @@ const CHECK_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><pa
 
 // The conversation pane: renders messages, follows the bottom while streaming,
 // and handles the Copy (code and whole reply), Retry and Stats buttons. `extra(msg)` lets an add-on put content of its own
-// under a reply's text, as { key, node }; the key says when it needs redrawing.
-export function createMessages(pane, { onRetry, extra = () => null }) {
+// under a reply's text, as { key, node }; the key says when it needs redrawing. `activity(msg)` gives a
+// reply's activity line, shown in place of its "Read …" summary.
+export function createMessages(pane, { onRetry, extra = () => null, activity = () => null }) { // activity
   let stick = true;
   const openStats = new Set(); // replies whose Stats card is open, by timestamp
   // Rendered messages, reused while nothing about them has changed. Re-rendering markdown
@@ -20,11 +21,12 @@ export function createMessages(pane, { onRetry, extra = () => null }) {
   const built = new WeakMap();
   const nodeFor = (m, streaming, showStats) => {
     const more = extra(m);
-    if (streaming) return messageNode(m, true, false, more);
-    const key = `${m.content.length}|${m.tools?.length ?? 0}|${m.stats ? 1 : 0}|${showStats}|${more?.key ?? ''}`;
+    const act = m.role === 'assistant' ? activity(m) : null; // activity
+    if (streaming) return messageNode(m, true, false, more, act);
+    const key = `${m.content.length}|${m.tools?.length ?? 0}|${m.stats ? 1 : 0}|${showStats}|${more?.key ?? ''}|${act ? 1 : 0}`;
     const hit = built.get(m);
     if (hit?.key === key) return hit.node;
-    const node = messageNode(m, false, showStats && openStats, more);
+    const node = messageNode(m, false, showStats && openStats, more, act);
     built.set(m, { key, node });
     return node;
   };
@@ -81,12 +83,13 @@ export function createMessages(pane, { onRetry, extra = () => null }) {
   };
 }
 
-function messageNode(msg, streaming, openStats, more) {
+function messageNode(msg, streaming, openStats, more, act) {
   const node = el('article', `msg ${msg.role}${streaming ? ' streaming' : ''}`);
   node.dataset.ts = msg.ts;
   node.append(el('span', 'who', LABEL[msg.role]));
   if (msg.files?.length) node.append(filesNode(msg.files));
-  if (msg.tools?.length) node.append(el('div', 'tool-log', msg.tools.join(' · ')));
+  if (act) node.append(act); // activity
+  else if (msg.tools?.length) node.append(el('div', 'tool-log', msg.tools.join(' · ')));
   const body = el('div', 'body');
   fillBody(body, msg);
   node.append(body);

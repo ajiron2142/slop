@@ -20,7 +20,7 @@ npx playwright install chromium
 npm test
 ```
 
-Run one suite with `npm test -- stats` (suites: `app`, `folder`, `write`, `git`, `paste`, `mini`, `viewer`, `signin`, `titles`, `gitlab`, `stats`, `speed`).
+Run one suite with `npm test -- stats` (suites: `app`, `folder`, `write`, `git`, `paste`, `activity`, `mini`, `viewer`, `signin`, `titles`, `gitlab`, `stats`, `speed`).
 
 The `git` suite builds a small sample repository with the `git` command, so git needs to be installed (it fails with a clear message otherwise).
 
@@ -32,7 +32,7 @@ Each check prints `PASS` or `FAIL`; the command exits with an error if anything 
 run.mjs        starts the servers, runs every suite, prints the results
 servers.mjs    a small web server for the app and the fake LiteLLM (Node built-ins only)
 helpers.mjs    shared steps: open the app connected to the fake LiteLLM, send a message, pick a model
-suites/        app.mjs, folder.mjs, write.mjs, git.mjs, paste.mjs, mini.mjs, viewer.mjs, signin.mjs, titles.mjs, gitlab.mjs, stats.mjs, speed.mjs
+suites/        app.mjs, folder.mjs, write.mjs, git.mjs, paste.mjs, activity.mjs, mini.mjs, viewer.mjs, signin.mjs, titles.mjs, gitlab.mjs, stats.mjs, speed.mjs
 ```
 
 The only dependency is Playwright (it drives a real Chromium), pinned to one exact version in `package.json`. It never needs updating unless you want to. If you change the version, change the Docker image tag above to match.

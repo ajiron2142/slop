@@ -2,7 +2,7 @@
 // to use), connecting with a token that may only read, a project per chat, the four read-only
 // tools, and refusing a token that could write. Runs against a fake GitLab (startGitlab).
 import { startGitlab } from '../servers.mjs';
-import { openApp, send, idle } from '../helpers.mjs';
+import { openApp, send, idle, stepsLine } from '../helpers.mjs';
 
 export default async function ({ browser, site, mock, check }) {
   const gitlab = await startGitlab();
@@ -105,7 +105,7 @@ export default async function ({ browser, site, mock, check }) {
   check('search finds lines with their numbers', found.startsWith('1 matching lines') && found.includes('platform/route-service/src/handler.js') && found.includes('2: const timeout = 30_000;'));
   check('files can be listed, with the project path', listed.trim() === 'platform/route-service/src/handler.js');
   check('a path without the project path is refused with the rule', refused.startsWith('Error: paths start with the project path, like "platform/route-service/src/handler.js"'));
-  check('the reply shows what was read', (await p.textContent('.msg.assistant:last-of-type .tool-log')).startsWith('Read GitLab pipelines?ref=main&per_page=1 · Read GitLab jobs/502/trace:240–250 · Read platform/route-service/src/handler.js'));
+  check('the reply shows what was read', (await stepsLine(p)).startsWith('Read GitLab pipelines?ref=main&per_page=1 · Read GitLab jobs/502/trace:240–250 · Read platform/route-service/src/handler.js'));
   check('every request to GitLab was a read', gitlab.methods.slice(methodsBefore).length >= 5 && gitlab.methods.every((m) => m === 'GET'));
 
   await p.click('#new-chat');

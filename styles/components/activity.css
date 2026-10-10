@@ -1,0 +1,29 @@
+/* What a reply did (optional add-on): the folded line, its steps, and an opened step. One grid, so the
+   marks and times line up, times on the right; a row is highlighted when hovered or open. */
+.activity { display: grid; grid-template-columns: 12px auto auto minmax(0, 1fr) auto; column-gap: 7px; min-width: 0; margin-bottom: 8px; font-size: 12.5px; color: var(--muted); }
+.act-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; padding: 3px 6px; font: inherit; color: inherit; text-align: left; background: none; border: 0; border-radius: 5px; cursor: pointer; }
+.act-row:hover, .act-row[aria-expanded="true"] { background: var(--surface); }
+.act-row:focus-visible { outline: 1px solid var(--line); }
+.act-tw { font-size: 9px; }
+.act-mark { font-size: 11px; }
+.act-mark[hidden] { display: none; }
+.act-spin { width: 8px; height: 8px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: act-spin 0.9s linear infinite; }
+@keyframes act-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .act-spin { animation: none; } }
+.act-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-time { padding-left: 12px; text-align: right; font-family: var(--font-code); font-size: 11px; font-variant-numeric: tabular-nums; }
+.act-head .act-tw { grid-column: 1; }
+.act-head .act-mark { grid-column: 2; }
+.act-head .act-name { grid-column: 3 / 5; }
+.act-head .act-time { grid-column: 5; }
+.act-step .act-tw { grid-column: 2; }
+.act-step .act-mark { grid-column: 3; }
+.act-step .act-name { grid-column: 4; color: var(--ink); }
+.act-step .act-time { grid-column: 5; }
+.act-list { display: contents; }
+.act-list[hidden] { display: none; }
+.act-box { grid-column: 3 / -1; box-sizing: border-box; width: 100%; margin: 2px 0 4px; padding: 8px 10px; font: 12px/1.6 var(--font-code); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; outline: none; resize: none; }
+.act-box:focus { border-color: var(--accent); }
+/* Thinking reads as quiet text, not a box. */
+.act-box.think { padding: 2px 10px; font-family: var(--font-body); font-size: 12.5px; font-style: italic; color: var(--muted); background: none; border: 0; border-left: 2px solid var(--line); border-radius: 0; }
+.act-box.think:focus { border-left-color: var(--accent); }

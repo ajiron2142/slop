@@ -1,7 +1,7 @@
 // Write mode (optional add-on): connecting a folder for editing, reviewing changes in the reply
 // (cards that open into diffs), Apply / Skip / Apply all remaining, typing instead of Skip, Undo
 // for the latest reply, and what stays read-only.
-import { openApp, idle } from '../helpers.mjs';
+import { openApp, idle, stepsLine } from '../helpers.mjs';
 
 // A real folder from the browser's private storage, standing in for the folder picker.
 const fakePicker = async () => {
@@ -58,7 +58,7 @@ export default async function ({ browser, site, mock, check }) {
   check('the model hears what was applied, skipped and refused', reply.includes('EDIT[Applied the change to wproject/src/app.js.]') && reply.includes('CREATE[The user skipped this change') && reply.includes("BAD[Error: old_text wasn't found in wproject/src/app.js"));
   check('applied changes are written', (await file('src/app.js')) === 'console.log("hello")');
   check('skipped changes are not', (await file('notes/new.txt')) === null && (await file('wproject/notes/new.txt')) === null);
-  check('the reply lists what happened', (await p.textContent('.msg.assistant:last-of-type .tool-log')) === "Edited wproject/src/app.js (+1 −1) · Skipped wproject/notes/new.txt · Couldn't change wproject/src/app.js");
+  check('the reply lists what happened', (await stepsLine(p)) === "Edited wproject/src/app.js (+1 −1) · Skipped wproject/notes/new.txt · Couldn't change wproject/src/app.js");
   check('the reply offers Undo', (await p.textContent('.write-log')).includes('1 changed') && (await p.isVisible('.write-log button:text-is("↶ Undo")')));
 
   await p.click('.write-log button:text-is("↶ Undo")');

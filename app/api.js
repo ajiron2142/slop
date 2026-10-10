@@ -97,7 +97,7 @@ export async function getKeyInfo(settings) {
 // the model made (only possible when tools are sent), the token usage the server reports
 // at the end, and why the reply finished ("stop", "length", "tool_calls"). `maxTokens` caps how
 // much the model may write; without it the provider's own default applies.
-export async function streamChat({ settings, messages, tools, maxTokens, signal, onDelta }) {
+export async function streamChat({ settings, messages, tools, maxTokens, signal, onDelta, onReasoning }) {
   const res = await request(settings, '/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -135,7 +135,8 @@ export async function streamChat({ settings, messages, tools, maxTokens, signal,
       finish = chunk.choices?.[0]?.finish_reason ?? finish;
       const delta = chunk.choices?.[0]?.delta;
       if (delta?.content) onDelta(delta.content);
-      if (delta?.reasoning_content || delta?.reasoning) reasoned = true;
+      const reasoning = delta?.reasoning_content || delta?.reasoning;
+      if (typeof reasoning === 'string' && reasoning) { reasoned = true; onReasoning?.(reasoning); } // activity: shown there
       // Tool calls arrive in pieces; join them up by index.
       for (const part of delta?.tool_calls ?? []) {
         const call = (calls[part.index ?? 0] ??= { id: '', type: 'function', function: { name: '', arguments: '' } });

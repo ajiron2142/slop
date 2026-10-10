@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
-import { openApp, send } from '../helpers.mjs';
+import { openApp, send, stepsLine } from '../helpers.mjs';
 
 // Builds the sample repo and returns { files: [[path, base64]], git: (...args) => output }.
 function makeRepo() {
@@ -145,7 +145,7 @@ export default async function ({ browser, site, mock, check }) {
   await send(p, 'git: what changed?');
   const sent = mock.requests.at(-1);
   check('a repo gets the git tools and a line about them', sent.toolNames.includes('git_log') && sent.toolNames.includes('git_diff') && sent.system.includes('git repository'));
-  check('the reply shows what it looked at', (await p.textContent('.msg.assistant:last-of-type .tool-log')) === 'Read git log · Diffed uncommitted changes');
+  check('the reply shows what it looked at', (await stepsLine(p)) === 'Read git log · Diffed uncommitted changes');
 
   // A folder that isn't a repo: plain chip, no git tools.
   await p.evaluate(() => {

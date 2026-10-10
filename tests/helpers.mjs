@@ -41,4 +41,8 @@ export async function pickModel(page, query) {
 }
 
 // A real 1×1 PNG, for attachment tests.
+// What a reply lists as done: its activity steps this tab (each tool's label), or the saved "Read …" line.
+export const stepsLine = (page, sel = '.msg.assistant:last-of-type') => page.$eval(sel, (m) => m.querySelector('.tool-log')?.textContent
+  ?? [...m.querySelectorAll('.act-step')].map((r) => r.dataset.label).filter(Boolean).join(' · '));
+
 export const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');

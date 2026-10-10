@@ -22,6 +22,7 @@ import { createViewer } from './viewer.js'; // image viewer
 import { loadConfig, createAuth, renderSignIn } from './oidc.js'; // sign-in
 import { autoTitle } from './autotitle.js'; // chat titles
 import { createGitlab, GITLAB_TOOLS, gitlabPrompt, isGitlabTool } from './gitlab.js'; // gitlab
+import { createActivity } from './activity.js'; // activity
 import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 
@@ -91,7 +92,12 @@ const gitlab = createGitlab({
   onChange: () => render(),
 });
 
-const messages = createMessages($('messages'), { onRetry: retry, extra: (m) => writer.decoration(m) }); // write mode: the line under a reply
+const activity = createActivity(); // activity
+const messages = createMessages($('messages'), {
+  onRetry: retry,
+  extra: (m) => writer.decoration(m), // write mode: the line under a reply
+  activity: (m) => activity.node(state.active?.meta.id, m), // activity
+});
 
 const meter = createMeter({ row: $('meter-row'), button: $('meter-btn'), pop: $('meter-pop') });
 
@@ -281,6 +287,7 @@ async function complete(chat) {
   const controller = new AbortController();
   state.streaming = { chat, msg, controller };
   writer.startReply(msg); // write mode
+  const act = activity.start(chat.meta.id, msg, s.model); // activity
   render({ toBottom: true });
 
   // What this reply used: summed over every round, with timing from the first visible word.
@@ -305,13 +312,16 @@ async function complete(chat) {
     // With a folder connected the model may ask to read files first: run those and ask again.
     for (let round = 1; ; round++) {
       let text = '';
+      act.asking(); // activity
       const { toolCalls, usage, finish: why, reasoned: thought } = await streamChat({
         settings: s,
         messages: history,
         tools,
         maxTokens: maxOutputOf(state.modelInfo[model]),
         signal: controller.signal,
+        onReasoning: act.thinking, // activity
         onDelta: (delta) => {
+          act.writing(); // activity
           firstAt ??= performance.now();
           text += delta;
           msg.content += delta;
@@ -337,12 +347,14 @@ async function complete(chat) {
       history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
       for (const call of toolCalls) {
         const name = call.function.name;
+        const stepDone = act.tool(call); // activity
         const { label, result } = writer.handles(name) ? await writer.run(folder, call, controller.signal) // write mode
           : isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
           : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
           : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments, controller.signal) // gitlab
           : await runTool(folder, name, call.function.arguments);
         if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
+        stepDone(label, result); // activity
         (msg.tools ??= []).push(label);
         history.push({ role: 'tool', tool_call_id: call.id, content: result });
       }
@@ -359,6 +371,7 @@ async function complete(chat) {
       chat.messages.push({ role: 'error', content: e.message + hint });
     }
   }
+  act.end(finish); // activity
   cancelAnimationFrame(frame);
   clearTimeout(frame);
   writer.endReply(); // write mode
@@ -436,7 +449,7 @@ async function openChat(id) {
   }
   panel.close();
   render({ toBottom: true });
-  composer.focus();
+  if (!sidebar.renaming()) composer.focus(); // a double-click opens the chat, then renames it: keep the name box focused
   if (state.active.folder) refreshGit(state.active.folder).then(() => render()); // git
 }
 

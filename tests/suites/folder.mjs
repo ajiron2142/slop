@@ -1,6 +1,6 @@
 // Connecting a folder to a chat (read-only): the menu, the tools loop, safety, memory per chat,
 // models without tool support, and browsers without folder access.
-import { openApp, send } from '../helpers.mjs';
+import { openApp, send, stepsLine } from '../helpers.mjs';
 
 // The browser's real folder picker can't be clicked by a test, so it is replaced with a real
 // folder handle from the browser's private storage, filled with a small sample project.
@@ -59,7 +59,7 @@ export default async function ({ browser, site, mock, check }) {
   check('model can read a file', reply.includes('APP[console.log("hi")]'));
   check('paths outside the folder are refused', reply.includes('paths must stay inside the folder'));
   check('text before a tool call is kept', reply.startsWith('Let me look.'));
-  check('the reply shows what was read', (await p.textContent('.msg.assistant:last-of-type .tool-log')) === "Listed project · Read project/src/app.js · Couldn't open project/../secret.txt");
+  check('the reply shows what was read', (await stepsLine(p)) === "Listed project · Read project/src/app.js · Couldn't open project/../secret.txt");
   // The tools themselves, run directly against the same folder.
   const tool = (name, args) => p.evaluate(async ([name, args]) => {
     const root = await (await navigator.storage.getDirectory()).getDirectoryHandle('project');

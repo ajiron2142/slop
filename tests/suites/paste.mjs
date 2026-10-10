@@ -1,6 +1,6 @@
 // Smart paste (optional add-on): a long paste becomes a chip the model searches instead of a
 // giant message, and nothing survives a reload.
-import { openApp, idle } from '../helpers.mjs';
+import { openApp, idle, stepsLine } from '../helpers.mjs';
 
 const LOG = Array.from({ length: 1200 }, (_, i) => (i === 600 ? `line ${i + 1} ERROR database timeout` : `line ${i + 1} INFO all good`)).join('\n');
 
@@ -32,7 +32,7 @@ export default async function ({ browser, site, mock, check }) {
   const reply = await p.textContent('.msg.assistant:last-of-type .body');
   check('the model can search the paste', reply.includes('SEARCH[1 matching lines | 601: line 601 ERROR database timeout]'));
   check('the model can read lines of the paste', reply.includes('READ[600\tline 600 INFO all good | 601\tline 601 ERROR'));
-  check('the reply shows what it looked at', (await p.textContent('.msg.assistant .tool-log')) === 'Searched paste for "ERROR" · Read paste lines 600–602');
+  check('the reply shows what it looked at', (await stepsLine(p, '.msg.assistant')) === 'Searched paste for "ERROR" · Read paste lines 600–602');
   check('the sent message shows the paste as a chip', (await p.textContent('.msg.user .file-chip')).includes('1.2k lines'));
   check('the paste is not saved with the chat', await p.evaluate(async () => {
     const id = document.querySelector('#chat-list li.active').dataset.id;
