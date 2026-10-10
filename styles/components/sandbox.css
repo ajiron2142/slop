@@ -32,4 +32,7 @@
 .picture-copy { display: inline-flex; align-items: center; gap: 5px; padding: 0; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 .picture-copy:hover { color: var(--ink); }
 .picture-copy .icon { width: 14px; height: 14px; }
-.picture img { display: block; max-width: 100%; height: auto; margin: 0 auto; background: var(--bg); }
+/* Pictures are drawn for white and shown on white in every theme, so they look the same once shared. */
+.picture { --picture-paper: #ffffff; }
+.picture img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.picture-paper { display: block; padding: 10px; background: var(--picture-paper); }

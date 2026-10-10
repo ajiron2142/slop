@@ -163,6 +163,8 @@ async function inTheApp({ browser, site, mock, check }) {
   }));
   check('as an image, so nothing inside it can run', await p.$eval(`${reply} .picture img`, (img, svg) => img.src === `data:image/svg+xml;base64,${btoa(svg)}` && img.naturalWidth === 120, SVG));
   await p.click(`${reply} .act-head`);
+  check('the picture sits on white, as drawn', (await p.$eval(`${reply} .picture-paper`, (e) => getComputedStyle(e).backgroundColor)) === 'rgb(255, 255, 255)');
+  check('the model is told pictures show on white', await p.evaluate(async () => (await import('./app/sandbox.js')).SANDBOX_TOOLS[0].function.description.includes('on a white background')));
   check('the reply tree shows the Sandbox as a place', await p.isVisible(`${reply} .flow-box[data-flow-box="sandbox"]`));
 
   await p.click(`${reply} .picture-copy`);
@@ -175,7 +177,7 @@ async function inTheApp({ browser, site, mock, check }) {
   });
   const b64 = Buffer.from(SVG).toString('base64');
   check('Copy reply: the text, a line per picture, the picture at the very bottom', copied.text.endsWith(`]\n\n![Picture 1][picture-1]\n\n[picture-1]: data:image/svg+xml;base64,${b64}`) && copied.text.startsWith('Let me work it out.'));
-  check('and the formatted copy carries it as an image', copied.html.includes(`<img src="data:image/svg+xml;base64,${b64}" alt="Picture 1">`));
+  check('the formatted copy carries it as a PNG, for Outlook and Teams, at its own size', /<img src="data:image\/png;base64,[^"]+" alt="Picture 1" width="120" height="60">/.test(copied.html) && !copied.html.includes('svg+xml'));
 
   await ask('sandbox:"again"');
   await idle(p);

@@ -23,7 +23,7 @@ export const SANDBOX_TOOLS = [{
     name: 'run_js',
     description: 'Run JavaScript in a sandbox with no network, page or storage, to work something out exactly (maths, dates, parsing, reshaping data). ' +
       'Returns what console.log printed, then the value of the last expression, cut at 20,000 characters. Stopped after 5 seconds. ' +
-      'show(svgText) shows an SVG picture in your reply (at most 3 per run, 200 KB each).',
+      'show(svgText) shows an SVG picture in your reply (at most 3 per run, 200 KB each), on a white background.',
     parameters: { type: 'object', properties: { code: { type: 'string', description: 'The JavaScript to run.' } }, required: ['code'] },
   },
 }];
@@ -111,7 +111,8 @@ export function svgUrl(svg) {
   return `data:image/svg+xml;base64,${btoa(bin)}`;
 }
 
-// A reply's pictures, under its text: each in a block like a code block, "Picture 1 · SVG" and Copy SVG.
+// A reply's pictures, under its text: each in a block like a code block, "Picture 1 · SVG" and Copy SVG,
+// on white in every theme (the model draws for white).
 export function picturesNode(msg) {
   if (!msg.pictures?.length) return null;
   const list = el('div', 'pictures');
@@ -135,8 +136,10 @@ export function picturesNode(msg) {
     const img = el('img');
     img.src = svgUrl(svg);
     img.alt = `Picture ${i + 1}`;
+    const paper = el('div', 'picture-paper');
+    paper.append(img);
     const block = el('div', 'picture');
-    block.append(head, img);
+    block.append(head, paper);
     list.append(block);
   });
   return list;

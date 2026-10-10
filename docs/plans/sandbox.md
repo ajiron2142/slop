@@ -44,9 +44,17 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 - **Copy reply** follows one fixed rule, with nothing asked of the model: the reply's text exactly as
   written, then one short line per picture, `![Picture 1][picture-1]`, then at the very bottom the
   definitions, `[picture-1]: data:image/svg+xml;base64,…`. This is standard markdown, so the text stays
-  readable and the encoded pictures stay out of the way. The HTML copy is made from that markdown, so it
-  carries the pictures as images with no special handling. Still to check: whether Teams keeps pasted data-URI
-  images. Outlook and Word do. GitHub's markdown drops them.
+  readable, the encoded pictures stay out of the way, and one file holds everything. It renders in
+  Python-Markdown (checked: 3.11), VS Code, Obsidian and most editors; GitHub drops data-URL images.
+  Raw `<svg>` pasted into markdown was ruled out: Python-Markdown breaks it at blank lines and reads `*x*`
+  inside it as italics, and each renderer treats raw HTML differently.
+- One Copy puts two versions on the clipboard; where you paste picks one. The plain text (markdown) keeps
+  the pictures as **SVG**, so people and other tools can still read and change them. The formatted copy,
+  which Teams, Outlook and Word use, has each SVG drawn as a **PNG** (twice its size, on white), since
+  Outlook is reported to block SVG data images. Not tested in Teams or Outlook from here.
+- Pictures are drawn for white and shown **on a white card in every theme**, so they look the same once
+  shared. The tool's description tells the model so. (Theme colours on screen, white when copied, was
+  considered and set aside: two paths, more to go wrong.)
 - No network, no `importScripts`, no `fetch`, no WebSocket: the sandbox's own policy forbids them.
 - An error in the code comes back as `Error: <message> (line N)`.
 
@@ -70,8 +78,7 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 - **Helpers inside the sandbox**, hand-written in about 150 lines with no libraries:
   - `show(svg)`, described above.
   - `svg(width, height, ...children)` and `el(tag, attrs, ...children)` to build SVG text.
-  - `chart.bar(rows)`, `chart.line(rows)`: simple charts that pick up the theme's colours, passed in
-    with each job.
+  - `chart.bar(rows)`, `chart.line(rows)`: simple charts, drawn for white like every picture.
   - `table(rows)`: returns a markdown table the model can use in its reply.
   - `random(seed)`: a seeded random, so the same code always gives the same result.
 
@@ -126,8 +133,6 @@ now (thinking, reading a file, running code). Lighter than the reply tree; to be
 - On is saved per chat (`meta.sandbox`), like a GitLab project; a new chat starts with it off.
 - A run that ends in an error is a failed step (✕): its result starts `Error: the run failed.`, then the
   output and the error as before.
-- Pictures are drawn on the theme's background. A picture with dark text drawn for a white page is hard
-  to read on a dark theme; phase 3's helpers will use the theme's colours.
 
 ## To remove it
 
