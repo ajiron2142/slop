@@ -24,6 +24,15 @@ export default async function ({ browser, site, mock, check }) {
     dt.setData('text/plain', text);
     document.getElementById('input').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
   }, LOG);
+  // A tool call with broken JSON isn't run, and the reply carries on.
+  await p.fill('#input', 'badjson: try it');
+  await p.press('#input', 'Enter');
+  await idle(p);
+  check('a tool call whose JSON is cut off isn\'t run, and the model is told why', (await p.textContent(`${reply} .body`)).startsWith("GOT[Error: the arguments weren't valid JSON") && !(await p.$('.msg.error')));
+  await p.click(`${reply} .act-head`);
+  await p.click(`${reply} .act-step >> nth=0`);
+  check('the step is marked failed and shows exactly what the model sent', (await p.textContent(`${reply} .act-step .act-mark`)) === '✕' && (await p.inputValue(`${reply} .act-box`)).startsWith('search_paste {"id": "x", "query": "ERR\n'));
+
   await p.fill('#input', 'paste think: what failed?');
   await p.press('#input', 'Enter');
   await idle(p);

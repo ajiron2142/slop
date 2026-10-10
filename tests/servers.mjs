@@ -78,6 +78,8 @@ Done.`;
 //                tries an edit that can't match, then reports the three results
 //   "git …"      (with git tools) reads the log and the uncommitted changes, then reports both
 //   "gitlab …"   (with GitLab tools) uses every GitLab tool once (and one path without the project), then reports
+//   "badjson …"  (with tools) a tool call whose arguments are cut off, then reports the result it got;
+//                any request carrying broken tool-call JSON is refused with 400, as strict providers do
 //   "slowgitlab …" (with GitLab tools) a GitLab search that never answers, to check Stop
 //   "thinkonly …" sends only reasoning, then finishes; "blank …" finishes with nothing at all
 //   anything else: the long reply
@@ -144,6 +146,9 @@ export async function startMock() {
       if (body.tools && text.startsWith('notools')) {
         return res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { message: 'litellm.UnsupportedParamsError: tools is not supported' } }));
       }
+      // Like strict providers: a request carrying a tool call with broken JSON arguments is refused.
+      const broken = body.messages.flatMap((m) => m.tool_calls ?? []).find((c) => { try { JSON.parse(c.function.arguments); return false; } catch { return true; } });
+      if (broken) { res.writeHead(400, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ error: { message: 'Unterminated string starting at: line 1' } })); }
       res.writeHead(200, { 'Content-Type': 'text/event-stream' });
 
       if (body.tools && text.startsWith('cuttool')) {
@@ -181,6 +186,14 @@ export async function startMock() {
         }
         sse(res, { choices: [{ delta: {}, finish_reason: results.length < 3 ? 'tool_calls' : 'stop' }] });
         if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
+        return res.end('data: [DONE]\n\n');
+      }
+
+      if (body.tools && text.startsWith('badjson')) { // a tool call cut off mid-arguments, then a reply saying what came back
+        const results = body.messages.filter((m) => m.role === 'tool');
+        if (!results.length) sse(res, { choices: [{ delta: { tool_calls: [{ index: 0, id: 'b1', type: 'function', function: { name: 'search_paste', arguments: '{"id": "x", "query": "ERR' } }] } }] });
+        else sse(res, { choices: [{ delta: { content: `GOT[${results[0].content.split('\n')[0]}]` } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: results.length ? 'stop' : 'tool_calls' }] });
         return res.end('data: [DONE]\n\n');
       }
 

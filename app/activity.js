@@ -34,9 +34,10 @@ export function createActivity({ now = () => performance.now() } = {}) {
     const running = r.ended == null;
     const t = now();
     const tools = r.steps.filter((s) => s.kind === 'tool').length;
-    const thought = r.steps.filter((s) => s.kind === 'think').reduce((sum, s) => sum + ((s.t1 ?? t) - s.t0), 0);
+    const thinks = r.steps.filter((s) => s.kind === 'think');
+    const thought = thinks.reduce((sum, s) => sum + ((s.t1 ?? t) - s.t0), 0);
     const doing = { wait: `Waiting for ${r.model}`, think: 'Thinking', write: 'Writing', tool: `Running ${r.steps.at(-1)?.name ?? ''}` }[r.state];
-    const done = [tools && `${tools} step${tools === 1 ? '' : 's'}`, thought && `thought ${secs(thought)}`, r.finish === 'stopped' && 'stopped'].filter(Boolean).join(' · ');
+    const done = [tools && `${tools} step${tools === 1 ? '' : 's'}`, thinks.length && `thought ${secs(thought)}`, r.finish === 'stopped' && 'stopped'].filter(Boolean).join(' · ');
     r.ui.tw.textContent = r.open ? '▾' : '▸';
     r.ui.spin.hidden = !running;
     r.ui.text.textContent = running ? doing : done;

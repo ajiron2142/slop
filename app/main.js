@@ -274,6 +274,20 @@ function send({ text, files }) {
   return true;
 }
 
+// A tool call whose arguments aren't valid JSON isn't run. The model is told what it sent, and the
+// call goes back to the provider with {} as its arguments, since some providers refuse a request
+// that carries broken JSON. Returns null for a call that's fine.
+function unreadable(call) {
+  const sent = call.function.arguments || '{}';
+  try { JSON.parse(sent); return null; } catch (e) {
+    call.function.arguments = '{}';
+    return {
+      label: `Couldn't read the call to ${call.function.name}`,
+      result: `Error: the arguments weren't valid JSON (${e.message}), so the call wasn't run. You sent: ${sent.slice(0, 500)}\nSend the call again with complete JSON.`,
+    };
+  }
+}
+
 async function complete(chat) {
   const s = state.settings;
   const folder = chat.folder;
@@ -348,11 +362,11 @@ async function complete(chat) {
       for (const call of toolCalls) {
         const name = call.function.name;
         const stepDone = act.tool(call); // activity
-        const { label, result } = writer.handles(name) ? await writer.run(folder, call, controller.signal) // write mode
+        const { label, result } = unreadable(call) ?? (writer.handles(name) ? await writer.run(folder, call, controller.signal) // write mode
           : isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
           : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
           : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments, controller.signal) // gitlab
-          : await runTool(folder, name, call.function.arguments);
+          : await runTool(folder, name, call.function.arguments));
         if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
         stepDone(label, result); // activity
         (msg.tools ??= []).push(label);
