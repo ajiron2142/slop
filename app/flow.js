@@ -11,8 +11,9 @@ import { el } from './dom.js';
 //
 // Rules, all fixed: a call belongs to the place whose tools include its name, or to the model when
 // none does; places are listed in the order first used, unused ones last; a call failed when its
-// result starts with "Error:"; the reply box says how the reply ended, never what a tool did. Below
-// 640px wide the tree goes above the steps.
+// result starts with "Error:", and a place's badge counts them up to 9, then says 9+ (it's always a
+// circle); the reply box says how the reply ended, never what a tool did. Below 640px wide the tree
+// goes above the steps.
 //
 // To remove it: delete this file and styles/components/flow.css, their lines in index.html and
 // tests/run.mjs, tests/suites/flow.mjs, and the lines marked "flow" in activity.js and main.js.
@@ -98,7 +99,7 @@ export function createFlow({ now = () => performance.now() } = {}) {
           ui.meta.textContent = [place.sub, calls.length ? `${calls.length} call${calls.length === 1 ? '' : 's'}` : ended ? 'not used' : ''].filter(Boolean).join(' · ');
         }
         ui.meta.hidden = !ui.meta.textContent;
-        ui.badge.textContent = failed || '';
+        ui.badge.textContent = failed > 9 ? '9+' : failed || ''; // always a circle, so never more than two characters
         ui.badge.title = failed ? `${failed} call${failed === 1 ? '' : 's'} failed` : '';
         // One ring per step, kept between draws so a filling ring keeps filling.
         for (const s of mine) {
