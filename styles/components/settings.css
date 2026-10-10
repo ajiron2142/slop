@@ -6,7 +6,7 @@ dialog.settings {
   max-height: calc(100vh - 32px);
   padding: 22px;
   border: 1px solid var(--line);
-  border-radius: min(var(--radius), 14px);
+  border-radius: var(--radius-lg);
   box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.45);
 }
 .settings-close { position: absolute; top: 14px; right: 14px; }
@@ -19,7 +19,7 @@ dialog.settings {
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: min(var(--radius), 10px);
+  border-radius: var(--radius-md);
   outline: none;
 }
 .settings label input:focus, .settings label textarea:focus { border-color: var(--accent); }

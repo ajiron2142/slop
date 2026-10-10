@@ -38,6 +38,11 @@
   --text: 15px;
   --leading: 1.55;
   --radius: 10px;
+  /* Three corner sizes, all from --radius: small for buttons, rows, chips and inputs; medium for blocks
+     and cards; large for dialogs and popovers. */
+  --radius-sm: min(var(--radius), 6px);
+  --radius-md: min(var(--radius), 10px);
+  --radius-lg: min(var(--radius), 14px);
   --bubble-radius: 14px;
   --bubble-pad: 10px 14px;
   --gap: 22px;

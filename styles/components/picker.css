@@ -28,12 +28,12 @@
   color: var(--ink);
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: min(var(--radius), 12px);
+  border-radius: var(--radius-lg);
   box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.4);
 }
 .picker-search { box-sizing: border-box; width: 100%; padding: 10px 12px; font-size: 14px; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--line); outline: none; }
 .picker-list { max-height: 320px; margin: 0; padding: 4px; overflow-y: auto; list-style: none; }
-.picker-option { padding: 7px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: 6px; cursor: pointer; }
+.picker-option { padding: 7px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: var(--radius-sm); cursor: pointer; }
 .picker-option.active { background: var(--surface); }
 .picker-option[aria-selected="true"] { font-weight: 600; }
 .picker-group { padding: 8px 10px 4px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }

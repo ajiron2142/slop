@@ -81,10 +81,10 @@
   font-family: var(--font-body);
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: min(var(--radius), 12px);
+  border-radius: var(--radius-lg);
   box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.4);
 }
-.attach-menu button { padding: 8px 10px; font: inherit; font-size: 14px; color: var(--ink); text-align: left; background: none; border: 0; border-radius: 6px; cursor: pointer; }
+.attach-menu button { padding: 8px 10px; font: inherit; font-size: 14px; color: var(--ink); text-align: left; background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
 .attach-menu button:hover, .attach-menu button:focus-visible { background: var(--surface); outline: none; }
 
 .drop {
@@ -97,7 +97,7 @@
   color: var(--ink);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   border: 2px dashed var(--accent);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   pointer-events: none;
 }
 

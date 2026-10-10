@@ -21,7 +21,7 @@
 .flow-wires path.on { stroke: var(--accent); stroke-dasharray: 7 6; animation: flow-march 0.7s linear infinite; }
 @keyframes flow-march { to { stroke-dashoffset: -13; } }
 
-.flow-box { position: relative; display: grid; gap: 1px; min-width: 120px; max-width: 230px; padding: 6px 10px; font-size: 12.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; transition: border-color 0.3s, opacity 0.2s; }
+.flow-box { position: relative; display: grid; gap: 1px; min-width: 120px; max-width: 230px; padding: 6px 10px; font-size: 12.5px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-sm); cursor: pointer; transition: border-color 0.3s, opacity 0.2s; }
 .flow-box.done { border-color: var(--add); }
 .flow-box.on { border-color: var(--accent); }
 .flow-box.stopped { color: var(--muted); border-style: dashed; }
