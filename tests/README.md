@@ -1,6 +1,6 @@
 # Tests
 
-Browser tests for the whole app: about 330 checks covering chatting, markdown and code blocks, attachments, the model picker, chats and search, themes, folder access, git, patches, smart paste, the mini window, the image viewer, sign-in (against a fake identity provider), chat titles, GitLab (against a fake GitLab), the usage meter and stats, the speed work, and the code sandbox (with the app's real security policy on). They run against a fake LiteLLM, so no real server or API key is needed, and take about 30 seconds.
+Browser tests for the whole app: about 360 checks covering chatting, markdown and code blocks, attachments, the model picker, chats and search, themes, folder access, git, patches, smart paste, the mini window, the image viewer, sign-in (against a fake identity provider), chat titles, GitLab (against a fake GitLab), the usage meter and stats, the speed work, and the code sandbox (the runner with the app's real security policy on, then its menu row, chip and pictures). They run against a fake LiteLLM, so no real server or API key is needed, and take about 30 seconds.
 
 Nothing here is part of the deployed app: the Dockerfile only copies the app's own files.
 

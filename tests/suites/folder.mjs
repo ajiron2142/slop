@@ -42,7 +42,7 @@ export default async function ({ browser, site, mock, check }) {
 
   await p.click('#new-chat');
   await p.click('#attach-btn');
-  check('paperclip opens the menu', await p.isVisible('#attach-menu'));
+  check('+ opens the menu', await p.isVisible('#attach-menu'));
   await p.keyboard.press('Escape');
   check('Escape closes the menu', !(await p.isVisible('#attach-menu')));
   await p.click('#attach-btn');
@@ -138,13 +138,14 @@ export default async function ({ browser, site, mock, check }) {
   if (errors.length) console.log('    ', errors.join('\n     '));
   await context.close();
 
-  // Firefox and Safari have no folder access: the paperclip opens the file chooser directly.
+  // Firefox and Safari have no folder access: + offers no folder. With nothing else in its menu
+  // (no add-on items), it opens the file chooser directly.
   const other = await openApp({ browser, site, mock }, { connect: false, init: 'delete window.showDirectoryPicker; delete Window.prototype.showDirectoryPicker;' });
   await other.page.click('#close-settings');
+  const others = await other.page.$$eval('#attach-menu button[data-action]', (bs) => bs.filter((b) => !b.hidden && !['files', 'folder', 'gitlab'].includes(b.dataset.action)).length);
   const chooser = other.page.waitForEvent('filechooser', { timeout: 2000 }).then(() => true, () => false);
   await other.page.click('#attach-btn');
-  check('without folder support, the paperclip opens the file chooser', await chooser);
-  check('without folder support, there is no menu', !(await other.page.isVisible('#attach-menu')));
-  check('without folder support, the label says attach only', (await other.page.getAttribute('#attach-btn', 'aria-label')) === 'Attach images or text files');
+  check('without folder support, + offers no folder', others ? await other.page.isHidden('#attach-menu [data-action="folder"]') : await chooser);
+  check('without folder support, the label never mentions folders', !(await other.page.getAttribute('#attach-btn', 'aria-label')).includes('folder'));
   await other.context.close();
 }

@@ -1,0 +1,35 @@
+/* Sandbox (optional add-on): its row in the + menu, its chip, and pictures in a reply.
+   On, the box glows green; while code runs, the chip's box lifts its lid and peeks out. */
+
+.attach-menu [data-action="sandbox"][aria-checked="true"] .icon,
+.tray-chip.sandbox .icon {
+  color: var(--add);
+  filter: drop-shadow(0 0 2.5px color-mix(in srgb, var(--add) 55%, transparent));
+}
+.tray-chip.sandbox .icon { width: 18px; height: 18px; overflow: visible; }
+
+/* Peek: the lid lifts, two eyes look left, then right, blink, and the lid settles. 4 s a round. */
+.peek .peek-eyes { opacity: 0; fill: currentColor; stroke: none; }
+.peek .peek-eyes ellipse { transform-box: fill-box; transform-origin: center; }
+.peek .peek-lid { transform-box: fill-box; transform-origin: 0% 100%; }
+@keyframes peek-lid { 0%, 8%, 92%, 100% { transform: none; } 16%, 84% { transform: translateY(-4.4px) rotate(-4deg); } }
+@keyframes peek-eyes { 0%, 14%, 86%, 100% { opacity: 0; transform: none; } 20%, 80% { opacity: 1; } 30%, 40% { transform: translateX(-1.8px); } 55%, 65% { transform: translateX(1.8px); } 75% { transform: none; } }
+@keyframes peek-blink { 0%, 45%, 49%, 100% { transform: scaleY(1); } 47% { transform: scaleY(0.1); } }
+.tray-chip.sandbox.running .peek-lid { animation: peek-lid 4s ease-in-out infinite; }
+.tray-chip.sandbox.running .peek-eyes { animation: peek-eyes 4s ease-in-out infinite; }
+.tray-chip.sandbox.running .peek-eyes ellipse { animation: peek-blink 4s linear infinite; }
+/* Reduced motion: no movement; while running, the lid stays open a crack with the eyes looking out. */
+@media (prefers-reduced-motion: reduce) {
+  .tray-chip.sandbox.running .peek-lid, .tray-chip.sandbox.running .peek-eyes, .tray-chip.sandbox.running .peek-eyes ellipse { animation: none; }
+  .tray-chip.sandbox.running .peek-lid { transform: translateY(-4.4px) rotate(-4deg); }
+  .tray-chip.sandbox.running .peek-eyes { opacity: 1; }
+}
+
+/* Pictures under a reply's text: the same frame and tinted header as a code block. */
+.pictures { display: grid; gap: 0.9em; margin: 0.9em 0; }
+.picture { overflow: hidden; background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius-md); }
+.picture-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; font-family: var(--font-meta); font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--ink) 7%, var(--bg)); }
+.picture-copy { display: inline-flex; align-items: center; gap: 5px; padding: 0; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.picture-copy:hover { color: var(--ink); }
+.picture-copy .icon { width: 14px; height: 14px; }
+.picture img { display: block; max-width: 100%; height: auto; margin: 0 auto; background: var(--bg); }

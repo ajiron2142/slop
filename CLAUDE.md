@@ -19,7 +19,7 @@ A lean, static chat UI for a LiteLLM proxy. These are the musts. Read them befor
   - The context limit comes only from LiteLLM's `max_input_tokens`; prices only from `input_cost_per_token` and `output_cost_per_token` (0 is free). A missing value is shown as unknown.
   - What the folder tools leave out comes only from the folder's `.gitignore` files; no built-in skip lists.
   - Thresholds are fixed numbers (a paste over 500 lines or 40,000 characters becomes a chip).
-- **Modular, like Legos.** Each optional feature lives in its own files and plugs in through small hooks marked with a comment (`// git`, `// patch`, `// smart paste`, `// mini window`, `// image viewer`, `// sign-in`, `// chat titles`, `// gitlab`, `// activity`, `// flow`). Its header says exactly how to remove it. Removing one must never touch the others.
+- **Modular, like Legos.** Each optional feature lives in its own files and plugs in through small hooks marked with a comment (`// git`, `// patch`, `// smart paste`, `// mini window`, `// image viewer`, `// sign-in`, `// chat titles`, `// gitlab`, `// activity`, `// flow`, `// sandbox`). Its header says exactly how to remove it. Removing one must never touch the others.
 - **No dependencies.** Plain ES modules, no build step. The only libraries are vendored in `vendor/` (see its README), and new ones need a very good reason.
 - **Components** are a `.js` + `.css` pair with the same name. Components use theme tokens, never fixed colours; themes only set tokens and overrides, never layout.
 - **Match the surrounding code**: its comment density, naming and idiom.

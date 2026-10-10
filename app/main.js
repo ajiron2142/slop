@@ -26,6 +26,7 @@ import { createActivity } from './activity.js'; // activity
 import { createFlow } from './flow.js'; // flow
 import { patchPrompt, patchBlock } from './patch.js'; // patch
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
+import { SANDBOX_TOOLS, isSandboxTool, runSandboxTool, picturesNode, replyMarkdown } from './sandbox.js'; // sandbox
 
 const state = {
   settings: null,
@@ -36,6 +37,8 @@ const state = {
   active: null, // { meta, messages, folder }, or null for a new unsaved chat
   draftFolder: null, // folder connected before a new chat's first message
   draftGitlab: null, // gitlab: project connected before a new chat's first message
+  draftSandbox: false, // sandbox: turned on before a new chat's first message
+  sandboxRunning: null, // sandbox: the chat whose code is running now
   streaming: null, // { chat, msg, controller }
   auth: null, // sign-in, when config.json sets it up
 };
@@ -96,6 +99,8 @@ const messages = createMessages($('messages'), {
   onRetry: retry,
   activity: (m) => activity.node(state.active?.meta.id, m), // activity
   codeBlock: patchBlock, // patch
+  extra: picturesNode, // sandbox
+  copyText: replyMarkdown, // sandbox
 });
 
 const meter = createMeter({ row: $('meter-row'), button: $('meter-btn'), pop: $('meter-pop') });
@@ -119,6 +124,7 @@ const composer = createComposer({
     const project = current && await gitlab.pickBranch(current, chipEl);
     if (project) setGitlabProject(project);
   },
+  onToggleSandbox: () => setSandbox(!sandboxOn()), // sandbox
   onSend: send,
   onStop: () => state.streaming?.controller.abort(),
   notify,
@@ -169,6 +175,7 @@ const settings = createSettings({
     state.settings = await store.loadSettings();
     state.active = null;
     state.draftFolder = null;
+    state.draftSandbox = false; // sandbox
     panel.close();
     applyTheme('');
     sidebar.setCollapsed(false);
@@ -214,6 +221,7 @@ function render(options) {
   const folder = state.active ? state.active.folder : state.draftFolder;
   composer.setFolder(folder?.name, folder && gitStatusOf(folder)); // git
   composer.setGitlab(gitlab.connected() ? (state.active ? state.active.meta.gitlab : state.draftGitlab) : null); // gitlab
+  drawSandbox(); // sandbox
 }
 
 async function reloadChatList() {
@@ -257,10 +265,11 @@ function send({ text, files }) {
   if (!state.active) {
     const now = Date.now();
     const title = (text || files[0].name).replace(/\s+/g, ' ').slice(0, 40);
-    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now, ...(state.draftGitlab && { gitlab: state.draftGitlab }) }, messages: [], folder: state.draftFolder }; // gitlab
+    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now, ...(state.draftGitlab && { gitlab: state.draftGitlab }), ...(state.draftSandbox && { sandbox: true }) }, messages: [], folder: state.draftFolder }; // gitlab, sandbox
     if (state.draftFolder) store.saveFolder(state.active.meta.id, state.draftFolder);
     state.draftFolder = null;
     state.draftGitlab = null; // gitlab
+    state.draftSandbox = false; // sandbox
   }
   notify('');
   const chat = state.active;
@@ -313,11 +322,12 @@ async function complete(chat) {
     }
     const repo = Boolean(folder) && await isRepo(folder); // git
     const project = gitlab.connected() ? chat.meta.gitlab : null; // gitlab
-    // Tools only for what this chat has: a folder, a git repo, a GitLab project, a paste still in memory.
-    const offered = [...(folder ? FOLDER_TOOLS : []), ...(repo ? GIT_TOOLS : []), ...(project ? GITLAB_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : [])]; // git, gitlab, smart paste
+    const sandbox = Boolean(chat.meta.sandbox); // sandbox
+    // Tools only for what this chat has: a folder, a git repo, a GitLab project, a paste still in memory, the sandbox.
+    const offered = [...(folder ? FOLDER_TOOLS : []), ...(repo ? GIT_TOOLS : []), ...(project ? GITLAB_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : []), ...(sandbox ? SANDBOX_TOOLS : [])]; // git, gitlab, smart paste, sandbox
     tools = offered.length ? offered : undefined;
     const names = (list) => list.map((t) => t.function.name); // flow: which place each tool reaches
-    act.places([folder && { id: 'folder', kind: 'Folder', name: folder.name, tools: names([...FOLDER_TOOLS, ...(repo ? GIT_TOOLS : [])]) }, project && { id: 'gitlab', kind: 'GitLab project', name: project.path, sub: `branch ${project.ref}`, tools: names(GITLAB_TOOLS) }, hasPastes(chat.messages) && { id: 'paste', kind: 'Pasted text', name: 'Pastes in this chat', tools: names(PASTE_TOOLS) }].filter(Boolean)); // flow, git, gitlab, smart paste
+    act.places([folder && { id: 'folder', kind: 'Folder', name: folder.name, tools: names([...FOLDER_TOOLS, ...(repo ? GIT_TOOLS : [])]) }, project && { id: 'gitlab', kind: 'GitLab project', name: project.path, sub: `branch ${project.ref}`, tools: names(GITLAB_TOOLS) }, hasPastes(chat.messages) && { id: 'paste', kind: 'Pasted text', name: 'Pastes in this chat', tools: names(PASTE_TOOLS) }, sandbox && { id: 'sandbox', kind: 'Sandbox', name: 'JavaScript, offline', tools: names(SANDBOX_TOOLS) }].filter(Boolean)); // flow, git, gitlab, smart paste, sandbox
     const system = [today(), s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, project && gitlabPrompt(project), (folder || project) && patchPrompt([folder?.name, project?.path].filter(Boolean))].filter(Boolean).join('\n\n'); // git, gitlab, patch
     history.unshift({ role: 'system', content: system });
     // With a folder connected the model may ask to read files first: run those and ask again.
@@ -359,11 +369,13 @@ async function complete(chat) {
       for (const call of toolCalls) {
         const name = call.function.name;
         const stepDone = act.tool(call); // activity
-        const { label, result } = unreadable(call) ?? (isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
+        const { label, result, pictures } = unreadable(call) ?? (isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
+          : isSandboxTool(name) ? await runCode(chat, call.function.arguments) // sandbox
           : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
           : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments, controller.signal) // gitlab
           : await runTool(folder, name, call.function.arguments));
         if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
+        if (pictures?.length) (msg.pictures ??= []).push(...pictures); // sandbox
         stepDone(label, result); // activity
         (msg.tools ??= []).push(label);
         history.push({ role: 'tool', tool_call_id: call.id, content: result });
@@ -426,6 +438,18 @@ async function nameChat(chat) {
   await reloadChatList();
 }
 
+// sandbox: runs the model's code; the chip's box peeks out meanwhile.
+async function runCode(chat, args) {
+  state.sandboxRunning = chat;
+  drawSandbox();
+  try {
+    return await runSandboxTool(args);
+  } finally {
+    state.sandboxRunning = null;
+    drawSandbox();
+  }
+}
+
 function retry() {
   const chat = state.active;
   if (!chat || state.streaming) return;
@@ -441,6 +465,7 @@ function newChat() {
   state.active = null;
   state.draftFolder = null;
   state.draftGitlab = null; // gitlab
+  state.draftSandbox = false; // sandbox
   panel.close();
   sidebar.close();
   render();
@@ -514,6 +539,19 @@ async function setGitlabProject(project) {
   } else state.draftGitlab = project;
   render();
   composer.focus();
+}
+
+// sandbox: on per chat (or for the next new one), saved with the chat.
+const sandboxOn = () => Boolean(state.active ? state.active.meta.sandbox : state.draftSandbox);
+const drawSandbox = () => composer.setSandbox(sandboxOn() && (state.sandboxRunning && state.sandboxRunning === state.active ? 'running' : 'on'));
+
+async function setSandbox(on) {
+  if (!state.active) state.draftSandbox = on;
+  else if (on) state.active.meta.sandbox = true;
+  else delete state.active.meta.sandbox;
+  drawSandbox();
+  composer.focus();
+  if (state.active) await store.saveMeta(state.active.meta);
 }
 
 // ---- start ----

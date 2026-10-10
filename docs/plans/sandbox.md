@@ -1,6 +1,6 @@
 # Plan: a bare-minimum JS sandbox (prototype)
 
-Status: phase 1 built (the runner, no UI). Next step is phase 2 below. Design changes still need a mockup first (CLAUDE.md).
+Status: phases 1 and 2 built (the runner; the + menu, the chip, pictures and Copy reply). Next is phase 3, the helpers.
 
 ## What it's for
 
@@ -118,8 +118,20 @@ now (thinking, reading a file, running code). Lighter than the reply tree; to be
 - `app/sandbox.js` already has `SANDBOX_TOOLS`, `isSandboxTool`, `runJs`, `sandboxResult` and
   `runSandboxTool` for phase 2; nothing calls them yet.
 
+## Phase 2 as built
+
+- The paperclip is a **+**, and each menu item has an icon. The Sandbox row is a checkbox item
+  (`aria-checked`); when it's on, its box glows green. Being in the menu, it's always there, so + always
+  opens the menu now (before, with no folder support and no GitLab, it opened the file chooser).
+- On is saved per chat (`meta.sandbox`), like a GitLab project; a new chat starts with it off.
+- A run that ends in an error is a failed step (✕): its result starts `Error: the run failed.`, then the
+  output and the error as before.
+- Pictures are drawn on the theme's background. A picture with dark text drawn for a white page is hard
+  to read on a dark theme; phase 3's helpers will use the theme's colours.
+
 ## To remove it
 
 Delete `sandbox/`, `app/sandbox.js` and `tests/suites/sandbox.mjs`, the lines marked "sandbox" in
 index.html, nginx.conf and tests/run.mjs, the Dockerfile's `sandbox/` line and the README's mentions.
-After phase 2, also its CSS and the lines marked "sandbox" in main.js and components/composer.js.
+Also styles/components/sandbox.css and the lines marked "sandbox" in main.js and components/messages.js
+and components/composer.js. The + menu and its icons stay: they're core.

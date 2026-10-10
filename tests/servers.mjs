@@ -263,6 +263,15 @@ export async function startMock() {
         return res.end('data: [DONE]\n\n');
       }
 
+      if (body.tools && text.startsWith('sandbox:')) { // sandbox: runs the code after "sandbox:", then says what came back
+        const results = body.messages.filter((m) => m.role === 'tool');
+        if (!results.length) sse(res, { choices: [{ delta: { content: 'Let me work it out.', tool_calls: [{ index: 0, id: 's1', type: 'function', function: { name: 'run_js', arguments: JSON.stringify({ code: text.slice('sandbox:'.length) }) } }] } }] });
+        else sse(res, { choices: [{ delta: { content: `RESULT[${results[0].content}]` } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: results.length ? 'stop' : 'tool_calls' }] });
+        if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
+        return res.end('data: [DONE]\n\n');
+      }
+
       if (body.tools && text.startsWith('flow')) { // the tree: two places, a slow second round, one failed call
         const results = body.messages.filter((m) => m.role === 'tool');
         const id = JSON.stringify(body.messages).match(/pasted id=\\"(\w+)\\"/)?.[1];

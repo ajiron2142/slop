@@ -71,7 +71,7 @@
 .tray-remove:hover { color: var(--ink); background: var(--line); }
 .tray-chip.folder .icon { width: 16px; height: 16px; color: var(--muted); }
 
-/* Attach / Connect folder menu (Chrome and Edge). Fixed so it sits above the button. */
+/* The + menu: Attach files, Connect folder, … each with its icon. Fixed so it sits above the button. */
 .attach-menu {
   position: fixed;
   z-index: 30;
@@ -84,7 +84,9 @@
   border-radius: var(--radius-lg);
   box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.4);
 }
-.attach-menu button { padding: 8px 10px; font: inherit; font-size: 14px; color: var(--ink); text-align: left; background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
+.attach-menu button { display: flex; align-items: center; gap: 10px; padding: 8px 10px; font: inherit; font-size: 14px; color: var(--ink); text-align: left; background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
+.attach-menu button[hidden] { display: none; }
+.attach-menu .icon { width: 17px; height: 17px; flex: none; color: var(--muted); }
 .attach-menu button:hover, .attach-menu button:focus-visible { background: var(--surface); outline: none; }
 
 .drop {

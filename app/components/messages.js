@@ -11,9 +11,12 @@ const CHECK_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><pa
 // The conversation pane: renders messages, follows the bottom while streaming,
 // and handles the Copy (code and whole reply), Retry and Stats buttons. `activity(msg)` gives a reply's
 // activity line, shown in place of its "Read …" summary. `codeBlock(lang, text)` lets an add-on show a
-// finished reply's code block its own way: { node } replaces it, { note } goes under it.
-export function createMessages(pane, { onRetry, activity = () => null, codeBlock = () => null }) { // activity, patch
+// finished reply's code block its own way: { node } replaces it, { note } goes under it. `extra(msg)`
+// gives a node to show under a reply's text, and `copyText(msg)` what its Copy button copies.
+export function createMessages(pane, { onRetry, activity = () => null, codeBlock = () => null, extra = () => null, copyText = (m) => m.content }) { // activity, patch, sandbox
   blockHook = codeBlock; // patch
+  extraHook = extra; // sandbox
+  copyHook = copyText; // sandbox
   let stick = true;
   const openStats = new Set(); // replies whose Stats card is open, by timestamp
   // Rendered messages, reused while nothing about them has changed. Re-rendering markdown
@@ -23,7 +26,7 @@ export function createMessages(pane, { onRetry, activity = () => null, codeBlock
   const nodeFor = (m, streaming, showStats) => {
     const act = m.role === 'assistant' ? activity(m) : null; // activity
     if (streaming) return messageNode(m, true, false, act);
-    const key = `${m.content.length}|${m.tools?.length ?? 0}|${m.stats ? 1 : 0}|${showStats}|${act ? 1 : 0}`;
+    const key = `${m.content.length}|${m.tools?.length ?? 0}|${m.pictures?.length ?? 0}|${m.stats ? 1 : 0}|${showStats}|${act ? 1 : 0}`; // sandbox: pictures
     const hit = built.get(m);
     if (hit?.key === key) return hit.node;
     const node = messageNode(m, false, showStats && openStats, act);
@@ -93,6 +96,8 @@ function messageNode(msg, streaming, openStats, act) {
   const body = el('div', 'body');
   fillBody(body, msg, streaming);
   node.append(body);
+  const more = msg.role === 'assistant' ? extraHook(msg) : null; // sandbox
+  if (more) node.append(more);
   if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'length') {
     node.append(el('div', 'reply-note', 'Cut off: the model reached the most it can write in one reply. Say "continue" to get the rest.'));
   } else if (msg.role === 'assistant' && !streaming && msg.stats && msg.stats.finish !== 'stopped' && !msg.content) {
@@ -100,11 +105,12 @@ function messageNode(msg, streaming, openStats, act) {
   }
   // Under a finished reply, on the right so they don't read as part of it: Stats (when detailed
   // stats are on), then Copy (when there's something to copy).
-  if (msg.role === 'assistant' && !streaming && (msg.content || msg.stats)) {
+  const copyText = msg.role === 'assistant' && !streaming ? copyHook(msg) : ''; // sandbox
+  if (msg.role === 'assistant' && !streaming && (copyText || msg.stats)) {
     const actions = el('div', 'reply-actions');
     const stats = openStats && msg.stats ? statsNodes(msg.stats, openStats.has(String(msg.ts))) : [];
     if (stats.length) actions.append(stats[0]);
-    if (msg.content) actions.append(copyButton(msg));
+    if (copyText) actions.append(copyButton(copyText));
     node.append(actions, ...stats.slice(1));
   }
   if (msg.role === 'error') {
@@ -116,6 +122,8 @@ function messageNode(msg, streaming, openStats, act) {
 }
 
 let blockHook = () => null; // patch
+let extraHook = () => null; // sandbox
+let copyHook = (m) => m.content; // sandbox
 
 // Assistant text is markdown (always sanitized); everything else is plain text. While a reply
 // streams, its code blocks stay plain; add-ons get them once it's finished.
@@ -161,7 +169,7 @@ function filesNode(files) {
   return row;
 }
 
-function copyButton(msg) {
+function copyButton(text) {
   const btn = el('button', 'reply-btn copy-reply');
   btn.type = 'button';
   btn.title = 'Copy this reply, formatted for Teams, Outlook and Word';
@@ -169,7 +177,7 @@ function copyButton(msg) {
   show(COPY_ICON, 'Copy');
   btn.addEventListener('click', async () => {
     try {
-      await copyReply(msg.content, btn.ownerDocument.defaultView);
+      await copyReply(text, btn.ownerDocument.defaultView);
       show(CHECK_ICON, 'Copied');
     } catch {
       show(COPY_ICON, 'Copy failed');

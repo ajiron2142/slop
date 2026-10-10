@@ -8,6 +8,7 @@ const TEXT_EXT = /\.(txt|md|markdown|csv|tsv|json|jsonl|yaml|yml|toml|ini|xml|ht
 const DOC_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>'; // smart paste
 const GITLAB_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21l-9-7 3-10 3 7h6l3-7 3 10z"/></svg>'; // gitlab
 const FOLDER_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+const PEEK_ICON = '<svg class="icon peek" viewBox="0 0 24 24" aria-hidden="true"><g class="peek-eyes"><ellipse cx="9.8" cy="7" rx="1.5" ry="1.85"/><ellipse cx="14.2" cy="7" rx="1.5" ry="1.85"/></g><path d="M5 9h14v11H5z"/><path class="peek-lid" d="M4 6h16v3H4z"/><path d="M10 13h4"/></svg>'; // sandbox
 const BRANCH_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="7" r="2"/><path d="M6 7v10"/><path d="M18 9c0 5-6 4-11.2 8.2"/></svg>'; // git
 
 const readAs = (file, how) => new Promise((resolve, reject) => {
@@ -19,12 +20,13 @@ const readAs = (file, how) => new Promise((resolve, reject) => {
 
 // The message box: Enter to send, Shift+Enter for a new line, Send/Stop button,
 // and attachments from the button, paste or drag-and-drop (all the same path).
-// Where folders are supported, the attach button opens a menu: Attach files or Connect folder.
-export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onConnectGitlab, onDisconnectGitlab, onPickGitlabBranch, onSend, onStop, notify }) {
+// The + button opens a menu (Attach files, Connect folder, …) when it has more than files to offer.
+export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onConnectGitlab, onDisconnectGitlab, onPickGitlabBranch, onToggleSandbox, onSend, onStop, notify }) {
   let files = [];
   let folderName = null;
   let folderGit = null; // git: { branch, ahead, behind }
   let gitlabProject = null; // gitlab: { path, ref }
+  let sandbox = null; // sandbox: null (off), 'on' or 'running'
   let busy = false;
 
   function autosize() {
@@ -51,8 +53,8 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   }
 
   function renderTray() {
-    tray.hidden = !files.length && !folderName && !gitlabProject;
-    tray.replaceChildren(...(folderName ? [folderChip()] : []), ...(gitlabProject ? [gitlabChip()] : []), ...files.map((f, i) => { // gitlab
+    tray.hidden = !files.length && !folderName && !gitlabProject && !sandbox;
+    tray.replaceChildren(...(folderName ? [folderChip()] : []), ...(gitlabProject ? [gitlabChip()] : []), ...(sandbox ? [sandboxChip()] : []), ...files.map((f, i) => { // gitlab, sandbox
       if (f.kind === 'paste') return pasteChip(f, i); // smart paste
       const chip = el('span', 'tray-chip');
       if (f.kind === 'image') {
@@ -88,6 +90,15 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     branch.setAttribute('aria-label', `Branch ${gitlabProject.ref}, pick another`);
     branch.addEventListener('click', () => onPickGitlabBranch?.(chip));
     chip.append(el('span', 'tray-name', gitlabProject.path), el('span', 'git-sep', '·'), branch, removeButton(`Disconnect GitLab project ${gitlabProject.path}`, onDisconnectGitlab));
+    return chip;
+  }
+
+  // sandbox: "Sandbox", on for this chat. Its box peeks out while code runs.
+  function sandboxChip() {
+    const chip = el('span', `tray-chip sandbox${sandbox === 'running' ? ' running' : ''}`);
+    chip.title = sandbox === 'running' ? 'Sandbox: running code' : 'Sandbox: the model can run JavaScript here, with no network, page or storage';
+    chip.innerHTML = PEEK_ICON;
+    chip.append(el('span', 'tray-name', 'Sandbox'), removeButton('Turn off the sandbox', onToggleSandbox));
     return chip;
   }
 
@@ -182,7 +193,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     if (hasMenu()) {
       attach.setAttribute('aria-haspopup', 'menu');
       attach.setAttribute('aria-expanded', String(!menu.hidden));
-      attach.setAttribute('aria-label', onConnectFolder ? 'Attach files or connect a folder' : 'Attach files or connect a GitLab project');
+      attach.setAttribute('aria-label', 'Attach files and more');
     } else {
       attach.removeAttribute('aria-haspopup');
       attach.removeAttribute('aria-expanded');
@@ -197,6 +208,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       closeMenu();
       if (item.dataset.action === 'files') fileInput.click();
       else if (item.dataset.action === 'gitlab') onConnectGitlab?.(); // gitlab
+      else if (item.dataset.action === 'sandbox') onToggleSandbox?.(); // sandbox
       else onConnectFolder();
     });
     menu.addEventListener('keydown', (e) => {
@@ -227,6 +239,12 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     },
     focus: () => input.focus(),
     setGitlab(project) { gitlabProject = project || null; renderTray(); labelAttach(); }, // gitlab
+    setSandbox(value) { // sandbox
+      if (value === sandbox) return;
+      sandbox = value || null;
+      menu.querySelector('[data-action="sandbox"]')?.setAttribute('aria-checked', String(Boolean(sandbox)));
+      renderTray();
+    },
     setFolder(name, git = null) {
       folderName = name || null;
       folderGit = name ? git : null; // git

@@ -1,9 +1,11 @@
-// Sandbox (optional add-on), phase 1: the runner on its own, with no UI yet. Code runs in a Worker
-// inside a sandboxed iframe, with no network, page or storage, and is stopped after 5 seconds.
-// Unlike the other suites, this one keeps the app's security policy on: the policy is what's tested.
+// Sandbox (optional add-on). First the runner on its own: code runs in a Worker inside a sandboxed
+// iframe, with no network, page or storage, and is stopped after 5 seconds. That part keeps the app's
+// security policy on: the policy is what's tested. Then the app: the + menu's Sandbox row, the chip,
+// run_js offered only while it's on, pictures in the reply, Copy SVG and Copy reply.
 import http from 'node:http';
+import { openApp, idle, stepsLine } from '../helpers.mjs';
 
-export default async function ({ browser, site, check }) {
+export default async function ({ browser, site, mock, check }) {
   // A server the code tries to reach. Nothing should ever arrive here.
   const hits = [];
   const spy = http.createServer((req, res) => {
@@ -120,4 +122,103 @@ export default async function ({ browser, site, check }) {
   check('no errors on the page', errors.length === 0);
   await context.close();
   spy.close();
+
+  await inTheApp({ browser, site, mock, check });
+}
+
+const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60"><rect width="120" height="60" fill="#2e9a4f"/></svg>';
+
+async function inTheApp({ browser, site, mock, check }) {
+  const { page: p, context, errors } = await openApp({ browser, site, mock });
+  const reply = '.msg.assistant:last-of-type';
+  const row = '#attach-menu [data-action="sandbox"]';
+  const chip = '#tray .tray-chip.sandbox';
+  const ask = async (text) => { await p.fill('#input', text); await p.press('#input', 'Enter'); };
+  const toolResult = () => JSON.parse(mock.requests.at(-1).sent).find((m) => m.role === 'tool')?.content;
+
+  await p.click('#attach-btn');
+  check('the + menu lists Sandbox, with an icon, switched off', await p.isVisible(row) && (await p.getAttribute(row, 'aria-checked')) === 'false' && Boolean(await p.$(`${row} svg.icon`)));
+  check('every item in the menu has an icon', await p.$$eval('#attach-menu button:not([hidden])', (bs) => bs.every((b) => b.querySelector('svg.icon'))));
+  await p.keyboard.press('Escape');
+  await ask('hello');
+  await idle(p);
+  check('with the sandbox off, a chat sends no tools', !mock.requests.at(-1).hasTools);
+
+  await p.click('#attach-btn');
+  await p.click(row);
+  check('tapping Sandbox switches it on and closes the menu', await p.isHidden('#attach-menu') && (await p.getAttribute(row, 'aria-checked')) === 'true');
+  check('a Sandbox chip shows it\'s on', (await p.textContent(chip)) === 'Sandbox×' && Boolean(await p.$(`${chip} svg.peek`)));
+  check('the chip is still while nothing runs', !(await p.$eval(chip, (c) => c.classList.contains('running'))));
+
+  await ask(`sandbox:console.log(6 * 7);\nshow('${SVG}');\n'done'`);
+  await idle(p);
+  const sent = mock.requests.at(-1);
+  check('with it on, run_js is offered', sent.toolNames.includes('run_js'));
+  check('the model gets the output and how many pictures it showed', toolResult() === '42\ndone\nShowed 1 picture (1 KB)');
+  check('its step says it ran code', (await stepsLine(p)) === 'Ran code');
+  check('the picture shows under the reply\'s text, in a block like a code block', await p.$eval(reply, (m) => {
+    const pic = m.querySelector('.pictures .picture');
+    return Boolean(pic) && m.querySelector('.body').compareDocumentPosition(pic) & Node.DOCUMENT_POSITION_FOLLOWING
+      && pic.querySelector('.picture-head').textContent === 'Picture 1 · SVGCopy SVG';
+  }));
+  check('as an image, so nothing inside it can run', await p.$eval(`${reply} .picture img`, (img, svg) => img.src === `data:image/svg+xml;base64,${btoa(svg)}` && img.naturalWidth === 120, SVG));
+  await p.click(`${reply} .act-head`);
+  check('the reply tree shows the Sandbox as a place', await p.isVisible(`${reply} .flow-box[data-flow-box="sandbox"]`));
+
+  await p.click(`${reply} .picture-copy`);
+  check('Copy SVG copies the SVG text', (await p.evaluate(() => navigator.clipboard.readText())) === SVG && (await p.textContent(`${reply} .picture-copy`)) === 'Copied');
+  await p.click(`${reply} .copy-reply`);
+  await p.waitForTimeout(200);
+  const copied = await p.evaluate(async () => {
+    const [item] = await navigator.clipboard.read();
+    return { text: await (await item.getType('text/plain')).text(), html: await (await item.getType('text/html')).text() };
+  });
+  const b64 = Buffer.from(SVG).toString('base64');
+  check('Copy reply: the text, a line per picture, the picture at the very bottom', copied.text.endsWith(`]\n\n![Picture 1][picture-1]\n\n[picture-1]: data:image/svg+xml;base64,${b64}`) && copied.text.startsWith('Let me work it out.'));
+  check('and the formatted copy carries it as an image', copied.html.includes(`<img src="data:image/svg+xml;base64,${b64}" alt="Picture 1">`));
+
+  await ask('sandbox:"again"');
+  await idle(p);
+  check('pictures are never sent back to the model', !mock.requests.at(-1).sent.includes('image/svg+xml') && !mock.requests.at(-1).sent.includes('Picture 1'));
+
+  // While code runs, the chip's box peeks out; it's still again once it's done.
+  await ask('sandbox:const end = Date.now() + 1500;\nwhile (Date.now() < end) {}\n"slow"');
+  await p.waitForSelector(`${chip}.running`, { timeout: 5000 });
+  check('while code runs, the chip peeks', (await p.$eval(`${chip} .peek-lid`, (l) => getComputedStyle(l).animationName)) === 'peek-lid');
+  await idle(p);
+  check('and is still again once it\'s done', !(await p.$eval(chip, (c) => c.classList.contains('running'))));
+
+  await ask('sandbox:let a = 1;\na.b.c');
+  await idle(p);
+  check('code that fails is a failed step', (await stepsLine(p)) === 'Ran code (failed)' && (await p.textContent(`${reply} .act-step .act-mark`)) === '✕');
+  check('and the model hears the error', toolResult() === "Error: the run failed.\nTypeError: Cannot read properties of undefined (reading 'c') (line 2)");
+
+  // Saved with the chat: reopening it brings back the chip and the pictures.
+  await p.reload();
+  await p.click('#chat-list li:first-child .chat-open');
+  await p.waitForSelector('.msg.assistant');
+  check('the sandbox stays on for the chat after a reload', await p.isVisible(chip));
+  check('and its pictures are still there', (await p.$$('.msg.assistant .picture img')).length === 1);
+
+  await p.click(`${chip} .tray-remove`);
+  check('the chip\'s × switches it off', await p.isHidden(chip) && (await p.getAttribute(row, 'aria-checked')) === 'false');
+  await ask('hello again');
+  await idle(p);
+  check('and run_js is no longer offered', !mock.requests.at(-1).hasTools);
+
+  await p.click('#attach-btn');
+  await p.click(row);
+  await p.click('#new-chat');
+  check('a new chat starts with the sandbox off', await p.isHidden(chip));
+
+  // Reduced motion: no movement; while running, the lid stays open a crack with the eyes looking out.
+  await p.emulateMedia({ reducedMotion: 'reduce' });
+  await p.click('#attach-btn');
+  await p.click(row);
+  await p.evaluate(() => document.querySelector('#tray .tray-chip.sandbox').classList.add('running'));
+  check('with reduce motion on, a running chip doesn\'t move but peeks', await p.$eval(chip, (c) => getComputedStyle(c.querySelector('.peek-lid')).animationName === 'none' && getComputedStyle(c.querySelector('.peek-eyes')).opacity === '1'));
+
+  check('no errors on the page', errors.length === 0);
+  if (errors.length) console.log('    ', errors.join('\n     '));
+  await context.close();
 }
