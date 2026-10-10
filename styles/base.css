@@ -147,7 +147,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border-radius: var(--radius);
   cursor: pointer;
 }
-.icon-btn:hover { color: var(--ink); background: var(--surface); }
+/* Only where there's a real pointer: a phone keeps a tapped button in its hover style until the next tap. */
+@media (hover: hover) { .icon-btn:hover { color: var(--ink); background: var(--surface); } }
 .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .notice { margin: 0; padding: 8px var(--edge); font-size: 13px; color: var(--ink); background: var(--surface); border-bottom: 1px solid var(--line); }

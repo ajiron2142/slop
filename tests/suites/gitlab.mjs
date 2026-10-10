@@ -14,16 +14,22 @@ export default async function ({ browser, site, mock, check }) {
 
   await p.click('#settings-btn');
   check('Settings has an optional GitLab part', (await box()).includes('GitLab (optional)'));
+  const connectShown = async () => await p.isVisible('#gitlab-client-id') && await p.isVisible('#gitlab-settings button:text-is("Connect GitLab")');
+  check('with no address, there\'s no Application ID box or Connect yet', !(await p.isVisible('#gitlab-client-id')) && !(await p.isVisible('#gitlab-settings button:text-is("Connect GitLab")')));
   await p.fill('#gitlab-url', 'https://example.invalid');
   await p.waitForSelector('#gitlab-settings .gitlab-found.bad');
   check('an address that isn\'t a GitLab says so, and shows no steps', (await box()).includes('No GitLab sign-in at this address') && !(await p.$('.gitlab-steps')));
+  check('nor the Application ID box or Connect', !(await p.isVisible('#gitlab-client-id')));
   const expected = errors.length; // the browser logs that failed request; it's what the check is for
   await p.fill('#gitlab-url', gitlab.url);
   await p.waitForSelector('#gitlab-settings .gitlab-found.ok');
   check('a real GitLab is recognised', (await box()).includes('GitLab found'));
+  check('the Application ID box and Connect appear with the steps', await connectShown());
   check('the steps link straight to that GitLab\'s applications page', (await p.getAttribute('.gitlab-steps a', 'href')) === `${gitlab.url}/-/user_settings/applications`);
   check('and show the exact redirect URI and which boxes to tick', (await p.textContent('.gitlab-values')).includes(`${site}/`) && (await p.textContent('.gitlab-ticks')) === 'openidread_apiConfidential');
   await p.fill('#gitlab-client-id', 'my-app');
+  await p.waitForTimeout(300); // leaving the address box checks it again
+  check('typing the Application ID leaves the address as it was, still found', (await p.inputValue('#gitlab-url')) === gitlab.url && (await p.inputValue('#gitlab-client-id')) === 'my-app' && (await box()).includes('GitLab found') && await connectShown());
   await p.click('#gitlab-settings button:text-is("Connect GitLab")');
   await p.waitForFunction(() => document.querySelector('#gitlab-settings')?.textContent.includes('Connected as'));
   await p.click('#settings-btn');

@@ -190,6 +190,13 @@ export default async function ({ browser, site, mock, check }) {
     const typed = await p.$eval('#input', (t) => t.getBoundingClientRect().height);
     const mid = (sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; });
     check(`${theme === 'mono' ? 'monokai' : theme}: the empty message box fits before typing, centred with Send`, fresh === typed && Math.abs((await mid('#input')) - (await mid('#send-btn'))) <= 2);
+    if (theme === 'bauhaus') {
+      check('bauhaus: Send\'s arrow sits in the middle of its circle', await p.$eval('#send-btn', (b) => {
+        const r = b.getBoundingClientRect();
+        const a = getComputedStyle(b, '::before');
+        return a.maskImage !== 'none' && a.width === '20px' && Math.abs(r.width - r.height) < 1;
+      }));
+    }
   }
   await p.click('#collapse-btn');
   await p.waitForTimeout(300);
@@ -247,6 +254,11 @@ async function onAPhone({ browser, site, mock, check }) {
   await p.setViewportSize({ width: 600, height: 560 });
   await p.waitForTimeout(100);
   check('a picker still closes when the width changes', await p.isHidden('#theme-picker .picker-pop'));
+  await p.tap('#close-settings');
+  await p.tap('#attach-btn');
+  await p.tap('#attach-btn');
+  const bg = (sel) => p.$eval(sel, (b) => getComputedStyle(b).backgroundColor);
+  check('a tapped icon button doesn\'t stay highlighted: it looks like one never touched', (await bg('#attach-btn')) === (await bg('#menu-btn')));
   check('taps don\'t flash a tinted box', await p.$eval('#settings button', (b) => getComputedStyle(b).webkitTapHighlightColor === 'rgba(0, 0, 0, 0)'));
   check('no errors on the phone', errors.length === 0);
   await context.close();

@@ -73,7 +73,7 @@ export const gitlabPrompt = (project) =>
 export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, onChange }) {
   let auth = null;
   let user = '';
-  let found = null; // the address last checked, and whether it's a GitLab: { url, ok }
+  let found = null; // the address last checked, and whether it's a GitLab: { url, ok } (ok is a promise)
 
   const address = () => String(getSettings().gitlabUrl ?? '').trim().replace(/\/+$/, '');
   const clientId = () => String(getSettings().gitlabClientId ?? '').trim();
@@ -105,15 +105,20 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
 
   // ---- Settings ----
 
-  async function check(url) {
+  // Each address keeps its own answer, so a slow answer for an earlier address can't land on a later one.
+  function check(url) {
     if (found?.url === url) return found.ok;
-    found = { url, ok: false };
-    try {
-      const res = await fetch(`${url}/.well-known/openid-configuration`);
-      const info = res.ok ? await res.json() : null;
-      found.ok = String(info?.issuer ?? '').replace(/\/+$/, '') === url;
-    } catch {}
-    return found.ok;
+    const ok = (async () => {
+      try {
+        const res = await fetch(`${url}/.well-known/openid-configuration`);
+        const info = res.ok ? await res.json() : null;
+        return String(info?.issuer ?? '').replace(/\/+$/, '') === url;
+      } catch {
+        return false;
+      }
+    })();
+    found = { url, ok };
+    return ok;
   }
 
   function copyRow(label, value) {
@@ -178,10 +183,14 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
       const stepsSlot = el('div');
       nodes.push(stepsSlot, idLabel, row);
 
+      // The steps, the Application ID box and Connect appear together, once the address answers as a
+      // GitLab: "after step 3" then always has its steps above it. A message (a failed connect) still shows.
+      const show = (ok) => { idLabel.hidden = !ok; row.hidden = !ok && !note.textContent; };
       const refresh = async () => {
         const url = urlInput.value.trim().replace(/\/+$/, '');
         stepsSlot.replaceChildren();
         status.textContent = '';
+        show(false);
         go.disabled = !url || !idInput.value.trim();
         if (!/^https?:\/\/\S+$/.test(url)) return;
         const ok = await check(url);
@@ -189,8 +198,11 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         status.textContent = ok ? 'GitLab found' : 'No GitLab sign-in at this address';
         status.className = `gitlab-found${ok ? ' ok' : ' bad'}`;
         if (ok) stepsSlot.replaceChildren(steps(url));
+        show(ok);
       };
-      urlInput.addEventListener('change', () => { saveSettings({ gitlabUrl: urlInput.value.trim() }); refresh(); });
+      // Typing checks the address; leaving the box only saves it, so tapping into the Application ID box
+      // never hides that box mid-tap.
+      urlInput.addEventListener('change', () => saveSettings({ gitlabUrl: urlInput.value.trim() }));
       urlInput.addEventListener('input', refresh);
       idInput.addEventListener('input', () => { go.disabled = !urlInput.value.trim() || !idInput.value.trim(); });
       idInput.addEventListener('change', () => saveSettings({ gitlabClientId: idInput.value.trim() }));
