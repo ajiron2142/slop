@@ -1,5 +1,5 @@
 // sandbox: runs one piece of the model's code per job, inside sandbox.html.
-// slop posts { id, code, reads }; the runner starts a fresh Worker for it, ends that Worker after 5 s
+// slop posts { id, code, reads, files }; the runner starts a fresh Worker for it, ends that Worker after 5 s
 // (which stops even an endless loop without freezing anything), and posts back
 // { id, out, pictures, error }. The Worker takes this page's policy, so it has no network either.
 //
@@ -60,9 +60,10 @@ function worker(svgProblem, MAX_OUT, MAX_PICTURES, MAX_PICTURE_BYTES, sandboxHel
     return line ? `${text} (line ${line})` : text;
   };
 
-  self.onmessage = async ({ data: { code, reads } }) => {
+  self.onmessage = async ({ data: { code, reads, files } }) => {
     self.onmessage = null;
     self.reads = Object.freeze(reads.map((r) => Object.freeze(r)));
+    self.files = Object.freeze(files.map((f) => Object.freeze(f)));
     let error = '';
     try {
       let value = (0, eval)(`${code}\n//# sourceURL=code.js`);
@@ -109,7 +110,12 @@ const cleanReads = (reads) => (Array.isArray(reads) ? reads : [])
   .filter((r) => typeof r?.tool === 'string' && typeof r.text === 'string')
   .map((r) => ({ tool: r.tool, args: parsed(r.args), text: r.text }));
 
-function run(id, code, reads) {
+// The text attached in the chat, as { name, text }. Anything else is left out.
+const cleanFiles = (files) => (Array.isArray(files) ? files : [])
+  .filter((f) => typeof f?.name === 'string' && typeof f.text === 'string')
+  .map((f) => ({ name: f.name, text: f.text }));
+
+function run(id, code, reads, files) {
   const w = new Worker(workerUrl);
   let out = '';
   let finished = false;
@@ -147,13 +153,13 @@ function run(id, code, reads) {
     e.preventDefault();
     finish({ out, pictures: [], error: `Error: ${e.message || 'the code could not run'}` });
   };
-  w.postMessage({ code: String(code), reads: cleanReads(reads) });
+  w.postMessage({ code: String(code), reads: cleanReads(reads), files: cleanFiles(files) });
 }
 
 // Jobs are taken only from the page that holds this frame.
 addEventListener('message', (e) => {
   if (e.source !== parent || typeof e.data?.id !== 'string' || typeof e.data.code !== 'string') return;
-  run(e.data.id, e.data.code, e.data.reads);
+  run(e.data.id, e.data.code, e.data.reads, e.data.files);
 });
 
 parent.postMessage({ ready: true }, '*');

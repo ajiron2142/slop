@@ -49,6 +49,9 @@ export function pasteNote(file) {
     `--- first lines ---\n${head}\n${tail ? `--- last lines ---\n${tail}\n` : ''}</pasted>`;
 }
 
+// A paste's whole text, or null once it's gone (after a reload).
+export const pasteText = (id) => (pastes.has(id) ? pastes.get(id).join('\n') : null);
+
 // Whether a chat has a paste the model can still look at (the tools are only sent then).
 export const hasPastes = (messages) => messages.some((m) => m.files?.some((f) => f.kind === 'paste' && pastes.has(f.id)));
 

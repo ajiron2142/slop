@@ -276,7 +276,7 @@ export async function startMock() {
 
       if (body.tools && text.startsWith('sandbox:')) { // sandbox: runs the code after "sandbox:", then says what came back
         const results = body.messages.filter((m) => m.role === 'tool');
-        if (!results.length) sse(res, { choices: [{ delta: { content: 'Let me work it out.', tool_calls: [{ index: 0, id: 's1', type: 'function', function: { name: 'run_js', arguments: JSON.stringify({ code: text.slice('sandbox:'.length) }) } }] } }] });
+        if (!results.length) sse(res, { choices: [{ delta: { content: 'Let me work it out.', tool_calls: [{ index: 0, id: 's1', type: 'function', function: { name: 'run_js', arguments: JSON.stringify({ code: text.slice('sandbox:'.length).split('\n\n<file name=')[0] }) } }] } }] });
         else sse(res, { choices: [{ delta: { content: `RESULT[${results[0].content}]` } }] });
         sse(res, { choices: [{ delta: {}, finish_reason: results.length ? 'stop' : 'tool_calls' }] });
         if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));

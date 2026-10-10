@@ -16,7 +16,7 @@ import { createPicker } from './components/picker.js';
 import { createSettings } from './components/settings.js';
 import { createMeter } from './components/meter.js';
 import { createPanel } from './components/panel.js';
-import { PASTE_TOOLS, hasPastes, isPasteTool, runPasteTool } from './paste.js'; // smart paste
+import { PASTE_TOOLS, hasPastes, isPasteTool, runPasteTool, pasteText } from './paste.js'; // smart paste
 import { miniSupported, createMini } from './mini.js'; // mini window
 import { createViewer } from './viewer.js'; // image viewer
 import { loadConfig, createAuth, renderSignIn } from './oidc.js'; // sign-in
@@ -445,12 +445,20 @@ async function runCode(chat, args, reads) {
   state.sandboxRunning = chat;
   drawSandbox();
   try {
-    return await runSandboxTool(args, reads);
+    return await runSandboxTool(args, { reads, files: attachedTexts(chat.messages) });
   } finally {
     state.sandboxRunning = null;
     drawSandbox();
   }
 }
+
+// sandbox: the text files and pastes attached in this chat, oldest first, for the code to use as is.
+// A paste is named "paste <id>", the id the model sees; one gone after a reload is left out.
+const attachedTexts = (messages) => messages.flatMap((m) => m.files ?? []).flatMap((f) => {
+  if (f.kind === 'text') return [{ name: f.name, text: f.text }];
+  if (f.kind === 'paste' && pasteText(f.id) != null) return [{ name: `paste ${f.id}`, text: pasteText(f.id) }]; // smart paste
+  return [];
+});
 
 function retry() {
   const chat = state.active;

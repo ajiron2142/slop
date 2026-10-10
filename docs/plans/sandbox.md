@@ -1,6 +1,6 @@
 # Plan: a bare-minimum JS sandbox (prototype)
 
-Status: built (the runner; the + menu, the chip, pictures and Copy reply; the helpers; `reads`).
+Status: built (the runner; the + menu, the chip, pictures and Copy reply; the helpers; `reads` and `files`).
 
 ## What it's for
 
@@ -157,6 +157,17 @@ now (thinking, reading a file, running code). Lighter than the reply tree; to be
   cap; big files are a separate question.
 - Why: the model no longer copies numbers from a result into its code, which costs tokens and invites
   mistakes. The sandbox still can't send anything anywhere.
+
+## `files`
+
+- The code also sees `files`: the text files and pastes attached in this chat, oldest first, as
+  `{ name, text }`. A paste is named `paste <id>`, the id the model is shown; one gone after a reload is
+  left out. It's frozen.
+- Small text files are already in the message, but a big paste isn't: the model only gets a preview and
+  searches the rest. With `files`, code can work on the whole paste exactly (count every timeout in a
+  1,200-line log) without the model reading it all.
+- main.js gathers them (a line marked "sandbox", and one marked "smart paste" for pastes); the sandbox
+  doesn't know where they came from.
 
 ## To remove it
 

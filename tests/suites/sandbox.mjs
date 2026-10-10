@@ -109,10 +109,14 @@ export default async function ({ browser, site, mock, check }) {
 
   // reads: what the other tools returned in this reply, given to the code as is.
   r = await p.evaluate(async () => (await import('./app/sandbox.js')).runJs('reads.map((x) => x.tool + " " + x.args.path + " " + x.text.length).join()',
-    [{ tool: 'read_file', args: '{"path":"proj/a.txt"}', text: 'hello' }, { tool: 'bad' }, { tool: 'list_files', args: 'not json', text: '' }]));
+    { reads: [{ tool: 'read_file', args: '{"path":"proj/a.txt"}', text: 'hello' }, { tool: 'bad' }, { tool: 'list_files', args: 'not json', text: '' }] }));
   check('the code gets what the other tools returned, with their arguments', r.out === 'read_file proj/a.txt 5,list_files undefined 0');
   check('and can\'t change it', (await run('"use strict"; reads.push(1)')).error.startsWith('TypeError'));
   check('with nothing read, reads is empty', (await run('reads.length')).out === '0');
+  r = await p.evaluate(async () => (await import('./app/sandbox.js')).runJs('files.map((f) => f.name + " " + f.text.length).join()',
+    { files: [{ name: 'notes.md', text: 'abc' }, { name: 7, text: 'x' }, { name: 'paste ab12', text: '' }] }));
+  check('the code gets the text attached in the chat', r.out === 'notes.md 3,paste ab12 0');
+  check('with nothing attached, files is empty', (await run('files.length')).out === '0');
 
   // A reply posted from anywhere but the iframe is ignored, even with the right id.
   await frame.evaluate(() => addEventListener('message', (e) => { window.lastJob = e.data.id; }));
@@ -234,6 +238,12 @@ async function inTheApp({ browser, site, mock, check }) {
   await idle(p);
   const sentTools = JSON.parse(mock.requests.at(-1).sent).filter((m) => m.role === 'tool').map((m) => m.content);
   check('code in a reply gets what the other tools returned before it, as is', sentTools[1] === `search_paste ERROR ${sentTools[0].split('\n').length}`);
+
+  // The whole paste and an attached text file, though the model was only shown a preview of the paste.
+  await p.setInputFiles('#file-input', [{ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('a ERROR\nb') }]);
+  await ask('sandbox:files.map((f) => f.name.split(" ")[0] + " " + f.text.split("\\n").length + " " + f.text.split("\\n").filter((l) => l.includes("ERROR")).length).join("; ")');
+  await idle(p);
+  check('code gets the chat\'s pastes whole and its text files', toolResult() === 'paste 900 3; notes.txt 2 1');
 
   await p.click(`${chip} .tray-remove`);
   check('the chip\'s × switches it off', await p.isHidden(chip) && (await p.getAttribute(row, 'aria-checked')) === 'false');
