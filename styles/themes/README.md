@@ -16,6 +16,21 @@ A theme is one self-contained CSS file in this folder. It sets the tokens from `
 
 It shows up in Settings → Theme automatically.
 
+### The smallest theme
+
+A theme only has to set what it changes; everything else comes from the Default theme. This is a complete theme:
+
+```css
+.theme-mytheme {
+  --bg: #fdf6e3;
+  --ink: #3b3a36;
+  --accent: #b58900;
+  --radius: 0; /* square corners everywhere */
+}
+```
+
+A dark theme should also set `--surface`, `--muted`, `--line`, `--code-bg` and the code colours, since Default's are light.
+
 ## Remove a theme
 
 Delete its file and its line in `index.html`.
@@ -39,6 +54,7 @@ Set on `.chat` in the base and overridden by each theme:
 | `--user-bg`, `--user-ink` | Your message bubble |
 | `--bot-bg`, `--bot-ink` | Reply bubble |
 | `--code-bg` | Code background |
+| `--add`, `--del` | Green and red for what worked and what failed: errors, failed steps, added and removed lines |
 | `--code-keyword`, `--code-string`, `--code-number`, `--code-title`, `--code-attr`, `--code-comment` | Syntax colours in code blocks. Defaults to GitHub's light palette; each theme sets its own in one line at the end of its file, and a dark theme must. Optional: `--code-addition` / `--code-deletion` for diffs (default to the string and keyword colours) |
 | `--font-body`, `--font-display`, `--font-meta`, `--font-code` | Fonts for text, titles, labels, code |
 | `--text`, `--leading` | Text size and line height |
@@ -47,7 +63,8 @@ Set on `.chat` in the base and overridden by each theme:
 | `--pad-top` | Space above the first message (code headers stick at the very top because of it) |
 | `--measure` | Max bubble width |
 | `--user-align` | Where your bubbles sit (`flex-end`, `stretch`, `center`) |
-| `--radius` | Corners on inputs and buttons |
+| `--radius` | Corners everywhere: 0 is square, larger is rounder |
+| `--radius-sm`, `--radius-md`, `--radius-lg` | Optional. Worked out from `--radius` (at most 6, 10 and 14px) for buttons and rows, blocks and cards, dialogs and popovers; set one to change only that size |
 
 ## Themes
 

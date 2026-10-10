@@ -12,10 +12,6 @@
 .msg { box-sizing: border-box; min-width: 0; max-width: var(--measure); align-self: flex-start; }
 .msg.user { align-self: var(--user-align); }
 .msg:has(pre) { width: 100%; max-width: 100%; }
-/* A reply always takes the full column, so Copy sits at the same right edge under every reply;
-   its text keeps the reading width unless it holds code. */
-.msg.assistant { width: 100%; max-width: 100%; }
-.msg.assistant:not(:has(pre)) .body { max-width: var(--measure); }
 .body { min-width: 0; }
 /* Code never widens the page: long lines scroll inside the block, even in a list, flex row or grid. */
 .body .code { min-width: 0; max-width: 100%; }
@@ -35,8 +31,6 @@
   background: var(--bot-bg);
   color: var(--bot-ink);
 }
-/* A reply has no bubble, so its text starts where its label, steps and notes do. */
-.assistant .body { padding-left: 0; padding-right: 0; }
 .user .body { background: var(--user-bg); color: var(--user-ink); }
 
 .body > :first-child { margin-top: 0; }
@@ -113,7 +107,6 @@
   font-size: 12px;
   color: var(--muted);
   background: color-mix(in srgb, var(--ink) 7%, var(--bg));
-  border-bottom: 1px solid var(--line);
 }
 .code .copy {
   display: inline-flex;
