@@ -272,7 +272,8 @@ async function complete(chat) {
   const folder = chat.folder;
   const editable = Boolean(folder && chat.canEdit); // write mode
   let tools;
-  const history = withoutErrors(chat.messages).map((m) => ({ role: m.role, content: toApiContent(m) }));
+  // A reply with no text (it only ran tools, or the model finished empty) has nothing to send back; some providers refuse one.
+  const history = withoutErrors(chat.messages).filter((m) => m.role !== 'assistant' || m.content).map((m) => ({ role: m.role, content: toApiContent(m) }));
 
   const msg = { role: 'assistant', content: '', ts: Date.now() };
   chat.messages.push(msg);

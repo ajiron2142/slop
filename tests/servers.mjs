@@ -131,6 +131,7 @@ export async function startMock() {
         model: body.model,
         text,
         hasTools: Boolean(body.tools),
+        emptyAssistant: body.messages.some((m) => m.role === 'assistant' && !m.content && !m.tool_calls),
         maxTokens: body.max_tokens,
         toolNames: (body.tools ?? []).map((t) => t.function.name),
         sent: JSON.stringify(body.messages),

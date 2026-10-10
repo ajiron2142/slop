@@ -61,6 +61,9 @@ export default async function ({ browser, site, mock, check }) {
   check('a reply with only reasoning says so under it', (await p.textContent('.msg.assistant:last-of-type .reply-note')) === 'No answer: the model finished without writing anything (it sent only its reasoning, which isn\'t shown).');
   check('and still has its stats, but nothing to copy', await p.isVisible('.msg.assistant:last-of-type .stats-btn') && !(await p.$('.msg.assistant:last-of-type .copy-reply')));
   await send(p, 'blank');
+  await send(p, 'echo after that');
+  check('an empty reply isn\'t sent back to the model (some providers refuse it)', mock.requests.at(-1).text.startsWith('echo after') && !mock.requests.at(-1).emptyAssistant);
+  await send(p, 'blank');
   check('a reply with nothing at all says so too', (await p.textContent('.msg.assistant:last-of-type .reply-note')) === 'No answer: the model finished without writing anything.');
 
   await pickModel(p, 'gemini-pro');
