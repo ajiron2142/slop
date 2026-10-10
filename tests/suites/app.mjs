@@ -175,6 +175,22 @@ export default async function ({ browser, site, mock, check }) {
   await send(p, 'echo a second message');
   const bars = await p.$$eval('.msg.user .body', (bodies) => bodies.map((b) => getComputedStyle(b).borderRightColor));
   check('in Monokai every message of yours has the blue bar', bars.length > 1 && bars.every((c) => c === 'rgb(97, 175, 239)'));
+
+  // In every theme the empty message box is already the height typing gives it, centred with Send.
+  for (const theme of ['linen', 'bauhaus', 'default', 'mono']) {
+    await p.click('#settings-btn');
+    await p.click('#theme-picker .model');
+    await p.keyboard.type(theme);
+    await p.keyboard.press('Enter');
+    await p.click('#close-settings');
+    await p.waitForTimeout(200);
+    const fresh = await p.$eval('#input', (t) => t.getBoundingClientRect().height);
+    await p.fill('#input', 'a');
+    await p.fill('#input', '');
+    const typed = await p.$eval('#input', (t) => t.getBoundingClientRect().height);
+    const mid = (sel) => p.$eval(sel, (e) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; });
+    check(`${theme === 'mono' ? 'monokai' : theme}: the empty message box fits before typing, centred with Send`, fresh === typed && Math.abs((await mid('#input')) - (await mid('#send-btn'))) <= 2);
+  }
   await p.click('#collapse-btn');
   await p.waitForTimeout(300);
   await p.reload();

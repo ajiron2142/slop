@@ -218,6 +218,7 @@ function render(options) {
     model: state.settings.model,
   });
   composer.setBusy(Boolean(state.streaming));
+  composer.fit();
   const folder = state.active ? state.active.folder : state.draftFolder;
   composer.setFolder(folder?.name, folder && gitStatusOf(folder)); // git
   composer.setGitlab(gitlab.connected() ? (state.active ? state.active.meta.gitlab : state.draftGitlab) : null); // gitlab

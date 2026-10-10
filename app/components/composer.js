@@ -29,10 +29,12 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   let sandbox = null; // sandbox: null (off), 'on' or 'running'
   let busy = false;
 
+  // The box is as tall as its text (up to 200px), plus its own border, whatever the theme sets.
   function autosize() {
     input.style.height = 'auto';
-    input.style.height = `${Math.min(input.scrollHeight + 2, 200)}px`;
+    input.style.height = `${Math.min(input.scrollHeight + input.offsetHeight - input.clientHeight, 200)}px`;
   }
+  input.ownerDocument.fonts?.ready.then(autosize); // a font that loads late changes the line height
 
   function removeButton(label, onClick) {
     const remove = el('button', 'tray-remove', '×');
@@ -238,6 +240,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       send.setAttribute('aria-label', busy ? 'Stop' : 'Send');
     },
     focus: () => input.focus(),
+    fit: autosize, // after a theme change
     setGitlab(project) { gitlabProject = project || null; renderTray(); labelAttach(); }, // gitlab
     setSandbox(value) { // sandbox
       if (value === sandbox) return;
