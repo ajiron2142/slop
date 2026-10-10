@@ -52,6 +52,10 @@
 .send:active { transform: scale(0.97); }
 
 .composer .attach { width: 44px; height: 44px; }
+/* While its menu is open, the + turns into an ×. */
+.composer .attach .icon { transition: transform 0.15s; }
+.composer .attach[aria-expanded="true"] .icon { transform: rotate(45deg); }
+@media (prefers-reduced-motion: reduce) { .composer .attach .icon { transition: none; } }
 .tray { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px var(--edge); }
 .tray-chip {
   display: inline-flex;

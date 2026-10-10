@@ -43,8 +43,12 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('#new-chat');
   await p.click('#attach-btn');
   check('+ opens the menu', await p.isVisible('#attach-menu'));
+  await p.waitForTimeout(200);
+  check('and turns into an × while it\'s open', await p.$eval('#attach-btn .icon', (i) => getComputedStyle(i).transform === 'matrix(0.707107, 0.707107, -0.707107, 0.707107, 0, 0)'));
   await p.keyboard.press('Escape');
   check('Escape closes the menu', !(await p.isVisible('#attach-menu')));
+  await p.waitForTimeout(200);
+  check('and the × turns back into a +', await p.$eval('#attach-btn .icon', (i) => getComputedStyle(i).transform === 'none'));
   await p.click('#attach-btn');
   await p.mouse.click(700, 300);
   check('clicking elsewhere closes the menu', !(await p.isVisible('#attach-menu')));
