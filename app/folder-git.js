@@ -5,7 +5,7 @@
 //
 // To remove it: delete this file, styles/components/folder-git.css and tests/suites/git.mjs,
 // their lines in index.html and tests/run.mjs, and the lines marked "git" in main.js and
-// composer.js. (diff.js stays: write mode uses it too.)
+// composer.js. Only git uses diff.js, so it can go too.
 
 import { fromModel, forModel } from './folder.js';
 import { diffLines, unifiedText } from './diff.js';

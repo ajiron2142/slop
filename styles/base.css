@@ -27,6 +27,8 @@
   --code-title: #8250df;
   --code-attr: #953800;
   --code-comment: #6e7781;
+  --add: #2e9a4f; /* added and removed lines, new and deleted files */
+  --del: #c4302b;
 
   --font-body: system-ui, -apple-system, sans-serif;
   --font-display: var(--font-body);

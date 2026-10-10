@@ -74,8 +74,9 @@ Done.`;
 //   "cuttool …"  (with tools) starts a tool call and is cut off at the length limit
 //   "paste …"    (with paste tools) searches the pasted text for ERROR, reads lines 600–602, reports both;
 //                with "think" in it, also sends reasoning before the search and before the answer
-//   "edit …"     (with write tools) edits src/app.js and creates notes/new.txt in one round, then
-//                tries an edit that can't match, then reports the three results
+//   "patch …"    replies with a git patch in a diff block (two edits, a new file, a deleted file);
+//                "patchbad …" with a diff block that isn't a valid patch, "patchmarker …" with one that
+//                contains the end-marker line
 //   "git …"      (with git tools) reads the log and the uncommitted changes, then reports both
 //   "gitlab …"   (with GitLab tools) uses every GitLab tool once (and one path without the project), then reports
 //   "badjson …"  (with tools) a tool call whose arguments are cut off, then reports the result it got;
@@ -83,6 +84,44 @@ Done.`;
 //   "slowgitlab …" (with GitLab tools) a GitLab search that never answers, to check Stop
 //   "thinkonly …" sends only reasoning, then finishes; "blank …" finishes with nothing at all
 //   anything else: the long reply
+// The patch the "patch …" replies carry: as `git diff` prints it, against PATCH_BASE below.
+export const PATCH_BASE = {
+  'config/route.yaml': 'service: route\nroute:\n  timeout: 30s\n',
+  'src/client.js': 'export const TIMEOUT_MS = 30_000;\nexport function post(url) {\n  if (!url) throw new Error("no url!");\n\treturn fetch(url);\n}\n',
+  'docs/old.md': '# Old\nGone soon.\n',
+};
+export const PATCH = `diff --git a/config/route.yaml b/config/route.yaml
+--- a/config/route.yaml
++++ b/config/route.yaml
+@@ -1,3 +1,3 @@
+ service: route
+ route:
+-  timeout: 30s
++  timeout: 60s
+diff --git a/src/client.js b/src/client.js
+--- a/src/client.js
++++ b/src/client.js
+@@ -1,2 +1,3 @@
+-export const TIMEOUT_MS = 30_000;
++import { withRetry } from "./retry.js";
++export const TIMEOUT_MS = 60_000;
+ export function post(url) {
+diff --git a/src/retry.js b/src/retry.js
+new file mode 100644
+--- /dev/null
++++ b/src/retry.js
+@@ -0,0 +1,2 @@
++// Tries again once; it's \`$HOME\`-safe and !important.
++export const withRetry = (fn) => fn().catch(() => fn());
+diff --git a/docs/old.md b/docs/old.md
+deleted file mode 100644
+--- a/docs/old.md
++++ /dev/null
+@@ -1,2 +0,0 @@
+-# Old
+-Gone soon.
+`;
+
 export async function startMock() {
   const requests = []; // every chat request received, newest last
   const auths = []; // the Authorization header of every request, newest last
@@ -171,24 +210,6 @@ export async function startMock() {
         return res.end('data: [DONE]\n\n');
       }
 
-      if (body.tools && text.startsWith('edit')) {
-        const results = body.messages.filter((m) => m.role === 'tool');
-        const call = (id, name, args) => ({ index: Number(id.slice(1)), id, type: 'function', function: { name, arguments: JSON.stringify(args) } });
-        if (results.length === 0) {
-          sse(res, { choices: [{ delta: { content: 'Making two changes.', tool_calls: [
-            call('e0', 'edit_file', { path: 'wproject/src/app.js', old_text: '"hi"', new_text: '"hello"' }),
-            call('e1', 'write_file', { path: 'wproject/notes/new.txt', content: 'fresh\n' }),
-          ] } }] });
-        } else if (results.length === 2) {
-          sse(res, { choices: [{ delta: { tool_calls: [call('e0', 'edit_file', { path: 'wproject/src/app.js', old_text: 'nope', new_text: 'x' })] } }] });
-        } else {
-          sse(res, { choices: [{ delta: { content: `EDIT[${results[0].content}] CREATE[${results[1].content}] BAD[${results[2].content}]` } }] });
-        }
-        sse(res, { choices: [{ delta: {}, finish_reason: results.length < 3 ? 'tool_calls' : 'stop' }] });
-        if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(100)));
-        return res.end('data: [DONE]\n\n');
-      }
-
       if (body.tools && text.startsWith('badjson')) { // a tool call cut off mid-arguments, then a reply saying what came back
         const results = body.messages.filter((m) => m.role === 'tool');
         if (!results.length) sse(res, { choices: [{ delta: { tool_calls: [{ index: 0, id: 'b1', type: 'function', function: { name: 'search_paste', arguments: '{"id": "x", "query": "ERR' } }] } }] });
@@ -260,6 +281,15 @@ export async function startMock() {
         }
         sse(res, { choices: [{ delta: {}, finish_reason: results.length < 2 ? 'tool_calls' : 'stop' }] });
         if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(200)));
+        return res.end('data: [DONE]\n\n');
+      }
+
+      if (text.startsWith('patch')) { // a reply carrying a diff block, streamed in pieces like any reply
+        const block = text.startsWith('patchbad') ? PATCH.replace('@@ -1,3 +1,3 @@', 'this line is not part of a patch') : text.startsWith('patchmarker') ? PATCH.replace(' service: route', ' service: route\nEND_OF_PATCH') : PATCH;
+        const reply = 'Here is the change:\n\n```diff\n' + block + '```\n\nPaste it in your repo.';
+        for (let i = 0; i < reply.length; i += 40) sse(res, { choices: [{ delta: { content: reply.slice(i, i + 40) } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] });
+        if (body.stream_options?.include_usage) sse(res, usage(body, reply));
         return res.end('data: [DONE]\n\n');
       }
 

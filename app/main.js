@@ -23,7 +23,7 @@ import { loadConfig, createAuth, renderSignIn } from './oidc.js'; // sign-in
 import { autoTitle } from './autotitle.js'; // chat titles
 import { createGitlab, GITLAB_TOOLS, gitlabPrompt, isGitlabTool } from './gitlab.js'; // gitlab
 import { createActivity } from './activity.js'; // activity
-import { WRITE_TOOLS, writePrompt, pickEditableFolder, createWriter } from './folder-write.js'; // write mode
+import { patchPrompt, patchBlock } from './patch.js'; // patch
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 
 const state = {
@@ -34,7 +34,6 @@ const state = {
   chats: [], // chat metadata, newest first (filtered by search)
   active: null, // { meta, messages, folder }, or null for a new unsaved chat
   draftFolder: null, // folder connected before a new chat's first message
-  draftEditable: false, // write mode: that folder may be edited (never saved; reloads come back read-only)
   draftGitlab: null, // gitlab: project connected before a new chat's first message
   streaming: null, // { chat, msg, controller }
   auth: null, // sign-in, when config.json sets it up
@@ -80,7 +79,6 @@ const sidebar = createSidebar({
 });
 
 const panel = createPanel({ app: $('app'), root: $('panel') });
-const writer = createWriter({ onChange: () => render() }); // write mode
 
 // gitlab: its part of Settings, the "Connect GitLab project" menu item and the project picker.
 const gitlab = createGitlab({
@@ -95,8 +93,8 @@ const gitlab = createGitlab({
 const activity = createActivity(); // activity
 const messages = createMessages($('messages'), {
   onRetry: retry,
-  extra: (m) => writer.decoration(m), // write mode: the line under a reply
   activity: (m) => activity.node(state.active?.meta.id, m), // activity
+  codeBlock: patchBlock, // patch
 });
 
 const meter = createMeter({ row: $('meter-row'), button: $('meter-btn'), pop: $('meter-pop') });
@@ -122,7 +120,6 @@ const composer = createComposer({
   },
   onSend: send,
   onStop: () => state.streaming?.controller.abort(),
-  onReplyNote: (text) => writer.instead(text), // write mode: typed instead of Skip
   notify,
 });
 
@@ -214,7 +211,7 @@ function render(options) {
   });
   composer.setBusy(Boolean(state.streaming));
   const folder = state.active ? state.active.folder : state.draftFolder;
-  composer.setFolder(folder?.name, state.active ? state.active.canEdit : state.draftEditable, folder && gitStatusOf(folder)); // git
+  composer.setFolder(folder?.name, folder && gitStatusOf(folder)); // git
   composer.setGitlab(gitlab.connected() ? (state.active ? state.active.meta.gitlab : state.draftGitlab) : null); // gitlab
 }
 
@@ -259,10 +256,9 @@ function send({ text, files }) {
   if (!state.active) {
     const now = Date.now();
     const title = (text || files[0].name).replace(/\s+/g, ' ').slice(0, 40);
-    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now, ...(state.draftGitlab && { gitlab: state.draftGitlab }) }, messages: [], folder: state.draftFolder, canEdit: state.draftEditable }; // gitlab
+    state.active = { meta: { id: crypto.randomUUID(), title, created: now, updated: now, ...(state.draftGitlab && { gitlab: state.draftGitlab }) }, messages: [], folder: state.draftFolder }; // gitlab
     if (state.draftFolder) store.saveFolder(state.active.meta.id, state.draftFolder);
     state.draftFolder = null;
-    state.draftEditable = false;
     state.draftGitlab = null; // gitlab
   }
   notify('');
@@ -291,7 +287,6 @@ function unreadable(call) {
 async function complete(chat) {
   const s = state.settings;
   const folder = chat.folder;
-  const editable = Boolean(folder && chat.canEdit); // write mode
   let tools;
   // A reply with no text (it only ran tools, or the model finished empty) has nothing to send back; some providers refuse one.
   const history = withoutErrors(chat.messages).filter((m) => m.role !== 'assistant' || m.content).map((m) => ({ role: m.role, content: toApiContent(m) }));
@@ -300,7 +295,6 @@ async function complete(chat) {
   chat.messages.push(msg);
   const controller = new AbortController();
   state.streaming = { chat, msg, controller };
-  writer.startReply(msg); // write mode
   const act = activity.start(chat.meta.id, msg, s.model); // activity
   render({ toBottom: true });
 
@@ -318,10 +312,10 @@ async function complete(chat) {
     }
     const repo = Boolean(folder) && await isRepo(folder); // git
     const project = gitlab.connected() ? chat.meta.gitlab : null; // gitlab
-    // Tools only for what this chat has: a folder, a git repo, edit access, a paste still in memory.
-    const offered = [...(folder ? FOLDER_TOOLS : []), ...(repo ? GIT_TOOLS : []), ...(project ? GITLAB_TOOLS : []), ...(editable ? WRITE_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : [])]; // git, write mode, smart paste
+    // Tools only for what this chat has: a folder, a git repo, a GitLab project, a paste still in memory.
+    const offered = [...(folder ? FOLDER_TOOLS : []), ...(repo ? GIT_TOOLS : []), ...(project ? GITLAB_TOOLS : []), ...(hasPastes(chat.messages) ? PASTE_TOOLS : [])]; // git, gitlab, smart paste
     tools = offered.length ? offered : undefined;
-    const system = [today(), s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, project && gitlabPrompt(project), editable && writePrompt].filter(Boolean).join('\n\n'); // git, gitlab, write mode
+    const system = [today(), s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, project && gitlabPrompt(project), (folder || project) && patchPrompt([folder?.name, project?.path].filter(Boolean))].filter(Boolean).join('\n\n'); // git, gitlab, patch
     history.unshift({ role: 'system', content: system });
     // With a folder connected the model may ask to read files first: run those and ask again.
     for (let round = 1; ; round++) {
@@ -362,8 +356,7 @@ async function complete(chat) {
       for (const call of toolCalls) {
         const name = call.function.name;
         const stepDone = act.tool(call); // activity
-        const { label, result } = unreadable(call) ?? (writer.handles(name) ? await writer.run(folder, call, controller.signal) // write mode
-          : isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
+        const { label, result } = unreadable(call) ?? (isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
           : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
           : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments, controller.signal) // gitlab
           : await runTool(folder, name, call.function.arguments));
@@ -388,7 +381,6 @@ async function complete(chat) {
   act.end(finish); // activity
   cancelAnimationFrame(frame);
   clearTimeout(frame);
-  writer.endReply(); // write mode
   if (folder) refreshGit(folder).then(() => render()); // git: commits or a fetch may have happened meanwhile
 
   msg.content = msg.content.trimEnd();
@@ -445,7 +437,6 @@ function retry() {
 function newChat() {
   state.active = null;
   state.draftFolder = null;
-  state.draftEditable = false;
   state.draftGitlab = null; // gitlab
   panel.close();
   sidebar.close();
@@ -489,26 +480,24 @@ async function removeChat(id) {
   render();
 }
 
-// ---- connected folder (per chat; read-only unless connected for editing) ----
+// ---- connected folder (per chat; read-only) ----
 
-async function connectFolder(editable = false) {
+async function connectFolder() {
   try {
-    await setFolder(await (editable ? pickEditableFolder() : pickFolder()), editable); // write mode
+    await setFolder(await pickFolder());
   } catch (e) {
     if (e.name !== 'AbortError') notify(`Couldn't open the folder: ${e.message}`);
   }
 }
 
-async function setFolder(handle, editable = false) {
+async function setFolder(handle) {
   if (state.active) {
     state.active.folder = handle;
-    state.active.canEdit = editable;
     await store.saveFolder(state.active.meta.id, handle);
   } else {
     state.draftFolder = handle;
-    state.draftEditable = editable;
   }
-  composer.setFolder(handle?.name, editable);
+  composer.setFolder(handle?.name);
   composer.focus();
   if (handle) refreshGit(handle).then(() => render()); // git
 }

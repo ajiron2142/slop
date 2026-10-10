@@ -79,9 +79,9 @@ app/                  behaviour
   api.js              LiteLLM calls (/v1/models, streaming /v1/chat/completions)
   storage.js          settings and chats in IndexedDB, search, export/import
   folder.js           read-only folder tools for the model (list_files, search_files, read_file)
-  folder-write.js     optional write mode: edit_file / write_file, review in the reply, Undo (removable add-on)
+  patch.js            git patches in replies: review per file, Copy for terminal (removable add-on)
   folder-git.js       git, read-only: git_log / git_diff and the branch on the folder chip; reads .git itself (removable add-on)
-  diff.js             line diffs, shared by write mode and git
+  diff.js             line diffs, for git
   paste.js            smart paste: long pastes stay in the tab and the model searches them (removable add-on)
   lines.js            line search and numbered ranges, shared by the folder tools and smart paste
   ignore.js           which files to leave out, read from the folder's .gitignore files (folder tools and git)
@@ -114,7 +114,7 @@ vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
 tests/                browser tests; not part of the deployed app (see tests/README.md)
 ```
 
-**Rules that keep it small:** each UI piece is a `.js` + `.css` pair with the same name; components use tokens, never fixed colours; themes only set tokens and overrides, never layout; adding anything means adding a file and one line. Features that come and go (like write mode) live in their own files and plug in through small hooks, so removing one never touches the rest. Nothing UI-related is remembered unless it has to be: review state and Undo exist only while you need them.
+**Rules that keep it small:** each UI piece is a `.js` + `.css` pair with the same name; components use tokens, never fixed colours; themes only set tokens and overrides, never layout; adding anything means adding a file and one line. Features that come and go (like patches or GitLab) live in their own files and plug in through small hooks, so removing one never touches the rest. Nothing UI-related is remembered unless it has to be: pastes and a reply's activity exist only in this tab.
 
 ## How it works
 
@@ -143,8 +143,6 @@ tests/                browser tests; not part of the deployed app (see tests/REA
 | `read_file` | Reads a file, or a range of its lines | a folder is connected |
 | `git_log` | Lists commits, by branch, range, file or text | the folder is a git repository |
 | `git_diff` | Shows uncommitted changes, one commit, or two compared | the folder is a git repository |
-| `edit_file` | Replaces one exact piece of a file, after you approve it | the folder was connected with **can edit** |
-| `write_file` | Creates a file (or rewrites a small one), after you approve it | the folder was connected with **can edit** |
 | `gitlab_list` | Lists files in the chat's GitLab project or one of its folders | the chat has a GitLab project connected |
 | `gitlab_search` | Searches the project's files; matching lines with line numbers | the chat has a GitLab project connected |
 | `gitlab_read` | Reads a file from the project, or a range of its lines | the chat has a GitLab project connected |
@@ -185,7 +183,7 @@ Or with Node.js: `npm ci`, `npx playwright install chromium`, then `npm test`. P
 - Attachments are read in the browser: images up to 10 MB, text files up to 512 KB. Imported chat files are validated before saving.
 - A connected folder is read-only: the browser grants read access only, and nothing in the app can write. The model can only reach files inside the folder you picked, and the browser asks for permission again after a reload. Every path the model sees or gives starts with the folder's name (`test/src/app.js` in a folder called `test`), so it's always clear where a file is; a path without it is refused. Browsers never tell a page where the folder is on your disk, so that's as full as a path gets. Files the model reads are sent to your LiteLLM URL like any message. What listing and searching leave out comes only from the folder's own `.gitignore` files (each one covers its folder and below, as in git), plus `.git` itself; a folder without one is read in full, and a folder you name explicitly is always listed. Searches also skip lockfiles, minified files and binaries, and stop at 100 matching lines. Long files come back 1,000 lines at a time, and files over 4 MB aren't read. Disconnect with the × on the folder chip.
 - **Smart paste keeps long pastes in this tab only.** A paste over 500 lines (or about 40,000 characters) becomes a chip instead of text. The model gets the first and last 10 lines and two tools, `search_paste` and `read_paste`, to look at the rest, so it only sends what it needs. The text is never saved: a reload forgets it, and the chat keeps just the chip.
-- **Write mode is opt-in per chat.** Only **Connect folder (can edit)** grants write access (the browser asks), and the chip says *can edit*. Every change shows in the reply as a card (file, lines added and removed, status) that opens into its diff, and is written only after you click Apply (or Apply all remaining, for the rest of that reply). If you'd rather have something else, type it and press Enter instead of Skip: the change is skipped and the model gets your words. The model can create and edit files but never delete or rename. Edit access lasts until you reload: after that the chat's folder is read-only again. **Undo** (under the reply) puts back every file the latest reply changed and removes files it created; it asks first if you've edited one of them since. Undo is only kept until your next message, so for anything older use Git.
+- **slop never writes files; changes come as patches you apply.** With a folder or GitLab project connected, the model is asked to answer change requests with one git patch. A valid patch shows as a block to review: the totals, then one row per file (new and deleted files marked) that opens into its diff. **Copy for terminal** copies one readable command, `git apply --recount --stat --summary --apply` with the patch between `<<'END_OF_PATCH'` and `END_OF_PATCH`. Paste it in your repo folder (any folder works; git just has to be installed) and press Enter: git applies all of it or nothing, and lists what changed. The quoted marker makes the shell treat the patch as plain data, so nothing inside it runs. A block counts as a patch only if every line is one git patches are made of and no line is the marker itself; otherwise it stays a plain code block with a note naming the line. To undo, `git checkout -- .` (and delete any new files).
 - **Git is read-only.** When the connected folder is a git repository, the model also gets `git_log` (commits, filtered by range, path or text) and `git_diff` (uncommitted changes, one commit, or two compared). They read the `.git` folder directly in the browser, with no library and no network: nothing can be committed, fetched or pushed. The folder chip shows the branch and how many commits are waiting to push (⇡) or pull (⇣) as of your last fetch, refreshed when you connect, open the chat and after each reply. New, untracked files are listed unless a `.gitignore` or `.git/info/exclude` leaves them out.
 
 ## Features
@@ -194,7 +192,7 @@ Or with Node.js: `npm ci`, `npx playwright install chromium`, then `npm test`. P
 - Attach images (sent to vision models) and text files (inlined) with the button, paste or drag-and-drop; click an image to see it large
 - Connect a folder to a chat, read-only, so the model can look through it (Chrome and Edge, models with tool support)
 - Git, read-only: when the folder is a repo, the model can read its history and diffs, and the chip shows the branch (e.g. `slop · main ⇡2`)
-- Optional write mode: the model proposes file edits, you review each diff right in the reply, and can undo the latest reply
+- Changes as git patches: review each file's diff in the reply, then one Copy for terminal and one paste applies them
 - Copy any reply in one click: pastes formatted into Teams, Outlook and Word, and as markdown everywhere else
 - Mini window (Chrome and Edge): pop the chat out into a small floating window that stays on top of your terminal; close it to bring the chat back
 - Smart paste: paste a long log or command output and the model searches it instead of reading it all, so follow-up questions stay cheap

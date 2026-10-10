@@ -46,4 +46,5 @@
 .theme-monokai .composer textarea:focus { border-color: var(--accent); }
 
 /* Code colours: One Monokai's. */
+.theme-monokai { --add: #98c379; --del: #e06c75; }
 .theme-monokai { --code-keyword: #e06c75; --code-string: #e5c07b; --code-number: #c678dd; --code-title: #98c379; --code-attr: #56b6c2; --code-comment: #676f7d; }

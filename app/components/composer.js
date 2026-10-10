@@ -20,10 +20,9 @@ const readAs = (file, how) => new Promise((resolve, reject) => {
 // The message box: Enter to send, Shift+Enter for a new line, Send/Stop button,
 // and attachments from the button, paste or drag-and-drop (all the same path).
 // Where folders are supported, the attach button opens a menu: Attach files or Connect folder.
-export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onConnectGitlab, onDisconnectGitlab, onPickGitlabBranch, onSend, onStop, onReplyNote = () => false, notify }) {
+export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onConnectGitlab, onDisconnectGitlab, onPickGitlabBranch, onSend, onStop, notify }) {
   let files = [];
   let folderName = null;
-  let folderEditable = false; // write mode
   let folderGit = null; // git: { branch, ahead, behind }
   let gitlabProject = null; // gitlab: { path, ref }
   let busy = false;
@@ -43,11 +42,10 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
 
   function folderChip() {
     const chip = el('span', 'tray-chip folder');
-    chip.title = folderEditable ? 'Connected folder (can edit, with your approval)' : 'Connected folder (read-only)';
+    chip.title = 'Connected folder (read-only)';
     chip.innerHTML = folderGit ? BRANCH_ICON : FOLDER_ICON; // git
     chip.append(el('span', 'tray-name', folderName));
     if (folderGit) gitParts(chip); // git
-    if (folderEditable) { chip.classList.add('can-edit'); chip.append(el('span', 'folder-mode', 'can edit')); } // write mode
     chip.append(removeButton(`Disconnect folder ${folderName}`, onDisconnectFolder));
     return chip;
   }
@@ -137,11 +135,6 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   input.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
     e.preventDefault();
-    // write mode: while a reply waits for you, Enter sends what you typed to it instead of stopping it.
-    if (busy && input.value.trim()) {
-      if (onReplyNote(input.value.trim())) { input.value = ''; autosize(); }
-      return;
-    }
     submit();
   });
   input.addEventListener('paste', (e) => {
@@ -204,7 +197,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       closeMenu();
       if (item.dataset.action === 'files') fileInput.click();
       else if (item.dataset.action === 'gitlab') onConnectGitlab?.(); // gitlab
-      else onConnectFolder(item.dataset.action === 'folder-edit');
+      else onConnectFolder();
     });
     menu.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { closeMenu(); attach.focus(); }
@@ -234,9 +227,8 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     },
     focus: () => input.focus(),
     setGitlab(project) { gitlabProject = project || null; renderTray(); labelAttach(); }, // gitlab
-    setFolder(name, editable = false, git = null) {
+    setFolder(name, git = null) {
       folderName = name || null;
-      folderEditable = Boolean(name && editable);
       folderGit = name ? git : null; // git
       renderTray();
     },

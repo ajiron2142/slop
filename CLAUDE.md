@@ -6,7 +6,8 @@ A lean, static chat UI for a LiteLLM proxy. These are the musts. Read them befor
 
 - **Small and simple.** Add a feature only if it brings a lot of value. Prefer removing to adding.
 - **No backend.** Everything runs in the browser from static files (nginx serves them). No server code, no storage service.
-- **Ephemeral.** Keep only what must be kept (chats, settings). Review state, pastes, edit access and Undo live in memory and are gone after a reload.
+- **Ephemeral.** Keep only what must be kept (chats, settings). Pastes and a reply's activity live in memory and are gone after a reload.
+- **Read-only, everywhere.** slop never writes files or changes anything elsewhere. Changes are suggested as git patches the user reviews and applies themselves.
 - **Connections are optional and self-service.** The core app works on its own with just a LiteLLM URL and key. Anything that connects elsewhere (sign-in, GitLab, …) is opt-in, set up by each person for themselves, read-only where possible, and needs no one to manage it.
 - **Ask before anything heavy or anything that changes how the app works.** Show a mockup (an artifact that also works on a phone, plus a desktop screenshot) before design changes.
 - **No emojis in the UI.** Text symbols like ⓘ ⇡ ⇣ ↶ are fine.
@@ -18,7 +19,7 @@ A lean, static chat UI for a LiteLLM proxy. These are the musts. Read them befor
   - The context limit comes only from LiteLLM's `max_input_tokens`; prices only from `input_cost_per_token` and `output_cost_per_token` (0 is free). A missing value is shown as unknown.
   - What the folder tools leave out comes only from the folder's `.gitignore` files; no built-in skip lists.
   - Thresholds are fixed numbers (a paste over 500 lines or 40,000 characters becomes a chip).
-- **Modular, like Legos.** Each optional feature lives in its own files and plugs in through small hooks marked with a comment (`// write mode`, `// git`, `// smart paste`, `// mini window`, `// image viewer`, `// sign-in`, `// chat titles`, `// gitlab`, `// activity`). Its header says exactly how to remove it. Removing one must never touch the others.
+- **Modular, like Legos.** Each optional feature lives in its own files and plugs in through small hooks marked with a comment (`// git`, `// patch`, `// smart paste`, `// mini window`, `// image viewer`, `// sign-in`, `// chat titles`, `// gitlab`, `// activity`). Its header says exactly how to remove it. Removing one must never touch the others.
 - **No dependencies.** Plain ES modules, no build step. The only libraries are vendored in `vendor/` (see its README), and new ones need a very good reason.
 - **Components** are a `.js` + `.css` pair with the same name. Components use theme tokens, never fixed colours; themes only set tokens and overrides, never layout.
 - **Match the surrounding code**: its comment density, naming and idiom.

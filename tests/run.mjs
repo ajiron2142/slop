@@ -10,7 +10,6 @@ import app from './suites/app.mjs';
 import folder from './suites/folder.mjs';
 import stats from './suites/stats.mjs';
 import speed from './suites/speed.mjs';
-import write from './suites/write.mjs';
 import paste from './suites/paste.mjs';
 import mini from './suites/mini.mjs';
 import viewer from './suites/viewer.mjs';
@@ -19,8 +18,9 @@ import titles from './suites/titles.mjs';
 import gitlab from './suites/gitlab.mjs';
 import git from './suites/git.mjs';
 import activity from './suites/activity.mjs';
+import patch from './suites/patch.mjs';
 
-const SUITES = { app, folder, write, git, paste, activity, mini, viewer, signin, titles, gitlab, stats, speed };
+const SUITES = { app, folder, git, paste, patch, activity, mini, viewer, signin, titles, gitlab, stats, speed };
 const only = process.argv.slice(2); // e.g. `npm test -- stats` runs one suite
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));

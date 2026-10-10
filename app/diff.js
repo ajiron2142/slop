@@ -1,4 +1,4 @@
-// Line diffs, shared by write mode (to review a change) and git (to show one to the model).
+// Line diffs, for git (to show a change to the model).
 
 // Line diff with 3 lines of context around each change. Lines are [mark, text, oldLine, newLine]
 // with mark ' ', '+', '-' or '…' (a gap). `lines.stats` has the added and removed counts.

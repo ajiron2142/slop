@@ -15,11 +15,11 @@
   <link rel="stylesheet" href="styles/components/settings.css">
   <link rel="stylesheet" href="styles/components/meter.css">
   <link rel="stylesheet" href="styles/components/panel.css">
-  <link rel="stylesheet" href="styles/components/folder-write.css">
   <link rel="stylesheet" href="styles/components/folder-git.css">
   <link rel="stylesheet" href="styles/components/mini.css">
   <link rel="stylesheet" href="styles/components/viewer.css">
   <link rel="stylesheet" href="styles/components/gitlab.css">
+  <link rel="stylesheet" href="styles/components/patch.css">
   <link rel="stylesheet" href="styles/components/activity.css">
   <!-- Themes: one line each. Add a theme by adding its file and a line here.
        media="not all" lets them download without delaying the first paint; the chosen one is switched on. -->
@@ -44,7 +44,6 @@
   <link rel="modulepreload" href="app/components/settings.js">
   <link rel="modulepreload" href="app/components/meter.js">
   <link rel="modulepreload" href="app/components/panel.js">
-  <link rel="modulepreload" href="app/folder-write.js">
   <link rel="modulepreload" href="app/folder-git.js">
   <link rel="modulepreload" href="app/diff.js">
   <link rel="modulepreload" href="app/paste.js">
@@ -55,6 +54,7 @@
   <link rel="modulepreload" href="app/oidc.js">
   <link rel="modulepreload" href="app/autotitle.js">
   <link rel="modulepreload" href="app/gitlab.js">
+  <link rel="modulepreload" href="app/patch.js">
   <link rel="modulepreload" href="app/activity.js">
   <link rel="modulepreload" href="vendor/marked.esm.js">
   <link rel="modulepreload" href="vendor/purify.es.js">
@@ -100,7 +100,6 @@
       <div id="attach-menu" class="attach-menu" role="menu" hidden>
         <button type="button" role="menuitem" data-action="files">Attach files</button>
         <button type="button" role="menuitem" data-action="folder">Connect folder (read-only)</button>
-        <button type="button" role="menuitem" data-action="folder-edit">Connect folder (can edit)</button>
         <button type="button" role="menuitem" data-action="gitlab" hidden>Connect GitLab project…</button><!-- gitlab -->
       </div>
     </section>
