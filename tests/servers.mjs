@@ -216,6 +216,8 @@ export async function startMock() {
             call(5, 'gitlab_read', { path: 'src/handler.js' }),
             call(6, 'gitlab_api', { path: '../../users' }),
             call(7, 'gitlab_api', { path: 'jobs/%2E%2e/%2e%2e/users' }),
+            call(8, 'gitlab_api', { path: '' }),
+            call(9, 'gitlab_api', { path: '?statistics=true' }),
           ] } }] });
         } else {
           sse(res, { choices: [{ delta: { content: results.map((r) => r.content).join(' || ') } }] });
@@ -379,6 +381,7 @@ export async function startGitlab() {
     if (p === '/user') return (server.slowUser ? setTimeout(() => json(res, { username: 'alice' }), 5000) : json(res, { username: 'alice' })), true;
     if (p === '/projects') return json(res, projects.filter((x) => x.path_with_namespace.includes(q.get('search') ?? ''))), true;
     if (p.startsWith('/projects/7/repository/') && q.get('ref')) gitlab.refs.push(q.get('ref')); // the files' branch
+    if (p === '/projects/7') return json(res, { id: 7, path_with_namespace: 'platform/route-service', created_at: '2024-03-01T09:00:00Z', ...(q.get('statistics') && { statistics: { commit_count: 412 } }) }), true;
     if (p === '/projects/7/repository/branches') {
       const found = branches.filter((b) => b.name.includes(q.get('search') ?? ''));
       if (q.get('sort') === 'updated_desc') found.sort((x, y) => y.commit.committed_date.localeCompare(x.commit.committed_date));

@@ -105,9 +105,10 @@ export default async function ({ browser, site, mock, check }) {
   const sent = mock.requests.at(-1);
   check('the chat gets the four GitLab tools and a line about the project', ['gitlab_list', 'gitlab_search', 'gitlab_read', 'gitlab_api'].every((t) => sent.toolNames.includes(t)) && sent.system.includes('"platform/route-service" (branch main)'));
   const reply = await p.textContent('.msg.assistant:last-of-type .body');
-  const [pipeline, job, file, found, listed, refused, outside, encoded] = reply.split(/\s*\|\|\s*/); // shown as rendered text, so line breaks are folded
+  const [pipeline, job, file, found, listed, refused, outside, encoded, project, stats] = reply.split(/\s*\|\|\s*/); // shown as rendered text, so line breaks are folded
   check('gitlab_api reads the project\'s API, JSON indented, with GitLab\'s links', pipeline.includes('"status": "failed"') && pipeline.includes('"web_url": "https://gitlab.example/platform/route-service/-/pipelines/99"'));
   check('any part of a long answer can be read, without colour codes', job.startsWith('240\tstep 240') && job.includes('250\tFAIL handler.test.js: expected 30000, got 120000') && job.endsWith('(lines 240–250 of 250)') && !job.includes('\x1b'));
+  check('an empty gitlab_api path reads the project itself, and a bare query adds to it', project.includes('"created_at": "2024-03-01T09:00:00Z"') && !project.includes('commit_count') && stats.includes('"commit_count": 412'));
   check('a gitlab_api path can\'t leave the project', outside.startsWith('Error: give the path after /projects/:id/') && encoded.startsWith('Error: give the path after'));
   check('files can be read', file.includes('const timeout = 30_000;'));
   check('search finds lines with their numbers', found.startsWith('1 matching lines') && found.includes('platform/route-service/src/handler.js') && found.includes('2: const timeout = 30_000;'));

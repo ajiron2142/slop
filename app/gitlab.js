@@ -56,7 +56,7 @@ export const GITLAB_TOOLS = [
     end_line: int('Last line to read.'),
   }, ['path']),
   tool('gitlab_api', `A read-only GitLab API request (GET) for the connected project: anything GitLab's REST API has under /projects/:id/, such as pipelines, jobs and their logs, merge requests, commits and issues. JSON comes back indented; long answers come back ${MAX_LINES} lines at a time, and the note says how many there are, so ask for any part (like the end of a job log) with start_line.`, {
-    path: str('The API path after /projects/:id/, with any query, e.g. "pipelines?ref=main&per_page=5", "pipelines/123/jobs", "jobs/456/trace", "merge_requests?state=opened".'),
+    path: str('The API path after /projects/:id/, with any query, e.g. "pipelines?ref=main&per_page=5", "pipelines/123/jobs", "jobs/456/trace", "merge_requests?state=opened". Empty, or only a query like "?statistics=true", for the project itself (created_at, last_activity_at, default_branch, …).'),
     start_line: int('First line to read (from 1).'),
     end_line: int('Last line to read.'),
   }, ['path']),
@@ -67,7 +67,7 @@ export const isGitlabTool = (name) => name.startsWith('gitlab_');
 export const gitlabPrompt = (project) =>
   `The user connected the GitLab project "${project.path}" (branch ${project.ref}) to this chat, read-only. ` +
   `Every path starts with "${project.path}/". Use gitlab_search to find things before reading files. ` +
-  'gitlab_api reads the rest of the project from GitLab\'s API (pipelines, jobs and their logs, merge requests, commits, issues). ' +
+  'gitlab_api reads the rest of the project from GitLab\'s API (pipelines, jobs and their logs, merge requests, commits, issues); an empty path is the project itself. ' +
   'When you mention something GitLab gave a web_url for, link to it with that URL.';
 
 export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, onChange }) {
@@ -374,10 +374,11 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         const path = String(args.path ?? '');
         // Browsers also read "%2e%2e" as ".." and a backslash as "/", so neither can leave the project.
         const parts = path.split(/[?#]/)[0].split(/[/\\]/).map((x) => x.toLowerCase().replace(/%2e/g, '.'));
-        if (!path || /^[/\\]/.test(path) || path.includes('://') || parts.some((x) => x === '..' || x === '.')) {
-          throw new Error('give the path after /projects/:id/, like "pipelines?ref=main"');
+        if (/^[/\\]/.test(path) || path.includes('://') || parts.some((x) => x === '..' || x === '.')) {
+          throw new Error('give the path after /projects/:id/, like "pipelines?ref=main", or nothing for the project itself');
         }
-        const res = await get(`${p}/${path}`, { raw: true, signal });
+        // Empty or a bare query is the project itself: /projects/:id, never /projects/:id/ (GitLab has nothing there).
+        const res = await get(!path || path.startsWith('?') ? `${p}${path}` : `${p}/${path}`, { raw: true, signal });
         let text = await res.text();
         if (text.length > MAX_BYTES) throw new Error('the answer is larger than 4 MB; ask for less (per_page, filters)');
         // JSON indented so it reads in lines; colour codes (as in job logs) removed.
@@ -385,9 +386,9 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         text = text.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '').replace(/\r/g, '');
         const lines = splitLines(text);
         const ranged = args.start_line != null || args.end_line != null;
-        if (!ranged && lines.length <= MAX_LINES && text.length <= MAX_CHARS) return { label: `Read GitLab ${path}`, result: text || '(empty)' };
+        if (!ranged && lines.length <= MAX_LINES && text.length <= MAX_CHARS) return { label: `Read GitLab ${path || 'project'}`, result: text || '(empty)' };
         const { from, last, text: result } = numberedRange(lines, args.start_line, args.end_line);
-        return { label: `Read GitLab ${path}${ranged ? `:${from}–${last}` : ''}`, result };
+        return { label: `Read GitLab ${path || 'project'}${ranged ? `:${from}–${last}` : ''}`, result };
       }
       throw new Error(`unknown tool ${name}`);
     } catch (e) {
