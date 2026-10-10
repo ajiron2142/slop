@@ -8,7 +8,7 @@
 // never kept; file paths start with the project's path ("team/app/src/main.js"); gitlab_api paths
 // are relative to the project ("pipelines?ref=main") and can't leave it; the branch is the
 // project's default branch unless you pick another on the chip; GitLab gets 30 seconds per
-// request, then the tool says it didn't answer. Settings (address and Client ID) are stored with
+// request, then the tool says it didn't answer. Settings (address and Application ID) are stored with
 // the other settings; the token lives in this tab only, like sign-in's.
 //
 // To remove it: delete this file, styles/components/gitlab.css and tests/suites/gitlab.mjs, their
@@ -168,7 +168,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
     } else {
       const idInput = el('input');
       Object.assign(idInput, { id: 'gitlab-client-id', placeholder: 'paste it here after step 3', value: getSettings().gitlabClientId ?? '', spellcheck: false, autocomplete: 'off' });
-      const idLabel = el('label', '', "Your app's Client ID");
+      const idLabel = el('label', '', "Your app's Application ID");
       idLabel.append(idInput);
       const go = el('button', 'btn primary', 'Connect GitLab');
       go.type = 'button';
