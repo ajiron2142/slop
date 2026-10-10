@@ -35,7 +35,7 @@ export default async function ({ browser, site, mock, check }) {
   check('Stats card: model, tokens, context, cost, finished', card.includes('claude-haiku') && /\d+ in \+ \d+ out = \d+/.test(card) && card.includes('of 200,000') && card.includes('Cost') && card.includes('Complete'));
 
   await pickModel(p, 'llama');
-  await send(p, 'echo second');
+  await send(p, 'a second, longer reply'); // long enough to time: a speed needs time between the first word and the last
   await p.click('#meter-btn');
   const pop2 = await p.textContent('#meter-pop');
   const blocks = await p.$$eval('.meter-model', (bs) => bs.map((b) => b.textContent));

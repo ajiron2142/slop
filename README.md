@@ -107,7 +107,7 @@ app/                  behaviour
     settings.js       settings dialog
 styles/
   base.css            tokens, the chat column's layout, app shell, shared buttons
-  components/         one file per component, same names as app/components (plus folder-write.css and folder-git.css)
+  components/         one file per component, same names as app/components (plus one per add-on: folder-git.css, gitlab.css, patch.css, …)
   themes/             one self-contained file per theme (see its README)
 fonts/                self-hosted fonts; fonts.css declares them
 vendor/               marked, DOMPurify, idb-keyval, highlight.js (never edited)
