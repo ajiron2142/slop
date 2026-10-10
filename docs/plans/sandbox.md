@@ -13,15 +13,16 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 - One tool, `run_js`, with `{ "code": "…" }`. It's turned on per chat, like a folder or GitLab: the
   paperclip button becomes a **+** button, and its menu lists each item with an icon: Attach files, then
   Connect folder, Connect GitLab project and **Sandbox**. The Sandbox row says Off, or **Enabled** in
-  green (how the row shows "on" is still open: the word, a dot, a tick, or a changing second line; see
-  https://claude.ai/artifact/LgqwkqcwB4uuLuaRkuNE81). It also adds a **Sandbox** chip under the message
+  green (how the row shows "on" is still open: the word, a dot, a tick, or a changing second line; try them in
+  https://claude.ai/artifact/CSX32cDaHbXDd1Zo5Su7kA). It also adds a **Sandbox** chip under the message
   box (× turns it off again).
 - **The icon is Peek**, a little box with a lid:
   - **Off:** a grey outline, still.
   - **Enabled, idle:** the same box glowing green, still.
   - **Running code:** the lid lifts, two eyes look left, then right, blink, and the lid settles back. Each
-    round takes 4 seconds, slow enough to follow. A variant still to decide adds a little escape attempt:
-    the box scoots to one side, wobbles, gives a tiny hop, and settles.
+    round takes 4 seconds, slow enough to follow. It moves only while code runs, so movement always means
+    the sandbox is working. It shows in the step line and in the chip. (A variant with a little escape
+    attempt was mocked up and set aside.)
   - The chip shows the same icon in the same state.
   - With "reduce motion" on, it doesn't move: while running, it shows the lid open a crack with the eyes
     looking out. It's offered to the model only in chats where that chip is on, so ordinary chats still
