@@ -235,6 +235,20 @@ async function reloadChatList() {
 
 const originOf = (url) => { try { return new URL(url).origin; } catch { return ''; } };
 
+// Typing a message re-warms the connection to an https proxy (name lookup, secure handshake), which the
+// browser or the network may have closed while idle, so it's open by the time you press Enter. Nothing is
+// sent to the proxy, and an open connection is simply kept. At most once every 30 seconds.
+let warmedAt = 0;
+$('input').addEventListener('input', () => {
+  const origin = originOf(state.settings?.baseUrl ?? '');
+  if (!origin.startsWith('https://') || Date.now() - warmedAt < 30_000) return;
+  warmedAt = Date.now();
+  document.querySelector('link[data-warm]')?.remove();
+  const link = Object.assign(document.createElement('link'), { rel: 'preconnect', href: origin, crossOrigin: 'anonymous' });
+  link.dataset.warm = '';
+  document.head.append(link);
+});
+
 // The models listed last time (from this same base URL) show at once, and the proxy's list replaces
 // them as soon as it answers. Context limits, prices and the key's budget come in their own requests and
 // fill in when they arrive, so the slowest of them never holds up the list. A reply sent before the

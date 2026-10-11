@@ -128,6 +128,25 @@ async function quickStart({ browser, site, mock, check }) {
   await p.reload({ waitUntil: 'domcontentloaded' });
   check('an https proxy is connected to while the page loads', await p.evaluate(() => document.querySelector('link[rel="preconnect"]')?.href === 'https://litellm.example.com/'));
   await p.unroute('**/app/main.js');
+
+  // Typing re-warms the connection to an https proxy, at most once every 30 seconds.
+  await p.goto('about:blank');
+  await p.goto(site);
+  await p.waitForSelector('#composer');
+  await p.evaluate(async () => {
+    const store = await import('./app/storage.js');
+    await store.saveSettings({ ...(await store.loadSettings()), baseUrl: 'https://litellm.example.com' });
+  });
+  await p.route('https://litellm.example.com/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"data":[]}' }));
+  await p.reload();
+  await p.waitForTimeout(300);
+  if (await p.isVisible('#settings[open]')) await p.click('#close-settings');
+  check('nothing is warmed before you type', !(await p.$('link[data-warm]')));
+  await p.type('#input', 'h');
+  const first = await p.$eval('link[data-warm]', (l) => { l.marked = true; return l.href; });
+  await p.type('#input', 'ello');
+  check('typing re-warms the connection to the proxy, once, without sending anything', first === 'https://litellm.example.com/'
+    && (await p.$$('link[data-warm]')).length === 1 && await p.$eval('link[data-warm]', (l) => l.marked === true));
   if (errors.length) console.log('    ', errors.join('\n     '));
   await context.close();
 }
