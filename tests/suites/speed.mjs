@@ -93,6 +93,34 @@ async function quickStart({ browser, site, mock, check }) {
   await idle(p);
   check('a reply sent before the model info arrives still asks for the model\'s full output limit', mock.requests.at(-1).maxTokens === 8192);
 
+  // A model saved last time that the proxy no longer lists: a message sent before the list arrives
+  // waits for it, and goes to a model that's still there.
+  await p.evaluate(async () => {
+    const store = await import('./app/storage.js');
+    const s = await store.loadSettings();
+    await store.saveSettings({ ...s, model: 'gone-model', knownModels: ['gone-model', ...s.knownModels] });
+  });
+  await slow('/v1/models', 800);
+  await p.reload();
+  await p.waitForFunction(() => document.querySelector('#model-picker .model')?.textContent === 'gone-model');
+  await p.fill('#input', 'echo quick');
+  await p.press('#input', 'Enter');
+  await idle(p);
+  check('a message sent before the list arrives waits for it, and never goes to a model the proxy dropped', mock.requests.at(-1).model !== 'gone-model' && (await p.textContent('#model-picker .model')) !== 'gone-model');
+  await p.unroute(`${mock.url}/v1/models`);
+
+  // A list saved from another proxy isn't shown for this one.
+  await p.evaluate(async () => {
+    const store = await import('./app/storage.js');
+    const s = await store.loadSettings();
+    await store.saveSettings({ ...s, knownModels: ['other-proxy-model'], knownModelsFrom: 'https://other.example' });
+  });
+  await slow('/v1/models', 800);
+  await p.reload();
+  await p.waitForTimeout(300);
+  check('a list saved from another proxy isn\'t shown for this one', (await p.textContent('#model-picker .model')) !== 'other-proxy-model');
+  await p.unroute(`${mock.url}/v1/models`);
+
   // The next load starts connecting to the proxy before the app has loaded (https only).
   check('the proxy\'s address is kept for the next load', await p.evaluate((origin) => JSON.parse(localStorage.getItem('chat-boot')).proxy === origin, new URL(mock.url).origin));
   await p.evaluate(() => localStorage.setItem('chat-boot', JSON.stringify({ ...JSON.parse(localStorage.getItem('chat-boot')), proxy: 'https://litellm.example.com' })));

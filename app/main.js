@@ -34,6 +34,7 @@ const state = {
   modelInfo: {}, // context limits and prices by model name, from LiteLLM
   keyInfo: null, // your key's budget and expiry, when LiteLLM reports them
   infoReady: Promise.resolve(), // settles once the model info asked for at the last refresh has arrived
+  listReady: Promise.resolve(), // settles once the model list asked for at the last refresh has arrived
   chats: [], // chat metadata, newest first (filtered by search)
   active: null, // { meta, messages, folder }, or null for a new unsaved chat
   draftFolder: null, // folder connected before a new chat's first message
@@ -234,36 +235,40 @@ async function reloadChatList() {
 
 const originOf = (url) => { try { return new URL(url).origin; } catch { return ''; } };
 
-// The models listed last time show at once, and the proxy's list replaces them as soon as it answers.
-// Context limits, prices and the key's budget come in their own requests and fill in when they arrive,
-// so the slowest of them never holds up the list. A reply waits for them (state.infoReady), since its
-// output limit comes from there.
+// The models listed last time (from this same base URL) show at once, and the proxy's list replaces
+// them as soon as it answers. Context limits, prices and the key's budget come in their own requests and
+// fill in when they arrive, so the slowest of them never holds up the list. A reply sent before the
+// list or the model info has arrived waits for them (state.listReady, state.infoReady): the list may
+// have dropped the chosen model, and the reply's output limit comes from the info.
 let refreshing = 0; // a newer refresh wins over one still waiting
 async function refreshModels() {
   const s = state.settings;
   const run = ++refreshing;
   const ready = Boolean(s.baseUrl && canAuth());
   rememberForBoot({ proxy: ready ? originOf(s.baseUrl) : '' }); // boot.js starts connecting to it on the next load
-  state.models = ready ? s.knownModels : [];
+  state.models = ready && s.knownModelsFrom === s.baseUrl ? s.knownModels : [];
   showModels();
   render();
   if (!ready) return;
   state.infoReady = getModelInfo(s).then((info) => { if (run === refreshing) { state.modelInfo = info; render(); } });
   getKeyInfo(s).then((key) => { if (run === refreshing) { state.keyInfo = key; render(); } });
-  let models = [];
-  try {
-    models = await listModels(s);
-    notify('');
-  } catch (e) {
-    if (run === refreshing) notify(`Could not load models: ${e.message}`);
-  }
-  if (run !== refreshing) return;
-  state.models = models;
-  s.knownModels = models;
-  if (models.length && !models.includes(s.model)) s.model = models[0];
-  await store.saveSettings(s);
-  showModels();
-  render();
+  state.listReady = (async () => {
+    let models = [];
+    try {
+      models = await listModels(s);
+      notify('');
+    } catch (e) {
+      if (run === refreshing) notify(`Could not load models: ${e.message}`);
+    }
+    if (run !== refreshing) return;
+    state.models = models;
+    Object.assign(s, { knownModels: models, knownModelsFrom: s.baseUrl });
+    if (models.length && !models.includes(s.model)) s.model = models[0];
+    showModels();
+    render();
+    await store.saveSettings(s);
+  })();
+  await state.listReady;
 }
 
 function showModels() {
@@ -326,7 +331,7 @@ async function complete(chat) {
   render({ toBottom: true });
 
   // What this reply used: summed over every round, with timing from the first visible word.
-  const model = s.model;
+  let model = s.model;
   const used = { input: 0, output: 0, cached: 0, context: 0, files: 0, rounds: 0 };
   const started = performance.now();
   let firstAt = null;
@@ -334,7 +339,8 @@ async function complete(chat) {
   let reasoned = false; // in the last round
   let frame = 0;
   try {
-    await state.infoReady; // the model's output limit, when the page has only just loaded
+    await Promise.all([state.listReady, state.infoReady]); // only waits right after the page loads: the chosen model still listed, its output limit known
+    model = s.model;
     if (folder && !(await allowRead(folder))) {
       throw new Error(`Access to the folder "${folder.name}" wasn't allowed. Retry and allow it, or disconnect the folder.`);
     }
