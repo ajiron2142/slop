@@ -20,6 +20,8 @@ npx playwright install chromium
 npm test
 ```
 
+**Speed:** `npm run bench` measures startup, sending, a round of tool calls, opening a long chat, streaming and folder search against the same fake servers with realistic network delays, and prints milliseconds. It isn't part of `npm test`; run it before and after a change meant to make something faster.
+
 It prints one line per suite and only the checks that fail; `npm test -- --all` prints every check. Run one suite with `npm test -- stats` (suites: `app`, `folder`, `git`, `paste`, `patch`, `activity`, `flow`, `sandbox`, `mini`, `viewer`, `signin`, `titles`, `gitlab`, `stats`, `speed`).
 
 The `git` suite builds a small sample repository with the `git` command, so git needs to be installed (it fails with a clear message otherwise).

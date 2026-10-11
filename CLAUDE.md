@@ -28,6 +28,7 @@ A lean, static chat UI for a LiteLLM proxy. These are the musts. Read them befor
 ## Checks
 
 - `npm test` runs every browser suite against a fake LiteLLM (`npm test -- <suite>` for one; it prints only failures, `-- --all` prints every check). Every feature has a suite; add checks with each change and keep them all passing.
+- **Speed claims use numbers:** `npm run bench` before and after.
 - **Tests are Legos too.** Each add-on's checks live in its own suite (`tests/suites/<add-on>.mjs`), removed along with it; a core suite never touches an add-on, while an add-on's suite may rely on the core.
 - **Check rules, not looks.** A check earns its place when it guards a rule or behaviour we'd hate to lose (paths outside the folder are refused, pictures never go back to the model). Avoid pinning details that may change on purpose; keep timing limits generous so they don't flake. Extra checks in an existing scenario are nearly free; a new scenario (reload, connect, wait for a reply) costs seconds per run.
 - Look at the real UI (screenshots at desktop size) after visual changes, in more than one theme.
