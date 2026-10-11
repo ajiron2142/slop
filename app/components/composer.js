@@ -100,7 +100,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     const chip = el('span', `tray-chip sandbox${sandbox === 'running' ? ' running' : ''}`);
     chip.title = sandbox === 'running' ? 'Sandbox: running code' : 'Sandbox: the model can run JavaScript here, with no network, page or storage';
     chip.innerHTML = PEEK_ICON;
-    chip.append(el('span', 'tray-name', 'Sandbox'), removeButton('Turn off the sandbox', onToggleSandbox));
+    chip.append(el('span', 'tray-name', 'Sandbox'), removeButton('Turn off the sandbox', () => { onToggleSandbox(); input.focus(); }));
     return chip;
   }
 
@@ -207,10 +207,10 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     menu.addEventListener('click', (e) => {
       const item = e.target.closest('button[data-action]');
       if (!item) return;
+      if (item.dataset.action === 'sandbox') return onToggleSandbox?.(); // sandbox: a switch, so the menu stays open and shows it change
       closeMenu();
       if (item.dataset.action === 'files') fileInput.click();
       else if (item.dataset.action === 'gitlab') onConnectGitlab?.(); // gitlab
-      else if (item.dataset.action === 'sandbox') onToggleSandbox?.(); // sandbox
       else onConnectFolder();
     });
     menu.addEventListener('keydown', (e) => {

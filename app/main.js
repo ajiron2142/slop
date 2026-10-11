@@ -561,7 +561,6 @@ async function setSandbox(on) {
   else if (on) state.active.meta.sandbox = true;
   else delete state.active.meta.sandbox;
   drawSandbox();
-  composer.focus();
   if (state.active) await store.saveMeta(state.active.meta);
 }
 

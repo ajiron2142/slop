@@ -12,22 +12,24 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 
 - One tool, `run_js`, with `{ "code": "…" }`. It's turned on per chat, like a folder or GitLab: the
   paperclip button becomes a **+** button, and its menu lists each item with an icon: Attach files, then
-  Connect folder, Connect GitLab project and **Sandbox**. Tapping Sandbox switches it on or off. When it's
-  on, the row's box icon glows green; nothing else in the row changes (no word, dot or tick; options tried
-  in https://claude.ai/artifact/CSX32cDaHbXDd1Zo5Su7kA). It also adds a **Sandbox** chip under the message
-  box, whose × switches it off again.
+  Connect folder, Connect GitLab project and **Sandbox**. Tapping Sandbox switches it on or off, and the
+  menu stays open so you see it change. Off, the row's word and box are grey; on, they turn ink and a thin
+  line is drawn under the word like a pen stroke (0.35 s, a curve that darts off and coasts to the end; the
+  grey turns ink in 0.2 s). No colour of its own, so it fits every theme; no rattle. Chosen in
+  https://claude.ai/artifact/7nu4n65XvY4q5XGMYq59wp ("Snappy, sharper curve"). It also adds a **Sandbox**
+  chip under the message box, whose × switches it off again.
 - `run_js` is offered to the model only in chats where the sandbox is on, so ordinary chats still send no
   tools, and they keep working with models that don't support tools.
 - **The icon is Peek**, a little box with a lid:
   - **Off:** a grey outline, still.
-  - **On, idle:** in the menu, the same box glowing green. The chip itself shows it's on, so its box stays
-    grey like every other chip's icon.
+  - **On, idle:** still. The menu row shows it's on (ink and the line), and the chip shows it too, so the
+    chip's box stays grey like every other chip's icon.
   - **Running code:** the lid lifts, two eyes look left, then right, blink, and the lid settles back. Each
     round takes 4 seconds, slow enough to follow. It moves only while code runs, so movement always means
     the sandbox is working. (A variant with a little escape attempt was mocked up and set aside.)
   - **It moves only in the chip** (option A in https://claude.ai/artifact/JzVVDgQTvGpKrPNotncEFL). The
     sandbox's step is drawn like every other tool's step (spinner, ✓, grey text), so the steps keep one
-    pattern, and green stays in the menu.
+    pattern.
   - With "reduce motion" on, it doesn't move: while running, it shows the lid open a crack with the eyes
     looking out.
 - The code runs in a Worker inside a sandboxed iframe. It's stopped after **5 seconds**. If it hasn't
@@ -129,7 +131,7 @@ now (thinking, reading a file, running code). Lighter than the reply tree; to be
 ## Phase 2 as built
 
 - The paperclip is a **+**, and each menu item has an icon. The Sandbox row is a checkbox item
-  (`aria-checked`); when it's on, its box glows green. Being in the menu, it's always there, so + always
+  (`aria-checked`); when it's on, its word and box are ink with a line under the word. Being in the menu, it's always there, so + always
   opens the menu now (before, with no folder support and no GitLab, it opened the file chooser).
 - On is saved per chat (`meta.sandbox`), like a GitLab project; a new chat starts with it off.
 - A run that ends in an error is a failed step (✕): its result starts `Error: the run failed.`, then the
