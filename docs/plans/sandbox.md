@@ -13,9 +13,10 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 - One tool, `run_js`, with `{ "code": "…" }`. It's turned on per chat, like a folder or GitLab: the
   paperclip button becomes a **+** button, and its menu lists each item with an icon: Attach files, then
   Connect folder, Connect GitLab project and **Sandbox**. Tapping Sandbox switches it on or off, and the
-  menu stays open so you see it change. Off, the row's word and box are grey; on, they turn ink and a thin
-  line is drawn under the word like a pen stroke (0.35 s, a curve that darts off and coasts to the end; the
-  grey turns ink in 0.2 s). No colour of its own, so it fits every theme; no rattle. Chosen in
+  menu stays open so you see it change. Off, the row's word and box are grey; on, they turn ink and the word
+  is marked like every choice in slop: semibold, with a thin line drawn under it like a pen stroke (0.35 s,
+  a curve that darts off and coasts to the end; the grey turns ink in 0.2 s). The chosen model, theme and
+  GitLab branch use the same mark (`.mark` in base.css). No colour of its own, so it fits every theme; no rattle. Chosen in
   https://claude.ai/artifact/7nu4n65XvY4q5XGMYq59wp ("Snappy, sharper curve"). It also adds a **Sandbox**
   chip under the message box, whose × switches it off again.
 - `run_js` is offered to the model only in chats where the sandbox is on, so ordinary chats still send no

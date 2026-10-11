@@ -61,7 +61,9 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('.tray-chip.gitlab .gitlab-branch');
   await p.waitForSelector('dialog.gitlab-picker.branches[open] .gitlab-project');
   const names = await p.$$eval('dialog.gitlab-picker.branches .gitlab-project', (rows) => rows.map((r) => r.textContent));
-  check('the branch list comes from GitLab: default first, then the latest pushed, with how long ago, the current one ticked', names.join(',') === '✓maindefault2h,release/2.45h,feat/sso2d');
+  check('the branch list comes from GitLab: default first, then the latest pushed, with how long ago', names.join(',') === 'maindefault2h,release/2.45h,feat/sso2d');
+  const marked = await p.$$eval('dialog.gitlab-picker.branches .mark', (ms) => ms.map((m) => `${getComputedStyle(m).fontWeight}|${getComputedStyle(m, '::after').transform}`));
+  check('the branch in use is marked like any choice: semibold, with a line under it', marked[0] === '600|matrix(1, 0, 0, 1, 0, 0)' && marked.slice(1).every((x) => x === '400|matrix(0, 0, 0, 1, 0, 0)'));
   const [chipBox, listBox] = await Promise.all([p.locator('.tray-chip.gitlab:not(.gitlab-head-chip)').boundingBox(), p.locator('dialog.gitlab-picker.branches').boundingBox()]);
   check('and grows up out of the chip, flush with it', Math.abs(listBox.y + listBox.height - (chipBox.y + chipBox.height)) < 2 && Math.abs(listBox.x - chipBox.x) < 2 && listBox.width >= chipBox.width - 1);
   await p.keyboard.press('Escape');

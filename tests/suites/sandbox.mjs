@@ -169,13 +169,14 @@ async function inTheApp({ browser, site, mock, check }) {
     return {
       word: getComputedStyle(sbx).color, box: getComputedStyle(sbx.querySelector('.icon')).color,
       ink: getComputedStyle(files).color, grey: getComputedStyle(files.querySelector('.icon')).color,
-      line: getComputedStyle(sbx.querySelector('.sandbox-word'), '::after').transform,
+      line: getComputedStyle(sbx.querySelector('.mark'), '::after').transform,
+      weight: getComputedStyle(sbx.querySelector('.mark')).fontWeight,
     };
   });
   await p.click('#attach-btn');
   check('the + menu lists Sandbox, with an icon, switched off', await p.isVisible(row) && (await p.getAttribute(row, 'aria-checked')) === 'false' && Boolean(await p.$(`${row} svg.icon`)));
   let seen = await look();
-  check('off, its word and box are grey, with no line', seen.word === seen.grey && seen.box === seen.grey && seen.line === 'matrix(0, 0, 0, 1, 0, 0)');
+  check('off, its word and box are grey, with no line', seen.word === seen.grey && seen.box === seen.grey && seen.line === 'matrix(0, 0, 0, 1, 0, 0)' && seen.weight === '400');
   check('every item in the menu has an icon', await p.$$eval('#attach-menu button:not([hidden])', (bs) => bs.every((b) => b.querySelector('svg.icon'))));
   await p.keyboard.press('Escape');
   await ask('hello');
@@ -187,7 +188,7 @@ async function inTheApp({ browser, site, mock, check }) {
   check('tapping Sandbox switches it on, and the menu stays open to show it', await p.isVisible('#attach-menu') && (await p.getAttribute(row, 'aria-checked')) === 'true');
   await p.waitForTimeout(500);
   seen = await look();
-  check('on, its word and box turn ink and a line is drawn under the word', seen.word === seen.ink && seen.box === seen.ink && seen.line === 'matrix(1, 0, 0, 1, 0, 0)');
+  check('on, its word and box turn ink, and the word is marked like any choice: semibold, with a line', seen.word === seen.ink && seen.box === seen.ink && seen.line === 'matrix(1, 0, 0, 1, 0, 0)' && seen.weight === '600');
   await p.keyboard.press('Escape');
   check('a Sandbox chip shows it\'s on', (await p.textContent(chip)) === 'Sandbox×' && Boolean(await p.$(`${chip} svg.peek`)));
   check('the chip is still while nothing runs', !(await p.$eval(chip, (c) => c.classList.contains('running'))));
