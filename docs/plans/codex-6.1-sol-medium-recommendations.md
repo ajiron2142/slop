@@ -123,6 +123,76 @@ Do not claim a pattern-length limit, keyword blacklist, or main-thread timeout m
 
 **Validation if a protection is chosen:** Observe the original regression in an isolated test process/worker so the suite cannot hang. Confirm the UI remains responsive, cancellation works, errors are explicit, literal matching remains unchanged, and valid regex behavior and deterministic case sensitivity are preserved if regex stays supported. Keep folder/paste add-on tests modular.
 
+## 8. Potential new tool: `ask_user`
+
+**Status:** The user supports the interaction principles below and requested this proposal be recorded for Claude. This is authorization to update the planning document, not to implement the tool. Review the design with the user before changing the app; keep any mockup outside the repository unless separately requested.
+
+**Purpose:** Let a model ask a focused question with selectable answers when a missing decision materially changes the outcome. This is useful for everyday business tasks as well as coding. The model does the reasoning; a small browser component presents the question, waits for an explicit answer, and returns that answer through the existing tool-call loop. No separate planning engine, application backend, build step, or new library is needed.
+
+**Provider boundary:** This is a harness feature, not a special Claude API endpoint. Define one ordinary function tool and send it through LiteLLM to compatible Claude/Bedrock, GPT/Azure, and local-model backends. Actual support and reliability depend on the chosen model, provider, and LiteLLM configuration; do not promise universal compatibility or infer capabilities from a model name. Models without working tool calling can still ask ordinary text questions, with answers sent as normal user messages. A structured question is not automatically available just because Claude Code has its own `AskUserQuestion` tool.
+
+### Agreed interaction principles
+
+- One focused question at a time, with 2–3 meaningful options and short explanations of the consequences.
+- A recommended option when there is a defensible reason, without automatically selecting or submitting it on the user's behalf.
+- A free-text alternative, so the user can give an answer outside the options. Provide this in the UI instead of making the model manufacture an "Other" option.
+- A real pause: do not continue work that depends on the answer until the user submits it. Elapsed time is not consent or an answer.
+- The user's submitted choice returns to the model as a tool result and remains part of the conversation for follow-up reasoning.
+- The user can cancel. Make cancellation explicit rather than treating it as a default selection.
+- Avoid questionnaire behavior: resolve routine details independently and do not repeat answered questions.
+
+### When to trigger it
+
+The model should choose whether to call the tool using these instructions; the app should not guess from keywords or require a question before every task.
+
+Ask when an answer is missing, cannot reasonably be inferred from the conversation, and would materially change the result. Examples: two reasonable approaches have substantial trade-offs; a missing constraint could make the output unusable; or the user must decide about a significant commitment. A question about an action is not itself permission to execute a separate action: preserve any relevant authorization boundaries.
+
+Skip the tool when the answer is already known, an obvious default exists, the choice is cosmetic/easily reversible, or a useful draft can be produced for refinement. State consequential assumptions briefly instead of stopping unnecessarily. Do not hard-code a quota like "always ask once" or "never ask twice"; genuinely new material decisions may need another question.
+
+Suggested model instruction:
+
+```text
+Ask only when the answer would substantially change the result
+and cannot be inferred from the conversation.
+
+Otherwise, choose a reasonable default and proceed.
+State consequential assumptions briefly.
+
+Ask one focused question with 2–3 options and free text.
+Explain meaningful trade-offs briefly; recommend an option
+when there is a clear reason. Wait for the user's answer before
+continuing dependent work. Do not repeat answered questions
+or ask for routine confirmation.
+```
+
+### Minimal implementation direction for review
+
+**Current integration points:** `app/main.js:405–407` assembles offered tools; `453–464` dispatches all calls concurrently; `465–472` appends the corresponding tool results before the next model round. `app/api.js:117–125` sends ordinary tool definitions; `165–170` assembles streamed tool-call arguments. `app/main.js:334–342` handles a new user message while a reply is running, and `169–175` handles deletion/abort. The new tool would need to fit those paths, rather than starting an unrelated conversation engine.
+
+Keep it an optional, removable add-on following the existing module/component conventions and feature hooks. Decide how users enable/disable it; do not silently choose a new default. Offer it independently of folder, paste, and sandbox availability. Validate returned arguments before displaying anything; render model-supplied text as text, not unsanitized HTML.
+
+A small proposed argument shape is `question`, `options` (2–3 entries with stable `id`, `label`, and `description`), and an optional `recommended_id` referencing one of those entries. Return an explicit result distinguishing a selected option, a free-text answer, and cancellation. Preserve the tool-call ID so the response is paired with the original question. Keep input limits fixed and documented; final field names, limits, and visual layout are implementation choices to review, not settled requirements.
+
+The simplest flow is: validate complete tool arguments → show one question card → await Submit → append the answer as that call's tool result → continue the existing model loop. Awaiting input should not leave a network stream open. Do not automatically retry the model request while the question is waiting. Use explicit submit and prevent duplicate submissions; show enough conversation context for the user to understand the question.
+
+**Important edge cases:** The existing dispatcher uses `Promise.all`; it cannot be left to show multiple conflicting question cards or run answer-dependent sibling tools prematurely. Review a deterministic rule for multiple `ask_user` calls or a mixed tool batch, and handle refusals with paired tool results where continuing the protocol requires them. Stop, cancelling the card, switching chats, deleting the chat/all data, reload, and a new composer message while waiting must not leave a dangling promise, a stale answer applied to another chat, or work resuming after cancellation. Avoid a general scheduling system just to implement this one tool. Persisting/resuming unanswered cards across reload is extra scope; a simple initial version can explicitly abandon the pending question, provided saved conversation and protocol remain valid.
+
+### Everyday examples
+
+| Task | Material question | When to skip it |
+| --- | --- | --- |
+| Prepare a presentation | Is this for executives or the delivery team? | The audience was already stated. |
+| Compare suppliers | Should price, reliability, or delivery speed carry most weight? | The user already provided evaluation criteria. |
+| Draft a sensitive client email | Should the response offer a concession or hold the existing terms? | A routine email can be drafted without making commitments. |
+| Summarize a report | Is the goal an executive brief or a detailed action plan? | The requested format is already clear or a short draft suffices. |
+| Analyze sales | Should the analysis focus on explaining a decline or finding growth opportunities? | The question already identifies the business objective. |
+
+### Trade-offs and validation
+
+**Benefits:** Easier mobile answers, explicit trade-offs, fewer wrong assumptions, and one interface shared by compatible backends. **Costs:** UI and pending-question state, model instruction maintenance, another model round after answering, and possible friction if the model asks too frequently. The interaction principles reduce unnecessary questioning but cannot guarantee model behavior. Do not present the tool as a performance optimization.
+
+Before implementing, review a phone-friendly mockup with the user outside the repo. Validate single-choice and free-text answers, recommendation not auto-submitted, cancellation, malformed arguments, concurrent/mixed calls, repeated questions, stale cards, chat switching, deletion, Stop, and reload. Ensure the model receives exactly the submitted answer with the correct call ID, and that dependent execution resumes only after submission. Exercise a fake provider first, then the user's actual LiteLLM/provider configurations where available; report unsupported cases honestly. Keep add-on checks in their own suite, observe new checks fail as required by CLAUDE.md, and check real UI keyboard/touch accessibility in more than one theme.
+
 ## Experiments deliberately left out of the shortlist
 
 - **Delay syntax coloring until the answer finishes:** In a 100,260-character streamed fixture with 160 JavaScript blocks, rendering work fell from 325.7 to 218.8 ms and the longest UI task from 130 to 73 ms, but complete-response time only fell from 2245.2 to 2182.8 ms (2.8%). Code visibly changes from plain to colored at the end. The measured prototype also delayed initial library loading until completion; background warming combined with deferred coloring was not tested. The user prefers seamless behavior, so this is not recommended by default.
