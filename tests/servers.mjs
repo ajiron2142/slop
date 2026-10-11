@@ -322,6 +322,23 @@ export async function startMock() {
         return res.end('data: [DONE]\n\n');
       }
 
+      if (text.startsWith('xss')) { // a reply full of ways to run code from model output; none may work
+        const reply = [
+          'Some **bold** text and a [safe link](https://example.com).',
+          '<img src="data:image/png;base64,AAAA" onerror="window.__xss = (window.__xss || 0) + 1">', // a broken image, so onerror would fire
+          '<script>window.__xss = (window.__xss || 0) + 1</script>',
+          '[click me](javascript:window.__xss=1)',
+          '<a href="https://example.com" onclick="window.__xss=1">styled</a>',
+          '<svg><g onload="window.__xss=1"></g></svg>',
+          '<iframe src="https://example.com"></iframe>',
+          '<div style="background:url(javascript:alert(1))">styled</div>',
+          '<details open ontoggle="window.__xss=1"><summary>x</summary></details>',
+        ].join('\n\n');
+        sse(res, { choices: [{ delta: { content: reply } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] });
+        return res.end('data: [DONE]\n\n');
+      }
+
       if (text.startsWith('patch')) { // a reply carrying a diff block, streamed in pieces like any reply
         const block = text.startsWith('patchbad') ? PATCH.replace('@@ -1,3 +1,3 @@', 'this line is not part of a patch') : text.startsWith('patchmarker') ? PATCH.replace(' service: route', ' service: route\nEND_OF_PATCH') : PATCH;
         const reply = 'Here is the change:\n\n```diff\n' + block + '```\n\nPaste it in your repo.';

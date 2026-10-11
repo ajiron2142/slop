@@ -64,6 +64,20 @@ export default async function ({ browser, site, mock, check }) {
   });
   check('Copy reply puts formatted HTML on the clipboard for Teams and Outlook', copied.html.includes('<h2') && copied.html.includes('<table') && /<pre style="[^"]*background:#f6f8fa/.test(copied.html));
   check('…and the markdown as plain text', copied.text.startsWith("Here's a tricky reply.") && copied.text.includes('## A heading'));
+
+  // Model output can never run code here: every known trick is stripped before it's shown (DOMPurify).
+  await send(p, 'xss: try everything');
+  await p.waitForTimeout(300);
+  const safe = await p.$eval('.msg.assistant:last-of-type .body', (b) => ({
+    ran: window.__xss ?? 0,
+    tags: [...b.querySelectorAll('script, iframe')].length, // a plain <svg> may stay; its handlers may not
+    handlers: [...b.querySelectorAll('*')].some((el) => [...el.attributes].some((a) => a.name.startsWith('on') || a.name === 'style')),
+    jsLinks: [...b.querySelectorAll('a')].some((a) => /^\s*javascript:/i.test(a.getAttribute('href') ?? '')),
+    links: [...b.querySelectorAll('a[href^="https:"]')].every((a) => a.target === '_blank' && a.rel === 'noopener noreferrer'),
+    text: b.textContent.includes('bold') && b.querySelector('strong') !== null,
+  }));
+  check('model output can\'t run code: no scripts, frames, event handlers, inline styles or javascript: links survive', safe.ran === 0 && safe.tags === 0 && !safe.handlers && !safe.jsLinks);
+  check('while ordinary formatting still shows, and links open in a new tab without access to this one', safe.text && safe.links);
   check('Copy stays visible while scrolling a long block', await p.evaluate(() => {
     const pane = document.getElementById('messages');
     const code = [...document.querySelectorAll('.msg.assistant .code')].at(-1);
