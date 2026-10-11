@@ -26,13 +26,8 @@ export default async function ({ browser, site, mock, check }) {
   const chosen = await p.$$eval('#model-picker .picker-option', (lis) => lis.map((li) => [li.getAttribute('aria-selected'), getComputedStyle(li.querySelector('.mark')).fontWeight, getComputedStyle(li.querySelector('.mark'), '::after').transform]));
   check('the chosen model is marked like any choice: semibold, with a line; the rest plain', chosen.some(([sel]) => sel === 'true')
     && chosen.every(([sel, w, t]) => (sel === 'true' ? w === '600' && t === 'matrix(1, 0, 0, 1, 0, 0)' : w === '400' && t === 'matrix(0, 0, 0, 1, 0, 0)')));
-  const same = await p.evaluate(() => {
-    const at = (el) => getComputedStyle(el, '::after');
-    const a = at(document.querySelector('#model-picker .mark'));
-    const b = at(document.querySelector('#attach-menu [data-action="sandbox"] .mark'));
-    return a.transitionDuration === b.transitionDuration && a.transitionTimingFunction === b.transitionTimingFunction && a.transitionDuration === '0.35s';
-  });
-  check('every mark draws at the same speed (the Sandbox\'s and the lists\')', same);
+  const pen = await p.evaluate(() => { const a = getComputedStyle(document.querySelector('#model-picker .mark'), '::after'); return `${a.transitionDuration} ${a.transitionTimingFunction}`; });
+  check('the mark is drawn with the shared pen stroke (base.css)', pen === '0.35s cubic-bezier(0.1, 1, 0.2, 1)');
   await p.keyboard.press('Escape');
 
   // Streaming and markdown.

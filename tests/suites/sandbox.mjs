@@ -193,6 +193,7 @@ async function inTheApp({ browser, site, mock, check }) {
   await p.waitForTimeout(500);
   seen = await look();
   check('on, its word and box turn ink, and the word is marked like any choice: semibold, with a line', seen.word === seen.ink && seen.box === seen.ink && seen.line === 'matrix(1, 0, 0, 1, 0, 0)' && seen.weight === '600');
+  check('its line is drawn with the shared pen stroke, like every other mark', await p.$eval(`${row} .mark`, (m) => { const a = getComputedStyle(m, '::after'); return `${a.transitionDuration} ${a.transitionTimingFunction}`; }) === '0.35s cubic-bezier(0.1, 1, 0.2, 1)');
   await p.keyboard.press('Escape');
   check('a Sandbox chip shows it\'s on', (await p.textContent(chip)) === 'Sandbox×' && Boolean(await p.$(`${chip} svg.peek`)));
   check('the chip is still while nothing runs', !(await p.$eval(chip, (c) => c.classList.contains('running'))));
