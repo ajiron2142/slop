@@ -16,6 +16,7 @@ Keep the app small, local, and robust: no new backend, build steps, dependencies
 | Load syntax languages individually | Transfer fewer local library files. | More loading logic; brief first-use coloring delay. | Optional; current loader is reasonable. |
 | Regex safety | Prevent some searches freezing the page. | Keep regex with a worker, or remove the feature. | User decision. |
 | `ask_user` tool | Ask useful questions with selectable answers. | Question UI and cancellation state; can interrupt users. | New proposal; principles agreed. |
+| Plan first / Short answers toggles | Combine planning and concise responses with existing Sandbox. | Instruction changes and visible per-chat settings. | Proposed design below; Plan first defaults agreed. |
 
 Read [CLAUDE.md](../../CLAUDE.md), [sandbox.md](sandbox.md), and [later.md](later.md). Preserve modular add-ons, deterministic rules, theme tokens, read-only integrations, and the deliberate distinction between saved chats/settings and temporary pastes/activity.
 
@@ -165,6 +166,31 @@ Skip each question if the user already supplied the answer or a draft would suff
 **Cost:** A question component and pending state, an additional model round, and friction if overused. Instructions help but cannot guarantee model behavior.
 
 **Check:** Review a phone-friendly mockup outside the repo first. Test choices/free text, no automatic submission, cancellation, malformed/multiple/mixed calls, correct result IDs, stale-card handling, Stop/reload/deletion, keyboard/touch access, and themes. Use fake providers, then available real LiteLLM configurations; report unsupported cases honestly.
+
+## 9. Composer toggles: Plan first and Short answers
+
+**Scope:** Record the discussed design for review, not implementation. No separate General mode: normal chat is the default. Proposed placement is the existing `+` menu alongside folder/GitLab connections and Sandbox, with enabled settings visible near the composer. Review a phone-friendly mockup outside the repo before UI changes.
+
+| Toggle | Purpose | How it works |
+| --- | --- | --- |
+| Sandbox (existing) | Allow isolated code execution. | Offers the existing sandbox tools; a capability, not a response style. |
+| Plan first (proposed) | Explore options and resolve material decisions before proceeding. | Guides the model through instructions; uses the same `ask_user` tool when needed. |
+| Short answers (proposed) | Keep responses brief while retaining essential information. | Guides response length through instructions, independently of planning. |
+
+The toggles can be used separately or together, including all three. Plan first should not automatically disable Sandbox: execution may help investigate a question. Planning should still avoid unnecessary questions; Short answers should not hide meaningful trade-offs or unanswered decisions.
+
+**Agreed Plan first behavior:**
+
+- Off for every new chat, even when the previous chat had it enabled. No inherited/global default that silently turns it on.
+- When enabled, stays enabled in that chat until manually switched off.
+- Saying “proceed” allows the agreed task to continue without switching the toggle off or restarting the same planning discussion.
+- A materially new scope or decision may need planning again; routine steps do not require repeated approval.
+
+Use the current per-chat Sandbox setting as a reference for integration, not a reason to change its behavior. No separate planning tool or state machine is required for a first version: the model follows instructions, and `ask_user` handles structured questions in either normal or planning conversations. An instruction toggle is not a hard execution-permission boundary; enforce actual tool permissions separately.
+
+**Still to review:** Short answers' default and persistence; exact labels/active indicators; whether Plan first persists across reload/export/import; and when changes made during an active reply take effect. Do not assume these are agreed. Keep requests consistent with the settings they started with rather than silently changing behavior midway.
+
+**Validation if implemented:** New chats always start with Plan first off; chats keep independent choices; “proceed” continues without disabling Plan first; all toggle combinations work; Sandbox's existing permissions remain intact; Short answers still includes essential information. Test any agreed reload/import behavior and mid-reply changes, and check mobile/touch/keyboard use in multiple themes. Model compliance needs provider evaluation as well as UI checks.
 
 ## What to leave out for now
 
