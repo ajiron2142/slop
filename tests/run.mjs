@@ -21,8 +21,9 @@ import activity from './suites/activity.mjs';
 import patch from './suites/patch.mjs';
 import flow from './suites/flow.mjs';
 import sandbox from './suites/sandbox.mjs'; // sandbox
+import edit from './suites/edit.mjs'; // edit
 
-const SUITES = { app, folder, git, paste, patch, activity, flow, sandbox, mini, viewer, signin, titles, gitlab, stats, speed };
+const SUITES = { app, edit, folder, git, paste, patch, activity, flow, sandbox, mini, viewer, signin, titles, gitlab, stats, speed };
 const args = process.argv.slice(2);
 const all = args.includes('--all'); // print every check, not just the failures
 const only = args.filter((a) => a !== '--all'); // e.g. `npm test -- stats` runs one suite

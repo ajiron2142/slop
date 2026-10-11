@@ -27,6 +27,7 @@ import { createFlow } from './flow.js'; // flow
 import { patchPrompt, patchBlock } from './patch.js'; // patch
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 import { SANDBOX_TOOLS, isSandboxTool, runSandboxTool, picturesNode, replyMarkdown } from './sandbox.js'; // sandbox
+import { editNode } from './edit.js'; // edit
 
 const state = {
   settings: null,
@@ -41,7 +42,7 @@ const state = {
   draftGitlab: null, // gitlab: project connected before a new chat's first message
   draftSandbox: false, // sandbox: turned on before a new chat's first message
   sandboxRunning: null, // sandbox: the chat whose code is running now
-  streaming: null, // { chat, msg, controller }
+  streaming: null, // { chat, msg, controller, toolsRunning, notes }
   auth: null, // sign-in, when config.json sets it up
 };
 
@@ -103,6 +104,7 @@ const messages = createMessages($('messages'), {
   codeBlock: patchBlock, // patch
   extra: picturesNode, // sandbox
   copyText: replyMarkdown, // sandbox
+  mine: (m) => editNode(m, editMessage), // edit
 });
 
 const meter = createMeter({ row: $('meter-row'), button: $('meter-btn'), pop: $('meter-pop') });
@@ -128,7 +130,7 @@ const composer = createComposer({
   },
   onToggleSandbox: () => setSandbox(!sandboxOn()), // sandbox
   onSend: send,
-  onStop: () => state.streaming?.controller.abort(),
+  onStop: stop,
   notify,
 });
 
@@ -296,7 +298,7 @@ function showModels() {
 // ---- chatting ----
 
 function send({ text, files }) {
-  if (state.streaming) return false;
+  if (state.streaming) return addNote(text, files);
   const s = state.settings;
   if (!s.baseUrl || !canAuth()) { openSettings(state.auth ? 'Sign in, or set a base URL and API key, first.' : 'Set a base URL and API key first.'); return false; }
   if (!s.model) { notify('Pick a model first.'); return false; }
@@ -316,10 +318,40 @@ function send({ text, files }) {
   chat.messages.push({ role: 'user', content: text, ts: Date.now(), ...(files.length && { files }) });
   store.saveChat(chat.meta, chat.messages).then(reloadChatList);
   complete(chat);
-  delete drafts.new; // sent: the box empties right after this, so nothing is left to keep
+  sent(chat);
+  return true;
+}
+
+// Sent: the box empties right after this, so there's no draft left to keep.
+function sent(chat) {
+  delete drafts.new;
   delete drafts[chat.meta.id];
   saveDrafts();
+}
+
+// A message sent while a reply is being written goes in at the reply's next break, and the model
+// carries on with it. While the model is writing (or about to), the break is now: the reply stops,
+// what it wrote so far stays, marked "Interrupted". While its tools run, the break is when they've
+// finished, so their work isn't lost; until then the message shows as waiting.
+function addNote(text, files) {
+  const s = state.streaming;
+  if (s.chat !== state.active) { notify('A reply is being written in another chat. Wait for it to finish, or stop it there.'); return false; }
+  const note = { role: 'user', content: text, ts: Date.now(), ...(files.length && { files }), ...(s.toolsRunning && { waiting: true }) };
+  s.chat.messages.push(note);
+  s.notes.push(note);
+  if (!s.toolsRunning) s.controller.abort();
+  render({ toBottom: true });
+  sent(s.chat);
   return true;
+}
+
+// Stop ends the reply; a message waiting for its next break stays in the chat, unanswered.
+function stop() {
+  const s = state.streaming;
+  if (!s) return;
+  for (const note of s.notes) delete note.waiting;
+  s.notes = [];
+  s.controller.abort();
 }
 
 // A tool call whose arguments aren't valid JSON isn't run. The model is told what it sent, and the
@@ -336,17 +368,19 @@ function unreadable(call) {
   }
 }
 
-async function complete(chat) {
+// `carried`: when the reply goes on from one that was interrupted, everything that one sent and got
+// back (its tool calls and their results too), up to and including the messages that interrupted it.
+async function complete(chat, carried = null) {
   const s = state.settings;
   const folder = chat.folder;
   let tools;
   // A reply with no text (it only ran tools, or the model finished empty) has nothing to send back; some providers refuse one.
-  const history = withoutErrors(chat.messages).filter((m) => m.role !== 'assistant' || m.content).map((m) => ({ role: m.role, content: toApiContent(m) }));
+  const history = carried ?? withoutErrors(chat.messages).filter((m) => m.role !== 'assistant' || m.content).map((m) => ({ role: m.role, content: toApiContent(m) }));
 
   const msg = { role: 'assistant', content: '', ts: Date.now() };
   chat.messages.push(msg);
   const controller = new AbortController();
-  state.streaming = { chat, msg, controller };
+  state.streaming = { chat, msg, controller, toolsRunning: false, notes: [] };
   const act = activity.start(chat.meta.id, msg, s.model); // activity
   render({ toBottom: true });
 
@@ -358,6 +392,7 @@ async function complete(chat) {
   let finish = null;
   let reasoned = false; // in the last round
   let frame = 0;
+  let text = ''; // what the model has written in this round
   try {
     await Promise.all([state.listReady, state.infoReady]); // only waits right after the page loads: the chosen model still listed, its output limit known
     model = s.model;
@@ -377,7 +412,7 @@ async function complete(chat) {
     const reads = []; // sandbox: what the other tools returned in this reply, for the code to use as is
     // With a folder connected the model may ask to read files first: run those and ask again.
     for (let round = 1; ; round++) {
-      let text = '';
+      text = '';
       act.asking(); // activity
       const { toolCalls, usage, finish: why, reasoned: thought } = await streamChat({
         settings: s,
@@ -409,11 +444,12 @@ async function complete(chat) {
         used.context = usage.input + usage.output;
       }
       // A cut-off reply may end in a half-written tool call, so nothing more runs after one.
-      if (!toolCalls.length || finish === 'length') break;
+      if (!toolCalls.length || finish === 'length') { if (text) history.push({ role: 'assistant', content: text }); break; }
       if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of tool calls.`);
       history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
       // The round's calls all start at once (they only read, so none waits on another); their results
       // go back in the order the model asked for them.
+      state.streaming.toolsRunning = true;
       const done = await Promise.all(toolCalls.map(async (call) => {
         const name = call.function.name;
         const stepDone = act.tool(call); // activity
@@ -425,6 +461,7 @@ async function complete(chat) {
         stepDone(run.label, run.result); // activity
         return run;
       }));
+      state.streaming.toolsRunning = false;
       toolCalls.forEach((call, i) => {
         const name = call.function.name;
         const { label, result, pictures } = done[i];
@@ -435,12 +472,16 @@ async function complete(chat) {
         history.push({ role: 'tool', tool_call_id: call.id, content: result });
       });
       used.rounds++;
+      if (state.streaming.notes.length) { finish = 'interrupted'; break; } // the next break: these tools are done
       if (msg.content) msg.content += '\n\n';
       if (state.active === chat) render();
     }
   } catch (e) {
     notify(''); // a "trying again" notice from a retry that came to nothing
-    if (e.name === 'AbortError') finish = 'stopped';
+    if (e.name === 'AbortError') {
+      finish = state.streaming.notes.length ? 'interrupted' : 'stopped';
+      if (text) history.push({ role: 'assistant', content: text }); // what it wrote before the interruption
+    }
     else {
       finish = null;
       // A fact, not a guess about the cause: the server's own message comes first.
@@ -454,8 +495,8 @@ async function complete(chat) {
   if (folder) refreshGit(folder).then(() => render()); // git: commits or a fetch may have happened meanwhile
 
   msg.content = msg.content.trimEnd();
-  // An empty reply goes away only when you stopped it or it failed; one the model finished empty stays, and says so.
-  if (!msg.content && !msg.tools && (!finish || finish === 'stopped')) chat.messages.splice(chat.messages.indexOf(msg), 1);
+  // An empty reply goes away only when you stopped or interrupted it or it failed; one the model finished empty stays, and says so.
+  if (!msg.content && !msg.tools && (!finish || finish === 'stopped' || finish === 'interrupted')) chat.messages.splice(chat.messages.indexOf(msg), 1);
   else if (finish) {
     const info = state.modelInfo[model];
     const counted = used.context > 0; // a stopped reply never gets the usage report
@@ -470,12 +511,19 @@ async function complete(chat) {
       ...(used.files && { files: used.files, rounds: used.rounds }),
     };
   }
+  const { notes } = state.streaming;
   state.streaming = null;
+  for (const note of notes) delete note.waiting;
+  // Messages sent meanwhile: the reply goes on at once, before anything else can start, with them added.
+  // (After a failure they stay unanswered, under the error.)
+  if (notes.length && finish && !chat.deleted) {
+    complete(chat, [...history.filter((m) => m.role !== 'system'), ...notes.map((m) => ({ role: 'user', content: toApiContent(m) }))]);
+  }
   // Spend changed, so refresh the budget in the background.
   getKeyInfo(s).then((key) => { state.keyInfo = key; render(); });
   if (!chat.deleted) {
     chat.meta.updated = Date.now();
-    await store.saveChat(chat.meta, withoutErrors(chat.messages));
+    await store.saveChat(chat.meta, withoutErrors(chat.messages).filter((m) => m !== state.streaming?.msg)); // not the reply that just started
     await reloadChatList();
     if (finish && msg.content && !chat.meta.titled) nameChat(chat); // chat titles
   }
@@ -521,6 +569,20 @@ function retry() {
   if (chat.messages.at(-1)?.role === 'assistant') chat.messages.pop();
   if (chat.messages.length) complete(chat);
   else render();
+}
+
+// edit: your message in its new wording, in its old place; everything after it goes, and the model answers again.
+function editMessage(msg, text) {
+  const chat = state.active;
+  const i = chat?.messages.indexOf(msg) ?? -1;
+  if (i < 0) return false;
+  if (state.streaming) { notify('Wait for the reply being written to finish, or stop it, then save.'); return false; }
+  notify('');
+  chat.messages = withoutErrors(chat.messages.slice(0, i));
+  chat.messages.push({ ...msg, content: text, ts: Date.now() });
+  store.saveChat(chat.meta, chat.messages).then(reloadChatList);
+  complete(chat);
+  return true;
 }
 
 // ---- chat list ----

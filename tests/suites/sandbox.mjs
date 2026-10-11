@@ -235,7 +235,17 @@ async function inTheApp({ browser, site, mock, check }) {
   await ask('sandbox:const end = Date.now() + 1500;\nwhile (Date.now() < end) {}\n"slow"');
   await p.waitForSelector(`${chip}.running`, { timeout: 5000 });
   check('while code runs, the chip peeks', (await p.$eval(`${chip} .peek-lid`, (l) => getComputedStyle(l).animationName)) === 'peek-lid');
+  // A message sent while the code runs waits for it to finish (the reply's next break), then goes in.
+  const asked = mock.requests.length;
+  await ask('echo and one more thing');
+  check('a message sent while code runs waits, and says so', await p.$eval('.msg.user:last-of-type', (m) => m.classList.contains('waiting') && m.textContent.includes('Goes in when this step finishes.')));
   await idle(p);
+  const after = mock.requests.slice(asked);
+  const went = JSON.parse(after[0]?.sent ?? '[]');
+  check('then it goes in after the code\'s result, which isn\'t lost: one more request, nothing run twice', after.length === 1 && after[0].text === 'echo and one more thing'
+    && went.at(-2).role === 'tool' && went.at(-2).content.startsWith('slow') && went.at(-1).role === 'user');
+  check('and the model answers it, under the reply it interrupted', (await p.textContent(`${reply} .body`)).startsWith('Got 0 image(s)')
+    && !(await p.$('.msg.waiting')) && (await p.$$eval('.msg.assistant', (ms) => ms.at(-2).textContent.includes('Interrupted.'))));
   check('and is still again once it\'s done', !(await p.$eval(chip, (c) => c.classList.contains('running'))));
 
   await ask('sandbox:let a = 1;\na.b.c');

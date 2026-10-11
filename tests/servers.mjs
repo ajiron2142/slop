@@ -370,7 +370,7 @@ export async function startMock() {
       for (let i = 0; i < reply.length; i += 7) {
         if (res.destroyed) return;
         sse(res, { choices: [{ delta: { content: reply.slice(i, i + 7) } }] });
-        await new Promise((r) => setTimeout(r, 4));
+        await new Promise((r) => setTimeout(r, text.startsWith('slow') ? 25 : 4)); // "slow…": about 2 s, to send into
       }
       sse(res, { choices: [{ delta: {}, finish_reason: text.startsWith('cut') ? 'length' : 'stop' }] });
       if (body.stream_options?.include_usage) sse(res, usage(body, reply));

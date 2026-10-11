@@ -38,14 +38,10 @@ The model searches the web itself, through the provider; no backend in slop. Lit
 `web_search_options` request through for models that support it. It would be a + menu switch, like the
 Sandbox. Whether it works depends on your proxy and models, so check first.
 
-## Edit a sent message, redo a reply (mock up first)
-
-Edit on your own messages (hidden while a reply streams): the message becomes a text box; Save replaces
-everything after it and asks for a fresh reply. Redo on the last reply asks again, e.g. after switching
-models. The old version is replaced, not kept as a branch.
-
 ## Set aside
 
+- **Redo on the last reply.** Built Edit instead: saving your last message unchanged asks again, and
+  usually it's better to tell the model what to fix, so it keeps the context of what it said.
 - **A short answer for a repeated tool call** ("Same result as step 3" when the model calls the same tool
   with the same arguments twice in one reply). Saves some tokens, but a file can change between the two
   calls, and the savings are small. Not worth the rule.

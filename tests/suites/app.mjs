@@ -155,6 +155,23 @@ export default async function ({ browser, site, mock, check }) {
   await p.waitForTimeout(300);
   check('Stop ends streaming', !(await p.evaluate(() => document.getElementById('send-btn').classList.contains('stop'))));
 
+  // Sending while a reply is being written: it stops where it is, stays, and goes on with your message.
+  const isStop = () => p.evaluate(() => document.getElementById('send-btn').classList.contains('stop'));
+  const asked = mock.requests.length;
+  await p.fill('#input', 'slow story please');
+  await p.press('#input', 'Enter');
+  await p.waitForFunction(() => document.querySelector('.msg.assistant.streaming .body')?.textContent.length > 20);
+  check('mid-reply, with the box empty, the button is Stop', await isStop());
+  await p.fill('#input', 'echo and make it rhyme');
+  check('with something typed it\'s Send again, and says where it goes', !(await isStop()) && (await p.getAttribute('#send-btn', 'aria-label')) === 'Send, into the reply being written');
+  await p.press('#input', 'Enter');
+  await idle(p);
+  const went = mock.requests.slice(asked);
+  const carried = JSON.parse(went[1]?.sent ?? '[]');
+  const kept = await p.$$eval('.msg', (ms) => ms.slice(-3).map((m) => [m.classList[1], m.querySelector('.body').textContent, m.querySelector('.reply-note')?.textContent ?? '']));
+  check('the reply stops where it is, stays, and says it was interrupted', kept[0][0] === 'assistant' && kept[0][1].length > 10 && kept[0][1].length < 500 && kept[0][2] === 'Interrupted.' && kept[1][0] === 'user' && kept[1][1] === 'echo and make it rhyme');
+  check('the model gets what it wrote so far, then your message, and carries on', went.length === 2 && carried.at(-2).role === 'assistant' && kept[0][1].startsWith(carried.at(-2).content.slice(0, 10)) && carried.at(-1).content === 'echo and make it rhyme' && kept[2][1].startsWith('Got 0 image(s)'));
+
   // A provider that's busy (429, 5xx, 529) before anything streams is asked again, at most twice.
   const tries = (text) => mock.requests.filter((r) => r.text === text).length;
   await p.fill('#input', 'busy1 once');

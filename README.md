@@ -96,6 +96,7 @@ app/                  behaviour
   viewer.js           image viewer: click an image to see it large (removable add-on)
   mini.js             mini window: pops the chat into a floating always-on-top window (Chrome/Edge, removable add-on)
   sandbox.js          runs the model's JavaScript in the sandbox below; its pictures and Copy reply text (removable add-on)
+  edit.js             Edit under your messages: reword one and the model answers again from there (removable add-on)
   stats.js            usage maths for the meter and Stats card (tokens, context, cost, speed)
   markdown.js         markdown to sanitised HTML
   highlight.js        syntax colours for code blocks; loads highlight.js on first use (lists the languages)
@@ -140,6 +141,10 @@ tests/                browser tests; not part of the deployed app (see tests/REA
 **What a reply is doing.** Under "Assistant" a folded line says what's happening right now (*Waiting for claude-haiku*, *Thinking*, *Running gitlab_read*) with a timer, and when the reply is done, how many steps it took. Click it for every step with its time; click a step for exactly what was asked and what came back, or the model's thinking (shown only for models that send their reasoning). An opened step is at most 200px tall and scrolls; nothing in it is cut, and Ctrl+A inside it selects just that step. It all lives in the tab's memory: after a reload a reply shows its one-line "Read …" summary, and none of it is ever sent to the model.
 
 **When the provider is busy.** A reply the provider turns down as busy or rate-limited (HTTP 429, 500, 502, 503, 504 or 529), before anything has streamed, is asked for again at most twice: after 2 s, then 5 s, or after the wait the server gives (`Retry-After`, up to 30 s, when the proxy exposes it). A notice says so, and Stop cancels the wait. Nothing else is retried, so text is never repeated.
+
+**Adding to a reply while it's written.** While a reply is being written the send button is Stop, until you type something (or attach a file): then it's Send again, and what you send goes in at the reply's next break, and the model carries on with it. While the model is writing, the break is now: the reply stops where it is, what it wrote stays (marked *Interrupted.*), and the model goes on from there with your message. While its tools run (reading files, running code), the break is when they've finished, so their work isn't lost; until then your message shows faded, with *Goes in when this step finishes.* Nothing is sent twice: the model gets the chat, what it wrote and found so far, and your message, in one request. Stop with the box empty stops the reply as before; a message still waiting stays in the chat, unanswered.
+
+**Edit.** Under each of your messages (when you point at it; always on a touch screen) **Edit** opens your words in a box. **Save** (or Enter) puts the new wording in its place, removes everything after it, and the model answers again; saving it unchanged asks again for a fresh answer. Attachments stay as they were. Esc or Cancel leaves it as it was. Hidden while a reply is being written.
 
 **Unsent drafts.** What you've typed but not sent is kept per chat, and for the next new one, through switching chats and reloads, until the tab closes. Only the text, not attachments.
 
@@ -208,6 +213,6 @@ Or with Node.js: `npm ci`, `npx playwright install chromium`, then `npm test`. P
 - Mini window (Chrome and Edge): pop the chat out into a small floating window that stays on top of your terminal; close it to bring the chat back
 - Smart paste: paste a long log or command output and the model searches it instead of reading it all, so follow-up questions stay cheap
 - Markdown replies with syntax-coloured, copyable code blocks, tables and nested lists
-- Chat history with search, export/import, and Stop / Retry
+- Chat history with search, export/import, Stop / Retry, Edit, and adding to a reply while it's written
 - Themes, switchable in Settings, each with its own code colours
 - Usage meter (context used and cost per chat), with optional detailed stats per reply and per model

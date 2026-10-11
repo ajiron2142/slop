@@ -13,8 +13,11 @@ const CHECK_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><pa
 // activity line, shown in place of its "Read …" summary. `codeBlock(lang, text)` lets an add-on show a
 // finished reply's code block its own way: { node } replaces it, { note } goes under it. `extra(msg)`
 // gives a node to show under a reply's text, and `copyText(msg)` what its Copy button copies.
-export function createMessages(pane, { onRetry, activity = () => null, codeBlock = () => null, extra = () => null, copyText = (m) => m.content }) { // activity, patch, sandbox
+// `mine(msg)` gives a node to show under one of your messages. While a reply is being written the pane
+// has the class "replying".
+export function createMessages(pane, { onRetry, activity = () => null, codeBlock = () => null, extra = () => null, copyText = (m) => m.content, mine = () => null }) { // activity, patch, sandbox, edit
   blockHook = codeBlock; // patch
+  mineHook = mine; // edit
   extraHook = extra; // sandbox
   copyHook = copyText; // sandbox
   let stick = true;
@@ -26,7 +29,7 @@ export function createMessages(pane, { onRetry, activity = () => null, codeBlock
   const nodeFor = (m, streaming, showStats) => {
     const act = m.role === 'assistant' ? activity(m) : null; // activity
     if (streaming) return messageNode(m, true, false, act);
-    const key = `${m.content.length}|${m.tools?.length ?? 0}|${m.pictures?.length ?? 0}|${m.stats ? 1 : 0}|${showStats}|${act ? 1 : 0}`; // sandbox: pictures
+    const key = `${m.waiting ? 1 : 0}|${m.content.length}|${m.tools?.length ?? 0}|${m.pictures?.length ?? 0}|${m.stats ? 1 : 0}|${showStats}|${act ? 1 : 0}`; // sandbox: pictures
     const hit = built.get(m);
     if (hit?.key === key) return hit.node;
     const node = messageNode(m, false, showStats && openStats, act);
@@ -66,6 +69,7 @@ export function createMessages(pane, { onRetry, activity = () => null, codeBlock
   return {
     render(messages, streamingMsg, { toBottom = false, showStats = false } = {}) {
       if (toBottom) stick = true;
+      pane.classList.toggle('replying', Boolean(streamingMsg));
       // Swapping the children briefly empties the pane, which resets its scroll; keep your place.
       const top = pane.scrollTop;
       pane.replaceChildren(
@@ -87,7 +91,7 @@ export function createMessages(pane, { onRetry, activity = () => null, codeBlock
 }
 
 function messageNode(msg, streaming, openStats, act) {
-  const node = el('article', `msg ${msg.role}${streaming ? ' streaming' : ''}`);
+  const node = el('article', `msg ${msg.role}${streaming ? ' streaming' : ''}${msg.waiting ? ' waiting' : ''}`);
   node.dataset.ts = msg.ts;
   node.append(el('span', 'who', LABEL[msg.role]));
   if (msg.files?.length) node.append(filesNode(msg.files));
@@ -98,9 +102,13 @@ function messageNode(msg, streaming, openStats, act) {
   node.append(body);
   const more = msg.role === 'assistant' ? extraHook(msg) : null; // sandbox
   if (more) node.append(more);
+  const own = msg.role === 'user' ? mineHook(msg) : null; // edit
+  if (own) node.append(own);
+  if (msg.waiting) node.append(el('div', 'reply-note', 'Goes in when this step finishes.'));
+  if (msg.role === 'assistant' && msg.stats?.finish === 'interrupted') node.append(el('div', 'reply-note', 'Interrupted.'));
   if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'length') {
     node.append(el('div', 'reply-note', 'Cut off: the model reached the most it can write in one reply. Say "continue" to get the rest.'));
-  } else if (msg.role === 'assistant' && !streaming && msg.stats && msg.stats.finish !== 'stopped' && !msg.content) {
+  } else if (msg.role === 'assistant' && !streaming && msg.stats && msg.stats.finish !== 'stopped' && msg.stats.finish !== 'interrupted' && !msg.content) {
     node.append(el('div', 'reply-note', `No answer: the model finished without writing anything${msg.stats.reasoned ? ' (it sent only its reasoning, which isn\'t shown)' : ''}.`));
   }
   // Under a finished reply, on the right so they don't read as part of it: Stats (when detailed
@@ -122,6 +130,7 @@ function messageNode(msg, streaming, openStats, act) {
 }
 
 let blockHook = () => null; // patch
+let mineHook = () => null; // edit
 let extraHook = () => null; // sandbox
 let copyHook = (m) => m.content; // sandbox
 
@@ -187,7 +196,7 @@ function copyButton(text) {
   return btn;
 }
 
-const FINISH = { stop: 'Complete', length: 'Cut off (length limit)', stopped: 'Stopped by you', tool_calls: 'Complete' };
+const FINISH = { stop: 'Complete', length: 'Cut off (length limit)', stopped: 'Stopped by you', interrupted: 'Interrupted by your message', tool_calls: 'Complete' };
 
 // "Stats" button and the card it opens: what one reply used, cost and how long it took.
 function statsNodes(s, open) {

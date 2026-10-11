@@ -1,0 +1,26 @@
+/* Edit (add-on): the Edit button under your messages, and the box it opens. */
+.edit-row { display: flex; justify-content: var(--user-align); margin-top: 6px; }
+.messages.replying .edit-row, .msg.editing .edit-row, .msg.waiting .edit-row { display: none; }
+/* Like Copy under a reply: there when you point at the message, always on a touch screen. */
+@media (hover: hover) {
+  .edit-row { opacity: 0; transition: opacity 0.15s; }
+  .msg:hover .edit-row, .edit-row:focus-within { opacity: 1; }
+}
+
+.msg.editing { width: 100%; }
+.editor { display: flex; flex-direction: column; gap: 8px; }
+.edit-box {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  resize: none;
+  outline: none;
+}
+.edit-buttons { display: flex; justify-content: flex-end; gap: 8px; }
+.edit-buttons .btn:disabled { opacity: 0.5; cursor: default; }

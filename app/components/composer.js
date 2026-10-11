@@ -20,6 +20,8 @@ const readAs = (file, how) => new Promise((resolve, reject) => {
 
 // The message box: Enter to send, Shift+Enter for a new line, Send/Stop button,
 // and attachments from the button, paste or drag-and-drop (all the same path).
+// While a reply is being written the button is Stop, until there's something in the box to send:
+// then it's Send again, and what you send goes into the reply (main.js decides when).
 // The + button opens a menu (Attach files, Connect folder, …) when it has more than files to offer.
 export function createComposer({ form, input, send, attach, fileInput, tray, dropZone, overlay, menu, onConnectFolder, onDisconnectFolder, onConnectGitlab, onDisconnectGitlab, onPickGitlabBranch, onToggleSandbox, onSend, onStop, notify }) {
   let files = [];
@@ -55,6 +57,7 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   }
 
   function renderTray() {
+    drawSend(); // attachments count as something to send
     tray.hidden = !files.length && !folderName && !gitlabProject && !sandbox;
     tray.replaceChildren(...(folderName ? [folderChip()] : []), ...(gitlabProject ? [gitlabChip()] : []), ...(sandbox ? [sandboxChip()] : []), ...files.map((f, i) => { // gitlab, sandbox
       if (f.kind === 'paste') return pasteChip(f, i); // smart paste
@@ -132,8 +135,16 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     renderTray();
   }
 
+  function hasDraft() { return Boolean(input.value.trim() || files.length); }
+  // The button says what Enter does now: Stop only while a reply is being written and the box is empty.
+  function drawSend() {
+    const stop = busy && !hasDraft();
+    send.classList.toggle('stop', stop);
+    send.setAttribute('aria-label', stop ? 'Stop' : busy ? 'Send, into the reply being written' : 'Send');
+  }
+
   function submit() {
-    if (busy) return onStop();
+    if (busy && !hasDraft()) return onStop();
     const text = input.value.trim();
     if (!text && !files.length) return;
     if (onSend({ text, files }) === false) return;
@@ -141,10 +152,11 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
     files = [];
     renderTray();
     autosize();
+    drawSend();
   }
 
   form.addEventListener('submit', (e) => { e.preventDefault(); submit(); });
-  input.addEventListener('input', autosize);
+  input.addEventListener('input', () => { autosize(); drawSend(); });
   input.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
     e.preventDefault();
@@ -236,12 +248,12 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
   return {
     setBusy(value) {
       busy = value;
-      send.classList.toggle('stop', busy);
-      send.setAttribute('aria-label', busy ? 'Stop' : 'Send');
+      form.classList.toggle('busy', busy);
+      drawSend();
     },
     focus: () => input.focus(),
     text: () => input.value,
-    setText(text) { input.value = text; autosize(); },
+    setText(text) { input.value = text; autosize(); drawSend(); },
     fit: autosize, // after a theme change
     setGitlab(project) { gitlabProject = project || null; renderTray(); labelAttach(); }, // gitlab
     setSandbox(value) { // sandbox

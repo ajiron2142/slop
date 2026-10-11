@@ -25,7 +25,8 @@ export async function openApp({ browser, site, mock }, { viewport = { width: 128
 }
 
 // Waits until the reply has finished streaming.
-export const idle = (page) => page.waitForFunction(() => !document.getElementById('send-btn').classList.contains('stop'), null, { timeout: 15000 });
+// (The button shows Send even then when something is typed, so this asks the form.)
+export const idle = (page) => page.waitForFunction(() => !document.getElementById('composer').classList.contains('busy'), null, { timeout: 15000 });
 
 export async function send(page, text) {
   await page.fill('#input', text);
