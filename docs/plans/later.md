@@ -31,12 +31,35 @@ LiteLLM model info says `supports_reasoning`. Default sends nothing, so each mod
 today (Claude models don't think unless asked; OpenAI's reasoning models think at medium; newer Gemini
 models decide for themselves). Low, Medium and High send LiteLLM's `reasoning_effort`, which it turns
 into each provider's own setting. Check with a real model on your proxy before building.
+Claude models that think while using tools want their thinking handed back with each tool round (LiteLLM's
+`thinking_blocks`), and slop drops reasoning today, so check a reply that thinks *and* reads files.
 
 ## Web search (check your LiteLLM first)
 
 The model searches the web itself, through the provider; no backend in slop. LiteLLM passes a
 `web_search_options` request through for models that support it. It would be a + menu switch, like the
 Sandbox. Whether it works depends on your proxy and models, so check first.
+
+## Microsoft 365: Outlook and Teams (check whether it's possible first)
+
+**The idea.** Connect your own Outlook and Teams, read-only, the way GitLab connects: through Microsoft
+Graph straight from the browser, signed in with your own Microsoft account (sign-in with PKCE, no backend).
+The model would get tools such as `outlook_search`, `outlook_read`, `calendar_list` and `teams_read`.
+Nothing is ever sent, changed or deleted (no `Mail.Send` or other write permission is asked for).
+
+**What to check first, in your organisation** (each one can rule it out):
+- Can you register an app yourself (Entra ID, *Users can register applications*), or only an admin?
+- Can you agree to read-only permissions yourself (`Mail.Read`, `Calendars.Read`, `Chat.Read`), or does
+  the tenant ask for admin consent? Many tenants do, which breaks "set up by each person, needs no one
+  to manage it".
+- Teams *channel* messages need `ChannelMessage.Read.All`, which always needs an admin; your own chats
+  (`Chat.Read`) may not.
+- Whether your company's rules let an outside web app read mail at all.
+
+**Rules if it's built.** A removable add-on, like GitLab. Each person pastes their own app's ID in Settings;
+no tenant or client IDs go in the repo. The token lasts while the tab is open.
+
+**Already there:** Copy under a reply pastes formatted text (and sandbox pictures as PNG) into Outlook and Teams.
 
 ## Set aside
 
