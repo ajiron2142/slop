@@ -1,12 +1,28 @@
 import { pasteNote } from './paste.js'; // smart paste
 
 export class ApiError extends Error {
-  constructor(message, kind, status) {
+  constructor(message, kind, status, retryAfter = null) {
     super(message);
     this.kind = kind; // 'cors' | 'auth' | 'http'
     this.status = status;
+    this.retryAfter = retryAfter; // seconds, when the server said how long to wait
   }
 }
+
+// A reply the provider turns down for being busy or rate-limited, before anything has streamed, is asked
+// for again: at most twice, after 2 s and then 5 s, or after the wait the server gives (Retry-After, up to
+// 30 s). Nothing else is retried. Returns the wait in ms, or null for "don't".
+const BUSY = new Set([429, 500, 502, 503, 504, 529]);
+const WAITS = [2000, 5000];
+function retryWait(e, attempt) {
+  if (e.kind !== 'http' || !BUSY.has(e.status) || attempt >= WAITS.length) return null;
+  return e.retryAfter != null ? Math.min(e.retryAfter, 30) * 1000 : WAITS[attempt];
+}
+const pause = (ms, signal) => new Promise((resolve, reject) => {
+  const done = () => { clearTimeout(timer); reject(new DOMException('Stopped', 'AbortError')); };
+  const timer = setTimeout(() => { signal?.removeEventListener('abort', done); resolve(); }, ms);
+  signal?.addEventListener('abort', done, { once: true });
+});
 
 // Accept the base URL with or without a trailing slash or "/v1".
 const endpoint = (baseUrl, path) => baseUrl.trim().replace(/\/+$/, '').replace(/\/v1$/, '') + path;
@@ -43,7 +59,8 @@ async function request(settings, path, init = {}, retried = false) {
       if (m) msg = typeof m === 'string' ? m : JSON.stringify(m);
     } catch {}
     const kind = res.status === 401 || res.status === 403 ? 'auth' : 'http';
-    throw new ApiError(`HTTP ${res.status}: ${msg}`, kind, res.status);
+    const after = res.headers.get('Retry-After'); // seconds; readable when the proxy exposes it (CORS)
+    throw new ApiError(`HTTP ${res.status}: ${msg}`, kind, res.status, /^\d+$/.test(after ?? '') ? Number(after) : null);
   }
   return res;
 }
@@ -97,20 +114,28 @@ export async function getKeyInfo(settings) {
 // the model made (only possible when tools are sent), the token usage the server reports
 // at the end, and why the reply finished ("stop", "length", "tool_calls"). `maxTokens` caps how
 // much the model may write; without it the provider's own default applies.
-export async function streamChat({ settings, messages, tools, maxTokens, signal, onDelta, onReasoning }) {
-  const res = await request(settings, '/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: settings.model,
-      messages,
-      stream: true,
-      stream_options: { include_usage: true },
-      ...(tools && { tools }),
-      ...(maxTokens && { max_tokens: maxTokens }),
-    }),
-    signal,
+export async function streamChat({ settings, messages, tools, maxTokens, signal, onDelta, onReasoning, onRetry }) {
+  const body = JSON.stringify({
+    model: settings.model,
+    messages,
+    stream: true,
+    stream_options: { include_usage: true },
+    ...(tools && { tools }),
+    ...(maxTokens && { max_tokens: maxTokens }),
   });
+  let res;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await request(settings, '/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, signal });
+      break;
+    } catch (e) {
+      const wait = retryWait(e, attempt);
+      if (wait == null) throw e;
+      onRetry?.(e, wait); // shown until the next try's answer
+      await pause(wait, signal);
+    }
+  }
+  if (onRetry) onRetry(null, 0);
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   const calls = [];

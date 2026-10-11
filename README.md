@@ -139,6 +139,10 @@ tests/                browser tests; not part of the deployed app (see tests/REA
 
 **What a reply is doing.** Under "Assistant" a folded line says what's happening right now (*Waiting for claude-haiku*, *Thinking*, *Running gitlab_read*) with a timer, and when the reply is done, how many steps it took. Click it for every step with its time; click a step for exactly what was asked and what came back, or the model's thinking (shown only for models that send their reasoning). An opened step is at most 200px tall and scrolls; nothing in it is cut, and Ctrl+A inside it selects just that step. It all lives in the tab's memory: after a reload a reply shows its one-line "Read …" summary, and none of it is ever sent to the model.
 
+**When the provider is busy.** A reply the provider turns down as busy or rate-limited (HTTP 429, 500, 502, 503, 504 or 529), before anything has streamed, is asked for again at most twice: after 2 s, then 5 s, or after the wait the server gives (`Retry-After`, up to 30 s, when the proxy exposes it). A notice says so, and Stop cancels the wait. Nothing else is retried, so text is never repeated.
+
+**Unsent drafts.** What you've typed but not sent is kept per chat, and for the next new one, through switching chats and reloads, until the tab closes. Only the text, not attachments.
+
 **Chat titles.** After a chat's first reply, the app sends one short extra request to the same model asking for a title of at most five words (abbreviations allowed). It happens once per chat and the title doesn't change after that. The answer is used only if it's one line of at most 8 words and 60 characters; otherwise, or if the request fails, the chat keeps its first message as its title. The request costs a few hundred tokens and isn't counted in the usage meter.
 
 **Tools the model can use.** A chat sends only the tools it has a use for, decided again for every message; a plain chat sends none, which is cheapest and works with any model. Every path starts with the folder's name (`test/src/app.js`).

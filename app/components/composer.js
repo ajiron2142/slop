@@ -240,6 +240,8 @@ export function createComposer({ form, input, send, attach, fileInput, tray, dro
       send.setAttribute('aria-label', busy ? 'Stop' : 'Send');
     },
     focus: () => input.focus(),
+    text: () => input.value,
+    setText(text) { input.value = text; autosize(); },
     fit: autosize, // after a theme change
     setGitlab(project) { gitlabProject = project || null; renderTray(); labelAttach(); }, // gitlab
     setSandbox(value) { // sandbox

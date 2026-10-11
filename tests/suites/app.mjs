@@ -154,6 +154,25 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('#send-btn');
   await p.waitForTimeout(300);
   check('Stop ends streaming', !(await p.evaluate(() => document.getElementById('send-btn').classList.contains('stop'))));
+
+  // A provider that's busy (429, 5xx, 529) before anything streams is asked again, at most twice.
+  const tries = (text) => mock.requests.filter((r) => r.text === text).length;
+  await p.fill('#input', 'busy1 once');
+  await p.press('#input', 'Enter');
+  await p.waitForFunction(() => document.getElementById('notice').textContent.includes('Trying again in 2 s'));
+  check('a busy provider is asked again after 2 s, and the notice says so', (await p.textContent('#notice')).startsWith('The model is busy (HTTP 529: Overloaded)'));
+  await idle(p);
+  check('then the reply arrives, and the notice goes', tries('busy1 once') === 2 && (await p.isHidden('#notice')) && !(await p.$('.msg.error')) && (await p.textContent('.msg.assistant:last-of-type .body')).length > 20);
+  await send(p, 'busyforever please');
+  check('it gives up after two more tries and shows the provider\'s error', tries('busyforever please') === 3 && (await p.textContent('.msg.error')).includes('HTTP 529: Overloaded') && (await p.isHidden('#notice')));
+  await p.click('.msg.error .retry').catch(() => {});
+  await idle(p);
+  await p.fill('#input', 'busy1 then stop');
+  await p.press('#input', 'Enter');
+  await p.waitForFunction(() => document.getElementById('notice').textContent.includes('Trying again'));
+  await p.click('#send-btn');
+  await p.waitForTimeout(2500);
+  check('Stop during the wait cancels the retry', tries('busy1 then stop') === 1 && !(await p.evaluate(() => document.getElementById('send-btn').classList.contains('stop'))) && (await p.isHidden('#notice')));
   check('both chats are listed', (await p.$$('#chat-list li')).length === 2);
   await p.fill('#search', 'deliberately long');
   await p.waitForTimeout(400);
@@ -182,7 +201,6 @@ export default async function ({ browser, site, mock, check }) {
   await p.keyboard.press('Enter');
   await p.waitForFunction(() => [...document.querySelectorAll('#chat-list .chat-open')].some((x) => x.textContent === 'Renamed chat'));
   check('Enter saves the new name', (await names())[1] === 'Renamed chat' && (await names())[0] === before[0]);
-
   // Themes and persistence.
   await p.click('#settings-btn');
   await p.click('#theme-picker .model');
@@ -241,6 +259,37 @@ export default async function ({ browser, site, mock, check }) {
   await p.keyboard.press('Escape');
   check('Escape closes it too', !(await isOpen()));
   check('nothing scrolls sideways on a phone', await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+
+  // Unsent drafts: kept per chat, and for the next new one, through switching chats and reloads.
+  await p.setViewportSize({ width: 1280, height: 800 }); // back to a wide window, with the chat list in view
+  if (await p.evaluate(() => document.getElementById('app').classList.contains('collapsed'))) await p.click('#collapse-btn');
+  await p.waitForTimeout(200);
+  const box = () => p.inputValue('#input');
+  const openFirst = async () => { // and wait until it has loaded
+    await p.click('#chat-list li:nth-child(1) .chat-open');
+    await p.waitForFunction(() => document.querySelector('#chat-list li:nth-child(1)').classList.contains('active') && document.querySelector('.msg'));
+  };
+  await p.click('#new-chat');
+  await p.fill('#input', 'half-written question');
+  await openFirst();
+  const otherBefore = await box();
+  await p.fill('#input', 'a draft for this chat');
+  await p.click('#new-chat');
+  check('switching chats keeps each one\'s unsent text', otherBefore === '' && (await box()) === 'half-written question');
+  await p.reload();
+  await p.waitForSelector('#chat-list li[data-id]');
+  const afterReload = await box();
+  await openFirst();
+  check('and a reload keeps them too (this tab only)', afterReload === 'half-written question' && (await box()) === 'a draft for this chat');
+  await p.press('#input', 'Enter');
+  await idle(p);
+  await p.reload();
+  await p.waitForSelector('#chat-list li[data-id]');
+  await openFirst();
+  check('a sent draft is gone', (await box()) === '');
+  await p.click('#new-chat');
+  await p.fill('#input', '');
+  await p.dispatchEvent('#input', 'input');
 
   check('no errors in the browser console', errors.length === 0);
   if (errors.length) console.log('    ', errors.join('\n     '));

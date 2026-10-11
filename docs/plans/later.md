@@ -24,6 +24,26 @@ OpenAI-style providers cache on their own. Claude models only cache what the req
 a request with fields they don't know, so this needs a check against each kind of model behind the proxy
 first. A safer form would be per model, only when LiteLLM's model info says it supports prompt caching.
 
+## "Think harder" (check your LiteLLM first)
+
+A small control next to the model picker (Default · Low · Medium · High), shown only for models whose
+LiteLLM model info says `supports_reasoning`. Default sends nothing, so each model does what it does
+today (Claude models don't think unless asked; OpenAI's reasoning models think at medium; newer Gemini
+models decide for themselves). Low, Medium and High send LiteLLM's `reasoning_effort`, which it turns
+into each provider's own setting. Check with a real model on your proxy before building.
+
+## Web search (check your LiteLLM first)
+
+The model searches the web itself, through the provider; no backend in slop. LiteLLM passes a
+`web_search_options` request through for models that support it. It would be a + menu switch, like the
+Sandbox. Whether it works depends on your proxy and models, so check first.
+
+## Edit a sent message, redo a reply (mock up first)
+
+Edit on your own messages (hidden while a reply streams): the message becomes a text box; Save replaces
+everything after it and asks for a fresh reply. Redo on the last reply asks again, e.g. after switching
+models. The old version is replaced, not kept as a branch.
+
 ## Set aside
 
 - **A short answer for a repeated tool call** ("Same result as step 3" when the model calls the same tool

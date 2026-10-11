@@ -83,6 +83,8 @@ Done.`;
 //                any request carrying broken tool-call JSON is refused with 400, as strict providers do
 //   "slowgitlab …" (with GitLab tools) a GitLab search that never answers, to check Stop
 //   "thinkonly …" sends only reasoning, then finishes; "blank …" finishes with nothing at all
+//   "busy1 …"    turned down as busy (529) the first time this text is sent, then answered normally;
+//                "busyforever …" always busy, saying to retry after 0 s (so the test doesn't wait)
 //   anything else: the long reply
 // The patch the "patch …" replies carry: as `git diff` prints it, against PATCH_BASE below.
 export const PATCH_BASE = {
@@ -181,6 +183,14 @@ export async function startMock() {
         images: parts.filter((p) => p.type === 'image_url').length,
         hasFile: parts.some((p) => p.type === 'text' && p.text.includes('<file name=')),
       });
+
+      if (text.startsWith('busy')) { // the provider is overloaded: 529, before anything streams
+        const tries = requests.filter((r) => r.text === text).length;
+        if (text.startsWith('busyforever') || tries <= 1) {
+          if (text.startsWith('busyforever')) res.setHeader('Retry-After', '0');
+          return res.writeHead(529, { 'Content-Type': 'application/json', 'Access-Control-Expose-Headers': 'Retry-After' }).end(JSON.stringify({ error: { message: 'Overloaded' } }));
+        }
+      }
 
       if (body.tools && text.startsWith('notools')) {
         return res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { message: 'litellm.UnsupportedParamsError: tools is not supported' } }));

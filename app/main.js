@@ -171,6 +171,9 @@ const settings = createSettings({
       state.streaming.controller.abort();
     }
     await store.clearAll();
+    for (const key of Object.keys(drafts)) delete drafts[key];
+    saveDrafts();
+    composer.setText('');
     state.auth?.signOut(); // sign-in
     signInBox?.draw();
     gitlab.disconnect(); // gitlab
@@ -313,6 +316,9 @@ function send({ text, files }) {
   chat.messages.push({ role: 'user', content: text, ts: Date.now(), ...(files.length && { files }) });
   store.saveChat(chat.meta, chat.messages).then(reloadChatList);
   complete(chat);
+  delete drafts.new; // sent: the box empties right after this, so nothing is left to keep
+  delete drafts[chat.meta.id];
+  saveDrafts();
   return true;
 }
 
@@ -380,6 +386,7 @@ async function complete(chat) {
         maxTokens: maxOutputOf(state.modelInfo[model]),
         signal: controller.signal,
         onReasoning: act.thinking, // activity
+        onRetry: (e, wait) => notify(e ? `The model is busy (${e.message}). Trying again in ${Math.round(wait / 1000)} s…` : ''),
         onDelta: (delta) => {
           act.writing(); // activity
           firstAt ??= performance.now();
@@ -432,6 +439,7 @@ async function complete(chat) {
       if (state.active === chat) render();
     }
   } catch (e) {
+    notify(''); // a "trying again" notice from a retry that came to nothing
     if (e.name === 'AbortError') finish = 'stopped';
     else {
       finish = null;
@@ -525,6 +533,7 @@ function newChat() {
   panel.close();
   sidebar.close();
   render();
+  showDraft();
   composer.focus();
 }
 
@@ -538,6 +547,7 @@ async function openChat(id) {
   }
   panel.close();
   render({ toBottom: true });
+  showDraft();
   if (!sidebar.renaming()) composer.focus(); // a double-click opens the chat, then renames it: keep the name box focused
   if (state.active.folder) refreshGit(state.active.folder).then(() => render()); // git
 }
@@ -559,7 +569,9 @@ async function removeChat(id) {
     state.streaming.controller.abort();
   }
   await store.deleteChat(id);
-  if (state.active?.meta.id === id) state.active = null;
+  delete drafts[id];
+  saveDrafts();
+  if (state.active?.meta.id === id) { state.active = null; showDraft(); }
   await reloadChatList();
   render();
 }
@@ -609,6 +621,23 @@ async function setSandbox(on) {
   if (state.active) await store.saveMeta(state.active.meta);
 }
 
+// ---- unsent drafts ----
+
+// What you've typed but not sent is kept per chat (and for the next new one) while this tab is open,
+// through switching chats and reloads. Only the text, not attachments; gone when the tab closes.
+const DRAFTS = 'chat-drafts';
+const drafts = (() => { try { return JSON.parse(sessionStorage.getItem(DRAFTS)) || {}; } catch { return {}; } })();
+const draftKey = () => state.active?.meta.id ?? 'new';
+function saveDrafts() { try { sessionStorage.setItem(DRAFTS, JSON.stringify(drafts)); } catch {} }
+function keepDraft() {
+  const text = composer.text();
+  if (text.trim()) drafts[draftKey()] = text;
+  else delete drafts[draftKey()];
+  saveDrafts();
+}
+const showDraft = () => composer.setText(drafts[draftKey()] ?? '');
+$('input').addEventListener('input', keepDraft);
+
 // ---- start ----
 
 async function init() {
@@ -620,6 +649,7 @@ async function init() {
   await reloadChatList();
   modelPicker.set([], state.settings.model);
   render();
+  showDraft(); // a draft for a new chat, after a reload
   const note = await setUpSignIn(); // sign-in
   // gitlab: also finishes a connect coming back from GitLab. Models don't wait for it.
   gitlab.start().then((gitlabNote) => { if (gitlabNote) openSettings(gitlabNote); });
