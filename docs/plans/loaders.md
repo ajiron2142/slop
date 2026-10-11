@@ -20,8 +20,6 @@ colours come from the page's palette buttons. All are plain canvas or CSS, no li
 
 ## Ideas for next time
 
-- [Round six: depth studies](loaders/round-6-review.md) adds four Codex variations for review: Tideglass, Ribbon relay, Lantern veil, and Orbit bloom. Includes phone-viewable animated recordings and a standalone interactive page. These are proposals, not confirmed picks.
-
 - Start each reply's loader from a different point in its chaotic path, so every reply looks different.
 - The ghost, redesigned without eyes, as a wisp with a fading trail.
 - Some loaders are heavy for a small indicator (about 300 points per frame for the net, thousands for the
