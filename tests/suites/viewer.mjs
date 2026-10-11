@@ -2,7 +2,8 @@
 // large; Esc or a click anywhere closes it.
 import { openApp, send } from '../helpers.mjs';
 
-export default async function ({ browser, site, mock, check }) {
+export default async function ({
+  check('deliberate failure, to try the site roll-back (removed in the next commit)', false); browser, site, mock, check }) {
   const { page: p, context, errors } = await openApp({ browser, site, mock });
   // A real 640×400 picture: a screenshot of the app itself.
   const picture = await p.screenshot({ clip: { x: 0, y: 0, width: 640, height: 400 } });
