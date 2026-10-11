@@ -29,7 +29,7 @@ export const SANDBOX_TOOLS = [{
       'svg(width, height, ...children) and el(tag, attrs, ...children) build your own picture (text is escaped). ' +
       'table(rows) returns a markdown table (first row the header, or objects); print it and use it in your reply. ' +
       'random(seed) gives repeatable random numbers. ' +
-      'reads holds what the other tools returned earlier in this reply, oldest first, as [{ tool, args, text }]. ' +
+      'reads holds what the other tools returned in the earlier rounds of this reply, oldest first, as [{ tool, args, text }]. ' +
       'files holds the text files and pastes the user attached in this chat, oldest first, as [{ name, text }] (a paste is named "paste <id>"), whole even when you were only shown part. ' +
       'Use reads and files to work on that data as is instead of copying it into your code.',
     parameters: { type: 'object', properties: { code: { type: 'string', description: 'The JavaScript to run.' } }, required: ['code'] },

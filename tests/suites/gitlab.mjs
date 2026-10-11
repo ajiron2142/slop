@@ -109,7 +109,12 @@ export default async function ({ browser, site, mock, check }) {
   check('Stop ends a GitLab request that never answers', !(await p.evaluate(() => document.getElementById('send-btn').classList.contains('stop'))));
 
   const methodsBefore = gitlab.methods.length;
+  // GitLab answers each request in 300 ms: the round's calls run at once, so it takes about one answer, not ten.
+  await p.route(`${gitlab.url}/api/v4/**`, async (route) => { await new Promise((r) => setTimeout(r, 300)); await route.continue(); });
+  const roundStart = Date.now();
   await send(p, 'gitlab: why did the pipeline fail?');
+  check('a round\'s tool calls run at the same time', Date.now() - roundStart < 1500);
+  await p.unroute(`${gitlab.url}/api/v4/**`);
   const sent = mock.requests.at(-1);
   check('the chat gets the four GitLab tools and a line about the project', ['gitlab_list', 'gitlab_search', 'gitlab_read', 'gitlab_api'].every((t) => sent.toolNames.includes(t)) && sent.system.includes('"platform/route-service" (branch main)'));
   const reply = await p.textContent('.msg.assistant:last-of-type .body');

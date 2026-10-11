@@ -33,6 +33,7 @@ const state = {
   models: [],
   modelInfo: {}, // context limits and prices by model name, from LiteLLM
   keyInfo: null, // your key's budget and expiry, when LiteLLM reports them
+  infoReady: Promise.resolve(), // settles once the model info asked for at the last refresh has arrived
   chats: [], // chat metadata, newest first (filtered by search)
   active: null, // { meta, messages, folder }, or null for a new unsaved chat
   draftFolder: null, // folder connected before a new chat's first message
@@ -231,21 +232,36 @@ async function reloadChatList() {
   sidebar.render(state.chats, state.active?.meta.id);
 }
 
+const originOf = (url) => { try { return new URL(url).origin; } catch { return ''; } };
+
+// The models listed last time show at once, and the proxy's list replaces them as soon as it answers.
+// Context limits, prices and the key's budget come in their own requests and fill in when they arrive,
+// so the slowest of them never holds up the list. A reply waits for them (state.infoReady), since its
+// output limit comes from there.
+let refreshing = 0; // a newer refresh wins over one still waiting
 async function refreshModels() {
   const s = state.settings;
-  state.models = [];
-  if (s.baseUrl && canAuth()) {
-    try {
-      [state.models, state.modelInfo, state.keyInfo] = await Promise.all([listModels(s), getModelInfo(s), getKeyInfo(s)]);
-      notify('');
-    } catch (e) {
-      notify(`Could not load models: ${e.message}`);
-    }
+  const run = ++refreshing;
+  const ready = Boolean(s.baseUrl && canAuth());
+  rememberForBoot({ proxy: ready ? originOf(s.baseUrl) : '' }); // boot.js starts connecting to it on the next load
+  state.models = ready ? s.knownModels : [];
+  showModels();
+  render();
+  if (!ready) return;
+  state.infoReady = getModelInfo(s).then((info) => { if (run === refreshing) { state.modelInfo = info; render(); } });
+  getKeyInfo(s).then((key) => { if (run === refreshing) { state.keyInfo = key; render(); } });
+  let models = [];
+  try {
+    models = await listModels(s);
+    notify('');
+  } catch (e) {
+    if (run === refreshing) notify(`Could not load models: ${e.message}`);
   }
-  if (state.models.length && !state.models.includes(s.model)) {
-    s.model = state.models[0];
-    await store.saveSettings(s);
-  }
+  if (run !== refreshing) return;
+  state.models = models;
+  s.knownModels = models;
+  if (models.length && !models.includes(s.model)) s.model = models[0];
+  await store.saveSettings(s);
   showModels();
   render();
 }
@@ -318,6 +334,7 @@ async function complete(chat) {
   let reasoned = false; // in the last round
   let frame = 0;
   try {
+    await state.infoReady; // the model's output limit, when the page has only just loaded
     if (folder && !(await allowRead(folder))) {
       throw new Error(`Access to the folder "${folder.name}" wasn't allowed. Retry and allow it, or disconnect the folder.`);
     }
@@ -368,21 +385,28 @@ async function complete(chat) {
       if (!toolCalls.length || finish === 'length') break;
       if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of tool calls.`);
       history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
-      for (const call of toolCalls) {
+      // The round's calls all start at once (they only read, so none waits on another); their results
+      // go back in the order the model asked for them.
+      const done = await Promise.all(toolCalls.map(async (call) => {
         const name = call.function.name;
         const stepDone = act.tool(call); // activity
-        const { label, result, pictures } = unreadable(call) ?? (isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
+        const run = unreadable(call) ?? (isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
           : isSandboxTool(name) ? await runCode(chat, call.function.arguments, reads) // sandbox
           : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
           : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments, controller.signal) // gitlab
           : await runTool(folder, name, call.function.arguments));
+        stepDone(run.label, run.result); // activity
+        return run;
+      }));
+      toolCalls.forEach((call, i) => {
+        const name = call.function.name;
+        const { label, result, pictures } = done[i];
         if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
         if (pictures?.length) (msg.pictures ??= []).push(...pictures); // sandbox
-        if (!isSandboxTool(name)) reads.push({ tool: name, args: call.function.arguments, text: result }); // sandbox
-        stepDone(label, result); // activity
+        if (!isSandboxTool(name)) reads.push({ tool: name, args: call.function.arguments, text: result }); // sandbox: for later rounds
         (msg.tools ??= []).push(label);
         history.push({ role: 'tool', tool_call_id: call.id, content: result });
-      }
+      });
       used.rounds++;
       if (msg.content) msg.content += '\n\n';
       if (state.active === chat) render();
@@ -444,11 +468,12 @@ async function nameChat(chat) {
 // sandbox: runs the model's code; the chip's box peeks out meanwhile.
 async function runCode(chat, args, reads) {
   state.sandboxRunning = chat;
+  state.sandboxRuns = (state.sandboxRuns ?? 0) + 1; // runs in one round go at once; it's still until the last ends
   drawSandbox();
   try {
     return await runSandboxTool(args, { reads, files: attachedTexts(chat.messages) });
   } finally {
-    state.sandboxRunning = null;
+    if (--state.sandboxRuns === 0) state.sandboxRunning = null;
     drawSandbox();
   }
 }

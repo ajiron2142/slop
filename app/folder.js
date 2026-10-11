@@ -103,19 +103,19 @@ export function globTest(pattern) {
 }
 
 // Every file under dir, in name order, as [path, handle], leaving out what the .gitignore files
-// list (ignore.js). Stops after `limit`.
-async function walk(dir, prefix, limit, rules, out = []) {
+// list (ignore.js). The first `limit` of them. A folder's subfolders are read at the same time; the
+// files still come out in name order.
+async function walk(dir, prefix, limit, rules) {
   const entries = [];
   for await (const entry of dir.values()) entries.push(entry);
   entries.sort((a, b) => a.name.localeCompare(b.name));
-  for (const entry of entries) {
-    if (out.length >= limit) break;
+  const parts = await Promise.all(entries.map(async (entry) => {
     const path = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (isIgnored(rules, path, entry.kind === 'directory')) continue;
-    if (entry.kind === 'file') out.push([path, entry]);
-    else await walk(entry, path, limit, await withIgnoreFile(entry, path, rules), out);
-  }
-  return out;
+    if (isIgnored(rules, path, entry.kind === 'directory')) return [];
+    if (entry.kind === 'file') return [[path, entry]];
+    return walk(entry, path, limit, await withIgnoreFile(entry, path, rules));
+  }));
+  return parts.flat().slice(0, limit);
 }
 
 async function list(root, path, pattern) {
@@ -134,9 +134,9 @@ async function search(root, path, { query, pattern, regex }) {
   const out = [];
   let total = 0;
   let hitFiles = 0;
-  // Read a few files at a time; results stay in path order.
-  for (let i = 0; i < files.length && total < MAX_MATCHES; i += 16) {
-    const texts = await Promise.all(files.slice(i, i + 16).map(([p, handle]) => readText(root, p, handle)));
+  // Read 64 files at a time; results stay in path order.
+  for (let i = 0; i < files.length && total < MAX_MATCHES; i += 64) {
+    const texts = await Promise.all(files.slice(i, i + 64).map(([p, handle]) => readText(root, p, handle)));
     texts.forEach((text, j) => {
       if (text == null || total >= MAX_MATCHES || !re.test(text)) return;
       const lines = text.split('\n');

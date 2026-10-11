@@ -1,7 +1,7 @@
 // The speed work stays in place: idle theme sheets, theme applied before the first paint,
 // code colouring loaded on first use, rendered messages reused, search index, and
 // "Delete all" during a reply.
-import { openApp, send, pickModel } from '../helpers.mjs';
+import { openApp, send, pickModel, idle } from '../helpers.mjs';
 
 export default async function ({ browser, site, mock, check }) {
   const { page: p, context, errors } = await openApp({ browser, site, mock }, { connect: false });
@@ -67,6 +67,39 @@ export default async function ({ browser, site, mock, check }) {
   check('"Delete all" during a reply leaves no chats behind', (await p.textContent('#chat-list')).includes('No chats yet'));
   check('"Delete all" resets the theme and sidebar', await p.evaluate(() => !document.getElementById('chat').className.includes('theme-') && !document.getElementById('app').classList.contains('collapsed')));
   check('no errors in the browser console', errors.length === 0);
+  if (errors.length) console.log('    ', errors.join('\n     '));
+  await context.close();
+
+  await quickStart({ browser, site, mock, check });
+}
+
+// The model list shows at once from last time, and the slow model-info request never holds it up.
+async function quickStart({ browser, site, mock, check }) {
+  const { page: p, context, errors } = await openApp({ browser, site, mock });
+  const slow = (path, ms) => p.route(`${mock.url}${path}`, async (route) => { await new Promise((r) => setTimeout(r, ms)); await route.continue(); });
+  await slow('/v1/models', 1500);
+  await slow('/v2/model/info', 1500);
+  const t0 = Date.now();
+  await p.reload();
+  await p.waitForFunction(() => { const b = document.querySelector('#model-picker .model'); return b && !b.disabled && b.textContent !== 'No models'; });
+  check('the models from last time show at once, before the proxy answers', Date.now() - t0 < 1000);
+  await p.unroute(`${mock.url}/v1/models`);
+  await p.reload();
+  const t1 = Date.now();
+  await p.waitForFunction(() => { const b = document.querySelector('#model-picker .model'); return b && !b.disabled; });
+  check('a slow model-info request doesn\'t hold up the list', Date.now() - t1 < 1000);
+  await p.fill('#input', 'echo early');
+  await p.press('#input', 'Enter');
+  await idle(p);
+  check('a reply sent before the model info arrives still asks for the model\'s full output limit', mock.requests.at(-1).maxTokens === 8192);
+
+  // The next load starts connecting to the proxy before the app has loaded (https only).
+  check('the proxy\'s address is kept for the next load', await p.evaluate((origin) => JSON.parse(localStorage.getItem('chat-boot')).proxy === origin, new URL(mock.url).origin));
+  await p.evaluate(() => localStorage.setItem('chat-boot', JSON.stringify({ ...JSON.parse(localStorage.getItem('chat-boot')), proxy: 'https://litellm.example.com' })));
+  await p.route('**/app/main.js', (route) => route.fulfill({ contentType: 'text/javascript', body: '' })); // only boot.js runs
+  await p.reload({ waitUntil: 'domcontentloaded' });
+  check('an https proxy is connected to while the page loads', await p.evaluate(() => document.querySelector('link[rel="preconnect"]')?.href === 'https://litellm.example.com/'));
+  await p.unroute('**/app/main.js');
   if (errors.length) console.log('    ', errors.join('\n     '));
   await context.close();
 }

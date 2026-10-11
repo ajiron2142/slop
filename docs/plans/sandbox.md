@@ -152,7 +152,7 @@ now (thinking, reading a file, running code). Lighter than the reply tree; to be
 
 ## Phase 4 as built: `reads`
 
-- The code sees `reads`: every other tool call in this reply so far, oldest first, as
+- The code sees `reads`: every other tool call in the earlier rounds of this reply, oldest first, as
   `{ tool, args, text }` (the tool's name, its arguments as an object, its result). It's frozen.
 - main.js collects them in the tool loop (a line marked "sandbox") and passes them with each run. The
   sandbox never knows where they came from, so no add-on depends on another: remove the folder add-on and
