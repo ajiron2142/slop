@@ -1,0 +1,70 @@
+# On every push to main: publish the site to GitHub Pages straight away, and run the tests alongside.
+# If the tests fail, the site goes back to the last version whose tests passed; the code on main is
+# left as it is, and GitHub emails you about the failed run. Only the app's own files are published,
+# the same set the Docker image copies (no tests, docs or README).
+name: Site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # a "Run workflow" button on the Actions tab
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read # to find the last run that passed
+
+concurrency: # one at a time, in push order
+  group: site
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect the app's files
+        run: mkdir _site && cp -r index.html app styles fonts vendor sandbox _site/
+      - uses: actions/upload-pages-artifact@v3
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  test:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/playwright:v1.56.1-noble # the browser the tests expect, already installed
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm test
+
+  roll-back:
+    needs: [publish, test]
+    if: failure() && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - name: Find the last version whose tests passed
+        id: good
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "sha=$(gh run list -R '${{ github.repository }}' --workflow site.yml --branch main --status success --limit 1 --json headSha --jq '.[0].headSha // ""')" >> "$GITHUB_OUTPUT"
+      - if: steps.good.outputs.sha != ''
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.good.outputs.sha }}
+      - if: steps.good.outputs.sha != ''
+        name: Collect that version's files
+        run: mkdir _site && cp -r index.html app styles fonts vendor sandbox _site/
+      - if: steps.good.outputs.sha != ''
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages-previous
+      - if: steps.good.outputs.sha != ''
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-previous

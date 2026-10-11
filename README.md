@@ -23,6 +23,8 @@ docker run -p 8080:8080 chat
 
 The image is `nginx-unprivileged`, so it runs under OpenShift's arbitrary UIDs. `nginx.conf` turns on gzip, has the browser re-check app files on each load (so a new release is never mixed with old cached files), caches fonts for a month, and stops other sites from embedding the page.
 
+**GitHub Pages (demo).** `.github/workflows/site.yml` publishes the app's files (the same set as the image) on every push to `main`, and runs the tests alongside. If the tests fail, the site goes back to the last version whose tests passed and GitHub emails you; the code on `main` stays as it is. Set **Settings → Pages → Source** to "GitHub Actions". Without a LiteLLM URL and key the app just waits for one; sign-in needs a `config.json`, which Pages doesn't have.
+
 ## Sign-in (optional)
 
 Instead of pasting an API key, people can sign in with your organisation's identity provider (Microsoft Entra ID, GitLab, Keycloak or any other OpenID Connect provider). It runs entirely in the browser (authorization code with PKCE, no backend and no secret), and it only turns on when the web root has a `config.json`. Without one, the app is exactly as described above. The repo never contains your provider's details: `config.json` is in `.gitignore` and isn't copied into the image.
