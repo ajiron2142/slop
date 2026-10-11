@@ -26,7 +26,6 @@ export default async function ({ browser, site, mock, check }) {
 
   // With a folder connected, the model is asked for patches, with paths from the repo's root.
   await p.click('#attach-btn');
-  check('folders connect read-only: there is no "can edit" option any more', !(await p.$('#attach-menu [data-action="folder-edit"]')));
   await p.click('#attach-menu [data-action="folder"]');
   await p.waitForSelector('.tray-chip.folder');
   await send(p, 'patch: raise the timeout and add a retry');

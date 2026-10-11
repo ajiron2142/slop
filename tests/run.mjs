@@ -23,7 +23,9 @@ import flow from './suites/flow.mjs';
 import sandbox from './suites/sandbox.mjs'; // sandbox
 
 const SUITES = { app, folder, git, paste, patch, activity, flow, sandbox, mini, viewer, signin, titles, gitlab, stats, speed };
-const only = process.argv.slice(2); // e.g. `npm test -- stats` runs one suite
+const args = process.argv.slice(2);
+const all = args.includes('--all'); // print every check, not just the failures
+const only = args.filter((a) => a !== '--all'); // e.g. `npm test -- stats` runs one suite
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const site = await startSite(root);
@@ -34,17 +36,24 @@ let failed = 0;
 
 for (const [name, suite] of Object.entries(SUITES)) {
   if (only.length && !only.includes(name)) continue;
-  console.log(`\n${name}`);
-  const check = (label, ok) => {
-    ok ? passed++ : failed++;
-    console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}`);
+  // One line per suite; each failing check (or, with --all, every check) under it.
+  const lines = [];
+  let ok = 0;
+  let bad = 0;
+  const check = (label, pass) => {
+    pass ? ok++ : bad++;
+    if (!pass || all) lines.push(`  ${pass ? 'PASS' : 'FAIL'}  ${label}`);
   };
   try {
     await suite({ browser, site: site.url, mock, check });
   } catch (e) {
-    failed++;
-    console.log(`  FAIL  stopped early: ${e.message.split('\n')[0]}`);
+    bad++;
+    lines.push(`  FAIL  stopped early: ${e.message.split('\n')[0]}`);
   }
+  console.log(`${bad ? 'FAIL' : 'ok  '}  ${name}: ${ok} passed${bad ? `, ${bad} failed` : ''}`);
+  if (lines.length) console.log(lines.join('\n'));
+  passed += ok;
+  failed += bad;
 }
 
 await browser.close();

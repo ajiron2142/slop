@@ -136,12 +136,16 @@ export default async function ({ browser, site, mock, check }) {
   // Without frame-src 'self' in slop's policy the sandbox can't load; runs then fail instead of waiting forever.
   const blocked = await browser.newContext();
   const b = await blocked.newPage();
+  await b.clock.install(); // the 10 s are fast-forwarded below instead of waited for
   await b.route(`${site}/`, async (route) => {
     const res = await route.fetch();
     route.fulfill({ response: res, body: (await res.text()).replace("frame-src 'self'; ", '') });
   });
   await b.goto(site);
-  r = await b.evaluate(async () => (await import('./app/sandbox.js')).runJs('1'));
+  const pending = b.evaluate(async () => (await import('./app/sandbox.js')).runJs('1'));
+  await b.waitForTimeout(300); // let the page start the run
+  await b.clock.runFor(10_000);
+  r = await pending;
   check('if the sandbox can\'t load, a run fails after 10 s', r.error === "Error: the sandbox didn't answer within 10 s.");
   await blocked.close();
 

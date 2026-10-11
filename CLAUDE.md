@@ -27,5 +27,5 @@ A lean, static chat UI for a LiteLLM proxy. These are the musts. Read them befor
 
 ## Checks
 
-- `npm test` runs every browser suite against a fake LiteLLM (`npm test -- <suite>` for one). Every feature has a suite; add checks with each change and keep them all passing.
+- `npm test` runs every browser suite against a fake LiteLLM (`npm test -- <suite>` for one; it prints only failures, `-- --all` prints every check). Every feature has a suite; add checks with each change and keep them all passing.
 - Look at the real UI (screenshots at desktop size) after visual changes, in more than one theme.
