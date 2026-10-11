@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thinking Loaders Four</title>
+<style>
+:root { --bg: #fafaf9; --card: #ffffff; --ink: #18181b; --muted: #71717a; --line: #e7e5e4; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0c0c0e; --card: #17171a; --ink: #f4f4f5; --muted: #a1a1aa; --line: #27272a; } }
+:root[data-theme="dark"] { --bg: #0c0c0e; --card: #17171a; --ink: #f4f4f5; --muted: #a1a1aa; --line: #27272a; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, sans-serif; }
+main { max-width: 900px; margin: 0 auto; padding: 24px 16px 40px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 24px 0 4px; }
+.sub { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+p.lead { color: var(--muted); margin: 0 0 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+canvas { width: 120px; height: 120px; display: block; }
+.name { font-size: 13px; font-weight: 600; text-align: center; }
+.name small { display: block; font-weight: 400; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.row button { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.row button[aria-pressed="true"] { background: var(--ink); color: var(--card); border-color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Thinking loaders, round four</h1>
+  <p class="lead">The drifting ghost without the cartoon eyes, shapes that never repeat, and more 4D.</p>
+  <div class="row" role="group" aria-label="Colours">Colours:
+    <button type="button" data-p="aurora" aria-pressed="true">Aurora</button>
+    <button type="button" data-p="sunset" aria-pressed="false">Sunset</button>
+    <button type="button" data-p="ocean" aria-pressed="false">Ocean</button>
+    <button type="button" data-p="candy" aria-pressed="false">Candy</button>
+    <button type="button" data-p="ink" aria-pressed="false">Ink only</button>
+  </div>
+
+  <h2>Drifting ghost, redesigned</h2>
+  <p class="sub">No drawn eyes. The shape and the trail do the work.</p>
+  <div class="grid">
+    <div class="card"><canvas data-d="wisp"></canvas><div class="name">Wisp<small>glows, trail fading behind it</small></div></div>
+    <div class="card"><canvas data-d="hollow"></canvas><div class="name">Hollow eyes<small>eyes are gaps in the dots</small></div></div>
+    <div class="card"><canvas data-d="veil"></canvas><div class="name">Veil<small>a sheet, dots rising off it like mist</small></div></div>
+  </div>
+
+  <h2>Never repeats</h2>
+  <p class="sub">Chaos or slowly drifting settings, so no two moments are the same. Leave one running and keep watching.</p>
+  <div class="grid">
+    <div class="card"><canvas data-d="clifford"></canvas><div class="name">Drifting attractor<small>Clifford map, its settings wandering</small></div></div>
+    <div class="card"><canvas data-d="harmono"></canvas><div class="name">Harmonograph<small>pendulums slowly falling out of tune</small></div></div>
+    <div class="card"><canvas data-d="flow" data-keep></canvas><div class="name">Flow field<small>particles riding a shifting current</small></div></div>
+    <div class="card"><canvas data-d="aizawa"></canvas><div class="name">Aizawa attractor<small>chaos, wrapped round a sphere</small></div></div>
+    <div class="card"><canvas data-d="thomas"></canvas><div class="name">Thomas attractor<small>chaos in a lattice of loops</small></div></div>
+    <div class="card"><canvas data-d="dejong" data-keep></canvas><div class="name">De Jong dust<small>a fine cloud slowly reshaping</small></div></div>
+  </div>
+
+  <h2>4D</h2>
+  <p class="sub">Shapes from four dimensions, turned through the fourth and shown in 3D.</p>
+  <div class="grid">
+    <div class="card"><canvas data-d="tessTrail"></canvas><div class="name">Tesseract, with trails<small>where it was a moment ago</small></div></div>
+    <div class="card"><canvas data-d="cell16"></canvas><div class="name">16-cell<small>the tesseract's dual</small></div></div>
+    <div class="card"><canvas data-d="cell5"></canvas><div class="name">5-cell<small>the 4D triangle</small></div></div>
+    <div class="card"><canvas data-d="clifTorus"></canvas><div class="name">Clifford torus<small>turns itself inside out</small></div></div>
+    <div class="card"><canvas data-d="tessNest"></canvas><div class="name">Nested tesseracts<small>two, turning opposite ways</small></div></div>
+    <div class="card"><canvas data-d="tessDots"></canvas><div class="name">Tesseract in dots<small>edges as beads</small></div></div>
+  </div>
+</main>
+<script>
+const S = 240, C = S / 2, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const PALETTES = {
+  aurora: [[90, 220, 180], [80, 160, 255], [190, 110, 255], [90, 220, 180]],
+  sunset: [[255, 120, 90], [255, 190, 80], [240, 90, 160], [255, 120, 90]],
+  ocean: [[40, 120, 220], [60, 210, 230], [120, 255, 200], [40, 120, 220]],
+  candy: [[255, 110, 180], [255, 200, 90], [110, 200, 255], [190, 130, 255], [255, 110, 180]],
+  ink: null,
+};
+let palette = PALETTES.aurora;
+const ink = () => getComputedStyle(document.body).color;
+const dark = () => matchMedia('(prefers-color-scheme: dark)').matches;
+function hue(f) {
+  if (!palette) return ink();
+  f = ((f % 1) + 1) % 1;
+  const n = palette.length - 1, i = Math.floor(f * n), k = f * n - i, a = palette[i], b = palette[i + 1];
+  return `rgb(${a.map((v, j) => Math.round(v + (b[j] - v) * k)).join(',')})`;
+}
+const rot = ([x, y, z], ax, ay) => { const cy = Math.cos(ay), sy = Math.sin(ay), cx = Math.cos(ax), sx = Math.sin(ax); const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; return [x1, y * cx - z1 * sx, y * sx + z1 * cx]; };
+function dot(g, x, y, r, colour, a = 1) { g.globalAlpha = Math.max(0, Math.min(1, a)); g.fillStyle = colour; g.beginPath(); g.arc(x, y, Math.max(0.4, r), 0, Math.PI * 2); g.fill(); }
+
+// ---- 4D: rotate in two planes at once, then project to 3D, then to the screen. ----
+function rot4([x, y, z, w], a, b) {
+  [x, w] = [x * Math.cos(a) - w * Math.sin(a), x * Math.sin(a) + w * Math.cos(a)];
+  [y, z] = [y * Math.cos(b) - z * Math.sin(b), y * Math.sin(b) + z * Math.cos(b)];
+  return [x, y, z, w];
+}
+const to3 = ([x, y, z, w], d = 2.6) => { const k = 1 / (d - w); return [x * k, y * k, z * k]; };
+function edges(g, verts, list, a, b, scale, t, alpha = 1, width = 1.8) {
+  const P = verts.map((v) => rot(to3(rot4(v, a, b)), 0.4, 0.5));
+  g.lineCap = 'round';
+  list.forEach(([i, j], e) => { const p = P[i], q = P[j]; g.globalAlpha = (0.45 + (p[2] + q[2] + 2) * 0.13) * alpha; g.strokeStyle = hue(e / list.length + t * 0.05); g.lineWidth = width; g.beginPath(); g.moveTo(C + p[0] * scale, C + p[1] * scale); g.lineTo(C + q[0] * scale, C + q[1] * scale); g.stroke(); });
+  return P;
+}
+const TESS = [...Array(16).keys()].map((i) => [0, 1, 2, 3].map((b) => (i >> b & 1 ? 1 : -1)));
+const TESS_E = []; for (let i = 0; i < 16; i++) for (let b = 0; b < 4; b++) { const j = i ^ (1 << b); if (j > i) TESS_E.push([i, j]); }
+const C16 = [0, 1, 2, 3].flatMap((k) => [1, -1].map((s) => { const v = [0, 0, 0, 0]; v[k] = s * 1.5; return v; }));
+const C16_E = []; for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) if (Math.floor(i / 2) !== Math.floor(j / 2)) C16_E.push([i, j]);
+const C5 = [[1, 1, 1, -1 / Math.sqrt(5)], [1, -1, -1, -1 / Math.sqrt(5)], [-1, 1, -1, -1 / Math.sqrt(5)], [-1, -1, 1, -1 / Math.sqrt(5)], [0, 0, 0, 4 / Math.sqrt(5)]].map((v) => v.map((c) => c * 0.9));
+const C5_E = []; for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) C5_E.push([i, j]);
+
+// ---- Chaotic paths, worked out once. ----
+function integrate(n, dt, step, start) { const pts = []; let p = start; for (let i = 0; i < n + 300; i++) { const d = step(p); p = p.map((v, k) => v + d[k] * dt); if (i >= 300) pts.push(p); } return pts; }
+const AIZAWA = integrate(9000, 0.01, ([x, y, z]) => [(z - 0.7) * x - 3.5 * y, 3.5 * x + (z - 0.7) * y, 0.6 + 0.95 * z - z ** 3 / 3 - (x * x + y * y) * (1 + 0.25 * z) + 0.1 * z * x ** 3], [0.1, 0, 0]).map(([x, y, z]) => [x / 1.6, -(z - 0.6) / 1.6, y / 1.6]);
+const THOMAS = integrate(14000, 0.05, ([x, y, z]) => [Math.sin(y) - 0.208186 * x, Math.sin(z) - 0.208186 * y, Math.sin(x) - 0.208186 * z], [1.1, 1.1, -0.01]).map(([x, y, z]) => [x / 4.2, y / 4.2, z / 4.2]);
+function trail(g, path, t, speed, len, scale, ax) {
+  const head = Math.floor(t * speed) % path.length, pts = [];
+  for (let i = 0; i < len; i++) pts.push(rot(path[(head - len + i + path.length * 4) % path.length], ax, t * 0.25));
+  g.lineCap = 'round'; g.lineWidth = 1.2;
+  for (let i = 1; i < len; i++) { const a = pts[i - 1], b = pts[i]; g.globalAlpha = (0.12 + 0.88 * (i / len) ** 1.6) * (0.6 + (a[2] + 1) * 0.2); g.strokeStyle = hue(i / len * 0.8 + t * 0.03); g.beginPath(); g.moveTo(C + a[0] * scale, C + a[1] * scale); g.lineTo(C + b[0] * scale, C + b[1] * scale); g.stroke(); }
+  const h = pts[len - 1]; dot(g, C + h[0] * scale, C + h[1] * scale, 2.6, hue(0.8 + t * 0.03), 1);
+}
+
+// ---- Ghost body: a dome on a short tube, the hem a travelling wave. ----
+function ghostPoints(t, rings = 16, per = 30) {
+  const pts = [];
+  for (let k = 0; k <= rings; k++) {
+    const v = k / rings;
+    for (let i = 0; i < per; i++) {
+      const a = (i / per) * Math.PI * 2 + (k % 2) * (Math.PI / per);
+      let y, r;
+      if (v < 0.5) { const th = (v / 0.5) * (Math.PI / 2); y = -0.2 - Math.cos(th) * 0.62; r = Math.sin(th) * 0.62; }
+      else { y = -0.2 + ((v - 0.5) / 0.5) * 0.85; r = 0.62 + (v - 0.5) * 0.14; }
+      if (k > 12) y += Math.sin(a * 5 + t * 4) * 0.09 * ((k - 12) / (rings - 12));
+      pts.push([Math.cos(a) * r, y, Math.sin(a) * r, v]);
+    }
+  }
+  return pts;
+}
+function ghost(g, t, cx, cy, scale, alpha, { hollow = false, glow = false } = {}) {
+  const turn = Math.sin(t * 0.7) * 0.7 + Math.PI * 0, tilt = 0.25;
+  const pts = ghostPoints(t).filter(([x, y, z]) => !hollow || !(z > 0.3 && [-0.22, 0.22].some((ex) => Math.hypot((x - ex) / 1, (y + 0.36) / 1.35) < 0.12)))
+    .map(([x, y, z, v]) => [...rot([x, y, z], tilt, turn), v]);
+  pts.sort((a, b) => a[2] - b[2]);
+  if (glow) g.globalCompositeOperation = dark() ? 'lighter' : 'source-over';
+  for (const [x, y, z, v] of pts) dot(g, cx + x * scale, cy + y * scale, 1.9 + z * 0.8, hue(v * 0.6 + t * 0.06), (0.25 + (z + 1) * 0.33) * alpha * (1 - Math.max(0, v - 0.75) * 1.0));
+  g.globalCompositeOperation = 'source-over';
+}
+
+// ---- Things that never settle. ----
+const FLOW = Array.from({ length: 260 }, (_, i) => ({ x: Math.random() * 2 - 1, y: Math.random() * 2 - 1, c: i / 260 }));
+const field = (x, y, T) => Math.sin(x * 2.3 + T * 0.31) + Math.cos(y * 2.7 - T * 0.23) + Math.sin((x + y) * 1.7 + T * 0.137) * 0.8 + Math.cos((x - y) * 3.1 + T * 0.071) * 0.5;
+let dj = [0.1, 0.1];
+
+const DRAW = {
+  wisp(g, t) { for (let k = 6; k >= 0; k--) { const tt = t - k * 0.14; ghost(g, tt, C + Math.sin(tt * 0.9) * 40, C + 8 + Math.sin(tt * 1.8) * 14, 64, k ? 0.16 * (1 - k / 7) : 0.95, { glow: true }); } },
+  hollow(g, t) { for (let k = 4; k >= 0; k--) { const tt = t - k * 0.16; ghost(g, tt, C + Math.sin(tt * 0.9) * 34, C + 8 + Math.sin(tt * 1.8) * 12, 72, k ? 0.14 * (1 - k / 5) : 1, { hollow: true }); } },
+  veil(g, t) {
+    const sway = Math.sin(t * 0.9) * 0.5, cx = C + Math.sin(t * 0.7) * 20, cy = C + Math.sin(t * 1.4) * 8;
+    const pts = [];
+    for (let k = 0; k <= 22; k++) for (let i = 0; i < 34; i++) {
+      const v = k / 22, a = (i / 34) * Math.PI * 2, th = Math.min(1, v / 0.45) * (Math.PI / 2);
+      let y = v < 0.45 ? -0.25 - Math.cos(th) * 0.6 : -0.25 + ((v - 0.45) / 0.55) * 0.95, r = v < 0.45 ? Math.sin(th) * 0.6 : 0.6 + (v - 0.45) * 0.45;
+      y += Math.sin(a * 4 + t * 3 + v * 4) * 0.07 * v; r += Math.sin(a * 3 - t * 2) * 0.04 * v;
+      pts.push([...rot([Math.cos(a) * r, y, Math.sin(a) * r], 0.25, sway + t * 0.2), v]);
+    }
+    pts.sort((a, b) => a[2] - b[2]);
+    for (const [x, y, z, v] of pts) dot(g, cx + x * 74, cy + y * 74, 1.6 + z * 0.6, hue(0.5 + v * 0.5 + t * 0.05), (0.25 + (z + 1) * 0.3) * (1.1 - v * 0.8));
+    for (let i = 0; i < 40; i++) { const life = (t * 0.35 + i * 0.137) % 1, a = i * 2.4, x = Math.cos(a) * (0.5 + life * 0.3), y = -0.85 - life * 0.55; dot(g, cx + x * 74, cy + y * 74 + 60 * (1 - life) * 0.2, 1.3, hue(0.5 + life * 0.4 + t * 0.05), (1 - life) * 0.6 * Math.min(1, life * 5)); }
+  },
+  clifford(g, t) {
+    const T = t * 0.6, a = -1.4 + 0.35 * Math.sin(T * 0.13), b = 1.6 + 0.3 * Math.sin(T * 0.171 + 1), c = 1.0 + 0.35 * Math.sin(T * 0.113 + 2), d = 0.7 + 0.35 * Math.sin(T * 0.193 + 3);
+    let x = 0.1, y = 0.1;
+    for (let i = 0; i < 9000; i++) {
+      const nx = Math.sin(a * y) + c * Math.cos(a * x), ny = Math.sin(b * x) + d * Math.cos(b * y); x = nx; y = ny;
+      if (i < 20) continue;
+      g.globalAlpha = 0.28; g.fillStyle = hue(Math.atan2(y, x) / (Math.PI * 2) + t * 0.03); g.fillRect(C + x * 46, C + y * 46, 1.2, 1.2);
+    }
+  },
+  harmono(g, t) {
+    const T = t * 0.5, f1 = 2 + 0.013 * Math.sin(T * 0.1), f2 = 3 + 0.011 * Math.sin(T * 0.077 + 1), f3 = 3.01 + 0.012 * Math.sin(T * 0.061 + 2), f4 = 2 + 0.014 * Math.sin(T * 0.089 + 3);
+    g.lineWidth = 1; g.lineCap = 'round';
+    let last = null;
+    for (let i = 0; i <= 2400; i++) {
+      const s = i * 0.04, damp = Math.exp(-s * 0.012);
+      const x = (Math.sin(f1 * s + T) + Math.sin(f3 * s + 1.3)) * 0.5 * damp, y = (Math.sin(f2 * s + 0.4) + Math.sin(f4 * s + T * 0.7)) * 0.5 * damp;
+      if (last) { g.globalAlpha = 0.25 + 0.6 * damp; g.strokeStyle = hue(i / 2400 + t * 0.03); g.beginPath(); g.moveTo(...last); g.lineTo(C + x * 92, C + y * 92); g.stroke(); }
+      last = [C + x * 92, C + y * 92];
+    }
+  },
+  flow(g, t) {
+    g.globalCompositeOperation = 'destination-out'; g.globalAlpha = 0.06; g.fillStyle = '#000'; g.fillRect(0, 0, S, S); g.globalCompositeOperation = 'source-over';
+    for (const p of FLOW) {
+      const ang = field(p.x, p.y, t) * Math.PI, nx = p.x + Math.cos(ang) * 0.012, ny = p.y + Math.sin(ang) * 0.012;
+      if (Math.hypot(nx, ny) > 0.92) { const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * 0.9; p.x = Math.cos(a) * r; p.y = Math.sin(a) * r; continue; }
+      g.globalAlpha = 0.8; g.strokeStyle = hue(p.c + t * 0.04); g.lineWidth = 1.3; g.beginPath(); g.moveTo(C + p.x * 100, C + p.y * 100); g.lineTo(C + nx * 100, C + ny * 100); g.stroke();
+      p.x = nx; p.y = ny;
+    }
+  },
+  aizawa(g, t) { trail(g, AIZAWA, t, 220, 2600, 88, 0.6); },
+  thomas(g, t) { trail(g, THOMAS, t, 260, 3600, 135, 0.5); },
+  dejong(g, t) {
+    g.globalCompositeOperation = 'destination-out'; g.globalAlpha = 0.12; g.fillStyle = '#000'; g.fillRect(0, 0, S, S); g.globalCompositeOperation = 'source-over';
+    const T = t * 0.5, a = 1.4 + 0.3 * Math.sin(T * 0.11), b = -2.3 + 0.25 * Math.sin(T * 0.143 + 1), c = 2.4 + 0.2 * Math.sin(T * 0.097 + 2), d = -2.1 + 0.25 * Math.sin(T * 0.157 + 3);
+    let [x, y] = dj;
+    for (let i = 0; i < 5000; i++) { const nx = Math.sin(a * y) - Math.cos(b * x), ny = Math.sin(c * x) - Math.cos(d * y); x = nx; y = ny; g.globalAlpha = 0.22; g.fillStyle = hue((x + 2) / 4 * 0.7 + t * 0.03); g.fillRect(C + x * 50, C + y * 50, 1, 1); }
+    dj = [x, y];
+  },
+  tessTrail(g, t) { for (let k = 5; k >= 0; k--) edges(g, TESS, TESS_E, (t - k * 0.06) * 0.6, (t - k * 0.06) * 0.35, 105, t, k ? 0.12 * (1 - k / 6) : 1, k ? 1.2 : 1.8); },
+  cell16(g, t) { const P = edges(g, C16, C16_E, t * 0.5, t * 0.31, 92, t, 0.9, 1.4); P.forEach((p, i) => dot(g, C + p[0] * 92, C + p[1] * 92, 2.6 + p[2], hue(i / 8 + t * 0.05), 0.95)); },
+  cell5(g, t) { const P = edges(g, C5, C5_E, t * 0.55, t * 0.37, 110, t, 1, 2); P.forEach((p, i) => dot(g, C + p[0] * 110, C + p[1] * 110, 3.2 + p[2], hue(i / 5 + t * 0.05), 1)); },
+  clifTorus(g, t) {
+    const N = 26, M = 26, a = t * 0.45, b = t * 0.27, P = [];
+    for (let i = 0; i < N; i++) for (let j = 0; j < M; j++) {
+      const u = (i / N) * Math.PI * 2, v = (j / M) * Math.PI * 2, q = rot4([Math.cos(u), Math.sin(u), Math.cos(v), Math.sin(v)].map((c) => c / Math.SQRT2), a, b);
+      const k = 1 / (1.05 - q[3]); P.push([...rot([q[0] * k, q[1] * k, q[2] * k].map((c) => c * 0.5), 0.5, 0.3), i, j]);
+    }
+    const ok = (p) => Math.abs(p[0]) < 1.3 && Math.abs(p[1]) < 1.3;
+    g.lineWidth = 1; g.lineCap = 'round';
+    for (let i = 0; i < N; i++) for (let j = 0; j < M; j++) {
+      const p = P[i * M + j], r = P[((i + 1) % N) * M + j], d = P[i * M + (j + 1) % M];
+      if (!ok(p)) continue;
+      for (const q of [r, d]) if (ok(q)) { g.globalAlpha = 0.35 + (p[2] + 1) * 0.2; g.strokeStyle = hue(i / N + j / M * 0.3 + t * 0.04); g.beginPath(); g.moveTo(C + p[0] * 80, C + p[1] * 80); g.lineTo(C + q[0] * 80, C + q[1] * 80); g.stroke(); }
+    }
+  },
+  tessNest(g, t) {
+    edges(g, TESS, TESS_E, t * 0.5, t * 0.3, 110, t, 1, 1.6);
+    edges(g, TESS.map((v) => v.map((c) => c * 0.5)), TESS_E, -t * 0.7, t * 0.45, 110, t + 0.5, 0.7, 1.2);
+  },
+  tessDots(g, t) {
+    const P = TESS.map((v) => rot(to3(rot4(v, t * 0.6, t * 0.35)), 0.4, 0.5)), pts = [];
+    TESS_E.forEach(([i, j], e) => { for (let s = 0; s <= 10; s++) { const f = s / 10; pts.push([P[i][0] + (P[j][0] - P[i][0]) * f, P[i][1] + (P[j][1] - P[i][1]) * f, P[i][2] + (P[j][2] - P[i][2]) * f, hue(e / 32 + f * 0.1 + t * 0.05)]); } });
+    pts.sort((a, b) => a[2] - b[2]);
+    for (const [x, y, z, c] of pts) dot(g, C + x * 105, C + y * 105, 1.6 + z * 0.9, c, 0.45 + (z + 1) * 0.25);
+  },
+};
+const canvases = [...document.querySelectorAll('canvas[data-d]')].map((c) => { c.width = c.height = S; return [c.getContext('2d'), DRAW[c.dataset.d], c.hasAttribute('data-keep')]; });
+(function frame(ms) {
+  const t = (reduce ? ms * 0.25 : ms) / 1000;
+  for (const [g, draw, keep] of canvases) { g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; if (!keep) g.clearRect(0, 0, S, S); draw(g, t); }
+  requestAnimationFrame(frame);
+})(0);
+for (const b of document.querySelectorAll('[data-p]')) b.addEventListener('click', () => { palette = PALETTES[b.dataset.p]; for (const o of document.querySelectorAll('[data-p]')) o.setAttribute('aria-pressed', String(o === b)); });
+</script>
+</body>
+</html>

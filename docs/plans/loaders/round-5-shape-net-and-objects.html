@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thinking Loaders Five</title>
+<style>
+:root { --bg: #fafaf9; --card: #ffffff; --ink: #18181b; --muted: #71717a; --line: #e7e5e4; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0c0c0e; --card: #17171a; --ink: #f4f4f5; --muted: #a1a1aa; --line: #27272a; } }
+:root[data-theme="dark"] { --bg: #0c0c0e; --card: #17171a; --ink: #f4f4f5; --muted: #a1a1aa; --line: #27272a; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, sans-serif; }
+main { max-width: 900px; margin: 0 auto; padding: 24px 16px 40px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 24px 0 4px; }
+.sub { color: var(--muted); font-size: 13px; margin: 0 0 10px; }
+p.lead { color: var(--muted); margin: 0 0 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.grid.big { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+canvas { width: 120px; height: 120px; display: block; }
+.big canvas { width: 180px; height: 180px; }
+.name { font-size: 13px; font-weight: 600; text-align: center; }
+.name small { display: block; font-weight: 400; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.row button { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.row button[aria-pressed="true"] { background: var(--ink); color: var(--card); border-color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Thinking loaders, round five</h1>
+  <p class="lead">The Clifford torus's net, folding into shapes everyone knows; simple curves like the Lissajous; and 3D objects with some life in them.</p>
+  <div class="row" role="group" aria-label="Colours">Colours:
+    <button type="button" data-p="aurora" aria-pressed="true">Aurora</button>
+    <button type="button" data-p="sunset" aria-pressed="false">Sunset</button>
+    <button type="button" data-p="ocean" aria-pressed="false">Ocean</button>
+    <button type="button" data-p="candy" aria-pressed="false">Candy</button>
+    <button type="button" data-p="ink" aria-pressed="false">Ink only</button>
+  </div>
+
+  <h2>Shape net</h2>
+  <p class="sub">A 3D mesh that folds from one shape into the next: heart, star, moon, lightning bolt, flower, butterfly, infinity.</p>
+  <div class="grid big">
+    <div class="card"><canvas data-d="netLines"></canvas><div class="name">Shape net<small>wire mesh, rocking to show its depth</small></div></div>
+    <div class="card"><canvas data-d="netDots"></canvas><div class="name">Shape cloud<small>the same, in dots</small></div></div>
+  </div>
+
+  <h2>Simple and pretty</h2>
+  <p class="sub">One line each, like the Lissajous.</p>
+  <div class="grid">
+    <div class="card"><canvas data-d="liss3d"></canvas><div class="name">Lissajous knot<small>the curve in 3D, a comet tracing it</small></div></div>
+    <div class="card"><canvas data-d="spiro" data-keep></canvas><div class="name">Spirograph<small>drawn and slowly fading</small></div></div>
+    <div class="card"><canvas data-d="rose"></canvas><div class="name">Rose<small>petals that never quite close</small></div></div>
+    <div class="card"><canvas data-d="pendulum"></canvas><div class="name">Pendulum wave<small>15 swings, falling in and out of step</small></div></div>
+  </div>
+
+  <h2>Fun objects</h2>
+  <p class="sub">Recognisable, in 3D, with a bit of life.</p>
+  <div class="grid">
+    <div class="card"><canvas data-d="jelly"></canvas><div class="name">Jellyfish<small>bell pulses, tentacles trail</small></div></div>
+    <div class="card"><canvas data-d="butterfly"></canvas><div class="name">Butterfly<small>flaps and drifts</small></div></div>
+    <div class="card"><canvas data-d="hourglass"></canvas><div class="name">Hourglass<small>sand runs out, then it flips</small></div></div>
+    <div class="card"><canvas data-d="koi"></canvas><div class="name">Koi<small>swims in a circle</small></div></div>
+  </div>
+</main>
+<script>
+const S = 240, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let C = S / 2;
+const PALETTES = {
+  aurora: [[90, 220, 180], [80, 160, 255], [190, 110, 255], [90, 220, 180]],
+  sunset: [[255, 120, 90], [255, 190, 80], [240, 90, 160], [255, 120, 90]],
+  ocean: [[40, 120, 220], [60, 210, 230], [120, 255, 200], [40, 120, 220]],
+  candy: [[255, 110, 180], [255, 200, 90], [110, 200, 255], [190, 130, 255], [255, 110, 180]],
+  ink: null,
+};
+let palette = PALETTES.aurora;
+const ink = () => getComputedStyle(document.body).color;
+function hue(f) {
+  if (!palette) return ink();
+  f = ((f % 1) + 1) % 1;
+  const n = palette.length - 1, i = Math.floor(f * n), k = f * n - i, a = palette[i], b = palette[i + 1];
+  return `rgb(${a.map((v, j) => Math.round(v + (b[j] - v) * k)).join(',')})`;
+}
+const rot = ([x, y, z], ax, ay) => { const cy = Math.cos(ay), sy = Math.sin(ay), cx = Math.cos(ax), sx = Math.sin(ax); const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; return [x1, y * cx - z1 * sx, y * sx + z1 * cx]; };
+function dot(g, x, y, r, colour, a = 1) { g.globalAlpha = Math.max(0, Math.min(1, a)); g.fillStyle = colour; g.beginPath(); g.arc(x, y, Math.max(0.4, r), 0, Math.PI * 2); g.fill(); }
+const ease = (f) => (f < 0.5 ? 4 * f ** 3 : 1 - (-2 * f + 2) ** 3 / 2);
+function cloud(g, pts, scale, size = 2) {
+  pts.sort((a, b) => a[2] - b[2]);
+  for (const [x, y, z, c, a = 1] of pts) dot(g, C + x * scale, C + y * scale, size + z * size * 0.45, c, (0.35 + (z + 1) * 0.33) * a);
+}
+
+// ---- Shape outlines: each resampled to N points, the same way round, starting at the top. ----
+const N = 84;
+function resample(poly) {
+  let area = 0; for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length]; area += a[0] * b[1] - b[0] * a[1]; }
+  if (area < 0) poly = poly.slice().reverse();
+  let top = 0; poly.forEach((p, i) => { if (p[1] < poly[top][1]) top = i; }); poly = [...poly.slice(top), ...poly.slice(0, top)];
+  const len = [0]; for (let i = 1; i <= poly.length; i++) len.push(len[i - 1] + Math.hypot(poly[i % poly.length][0] - poly[i - 1][0], poly[i % poly.length][1] - poly[i - 1][1]));
+  const total = len[len.length - 1], out = []; let j = 0;
+  for (let k = 0; k < N; k++) { const d = (k / N) * total; while (len[j + 1] < d) j++; const f = (d - len[j]) / (len[j + 1] - len[j] || 1), a = poly[j], b = poly[(j + 1) % poly.length]; out.push([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]); }
+  return out;
+}
+const curve = (n, f) => Array.from({ length: n }, (_, i) => f((i / n) * Math.PI * 2));
+const SHAPES = [
+  curve(300, (t) => [16 * Math.sin(t) ** 3 / 17, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 17 + 0.05]),
+  Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? 0.42 : 1, a = (i / 10) * Math.PI * 2 - Math.PI / 2; return [Math.cos(a) * r, Math.sin(a) * r + 0.08]; }),
+  [...curve(200, (t) => t).filter((t) => t > 0.3 * Math.PI && t < 1.7 * Math.PI).map((t) => [Math.cos(t) * 0.95, Math.sin(t) * 0.95]),
+    ...curve(200, (t) => t).filter((t) => t > 0.36 * Math.PI && t < 1.64 * Math.PI).reverse().map((t) => [0.45 + Math.cos(t) * 0.78, Math.sin(t) * 0.78])].map(([x, y]) => [x + 0.15, y]),
+  [[0.2, -1], [-0.55, 0.12], [-0.05, 0.12], [-0.25, 1], [0.55, -0.15], [0.05, -0.15]],
+  curve(300, (t) => { const r = 0.62 + 0.3 * Math.cos(5 * t); return [Math.cos(t - Math.PI / 2) * r, Math.sin(t - Math.PI / 2) * r]; }),
+  curve(400, (t) => { const r = Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.sin(t / 12) ** 5; return [Math.sin(t) * r / 3.3, -Math.cos(t) * r / 3.3 + 0.18]; }),
+  curve(300, (t) => [Math.cos(t) / (1 + Math.sin(t) ** 2) * 1.05, Math.sin(t) * Math.cos(t) / (1 + Math.sin(t) ** 2) * 1.05]),
+].map(resample);
+const V = 9;
+// A puffed-up version of the outline: rings from front to back, each pulled in along the edge's normal.
+function mesh(outline) {
+  return Array.from({ length: V }, (_, k) => {
+    const v = -Math.PI / 2 + (k / (V - 1)) * Math.PI;
+    return outline.map((p, i) => {
+      const a = outline[(i + N - 1) % N], b = outline[(i + 1) % N], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = dy / l, ny = -dx / l;
+      const inset = (1 - Math.cos(v)) * 0.14;
+      return [p[0] - nx * inset, p[1] - ny * inset, Math.sin(v) * 0.26];
+    });
+  });
+}
+const MESHES = SHAPES.map(mesh);
+function netAt(t) {
+  const per = 3.4, k = Math.floor(t / per) % MESHES.length, f = ease(Math.min(1, (t % per) / 1.1)), A = MESHES[k], B = MESHES[(k + 1) % MESHES.length];
+  const yaw = Math.sin(t * 0.6) * 0.75, tilt = 0.25 + Math.sin(t * 0.4) * 0.1;
+  return A.map((ring, r) => ring.map((p, i) => rot(p.map((v, j) => v + (B[r][i][j] - v) * f), tilt, yaw)));
+}
+
+// ---- Shared bits for the objects. ----
+const PEND = Array.from({ length: 15 }, (_, i) => 51 + i);
+
+const DRAW = {
+  netLines(g, t) {
+    const m = netAt(t), sc = 82;
+    g.lineWidth = 1.2; g.lineCap = 'round';
+    m.forEach((ring, r) => { for (let i = 0; i < N; i++) { const a = ring[i], b = ring[(i + 1) % N]; g.globalAlpha = 0.3 + (a[2] + 1) * 0.3; g.strokeStyle = hue(i / N + r * 0.02 + t * 0.05); g.beginPath(); g.moveTo(C + a[0] * sc, C + a[1] * sc); g.lineTo(C + b[0] * sc, C + b[1] * sc); g.stroke(); } });
+    for (let i = 0; i < N; i += 3) for (let r = 0; r < V - 1; r++) { const a = m[r][i], b = m[r + 1][i]; g.globalAlpha = 0.2 + (a[2] + 1) * 0.25; g.strokeStyle = hue(i / N + t * 0.05); g.beginPath(); g.moveTo(C + a[0] * sc, C + a[1] * sc); g.lineTo(C + b[0] * sc, C + b[1] * sc); g.stroke(); }
+  },
+  netDots(g, t) {
+    const pts = []; netAt(t).forEach((ring, r) => ring.forEach(([x, y, z], i) => pts.push([x, y, z, hue(i / N + r * 0.03 + t * 0.05)])));
+    cloud(g, pts, 82, 1.8);
+  },
+  liss3d(g, t) {
+    const ph = t * 0.15, pts = [];
+    for (let i = 0; i < 420; i++) { const s = (i / 420) * Math.PI * 2; pts.push(rot([Math.sin(3 * s + ph), Math.sin(2 * s), Math.sin(5 * s + 1.3 + ph * 0.5)].map((v) => v * 0.78), 0.35, t * 0.3)); }
+    const order = [...pts.keys()].sort((a, b) => pts[a][2] - pts[b][2]), head = Math.floor((t * 60) % 420);
+    g.lineCap = 'round';
+    for (const i of order) { const a = pts[i], b = pts[(i + 1) % 420], age = ((head - i + 420) % 420) / 420; g.globalAlpha = (0.15 + 0.85 * (1 - age) ** 3) * (0.55 + (a[2] + 1) * 0.22); g.strokeStyle = hue(i / 420 + t * 0.05); g.lineWidth = 1.4 + (1 - age) ** 4 * 2.2; g.beginPath(); g.moveTo(C + a[0] * 95, C + a[1] * 95); g.lineTo(C + b[0] * 95, C + b[1] * 95); g.stroke(); }
+    const h = pts[head]; dot(g, C + h[0] * 95, C + h[1] * 95, 3.4, hue(head / 420 + t * 0.05), 1);
+  },
+  spiro(g, t) {
+    g.globalCompositeOperation = 'destination-out'; g.globalAlpha = 0.018; g.fillStyle = '#000'; g.fillRect(0, 0, S, S); g.globalCompositeOperation = 'source-over';
+    const loop = Math.floor(t / 14), R = 1, r = [0.62, 0.38, 0.71, 0.27, 0.55][loop % 5], d = [0.55, 0.62, 0.4, 0.7, 0.8][loop % 5];
+    g.lineWidth = 1.2; g.lineCap = 'round';
+    for (let k = 0; k < 6; k++) {
+      const s0 = (t * 6 + k * 0.05) , s1 = s0 + 0.05, P = (s) => [((R - r) * Math.cos(s) + d * Math.cos(((R - r) / r) * s)) * 0.95, ((R - r) * Math.sin(s) - d * Math.sin(((R - r) / r) * s)) * 0.95];
+      const [x0, y0] = P(s0), [x1, y1] = P(s1);
+      g.globalAlpha = 0.9; g.strokeStyle = hue(s0 / 40 + loop * 0.2); g.beginPath(); g.moveTo(C + x0 * 100, C + y0 * 100); g.lineTo(C + x1 * 100, C + y1 * 100); g.stroke();
+    }
+  },
+  rose(g, t) {
+    const k = 2.5 + 1.2 * Math.sin(t * 0.06), n = 2600;
+    g.lineWidth = 1; g.lineCap = 'round';
+    let last = null;
+    for (let i = 0; i <= n; i++) { const th = (i / n) * Math.PI * 16, r = Math.cos(k * th) * 0.92, x = C + Math.cos(th + t * 0.1) * r * 100, y = C + Math.sin(th + t * 0.1) * r * 100; if (last) { g.globalAlpha = 0.55; g.strokeStyle = hue(i / n * 2 + t * 0.05); g.beginPath(); g.moveTo(...last); g.lineTo(x, y); g.stroke(); } last = [x, y]; }
+  },
+  pendulum(g, t) {
+    const T = (t % 60), pts = [];
+    PEND.forEach((n, i) => {
+      const ang = Math.sin((T / 60) * n * Math.PI * 2) * 0.55, len = 1.1, x = (i - 7) / 7 * 0.9, top = [x, -0.85, 0];
+      const bob = [x, -0.85 + Math.cos(ang) * len, Math.sin(ang) * len];
+      const a = rot(top, 0.35, 0.9), b = rot(bob, 0.35, 0.9);
+      g.globalAlpha = 0.18; g.strokeStyle = ink(); g.lineWidth = 1; g.beginPath(); g.moveTo(C + a[0] * 95, C + 10 + a[1] * 95); g.lineTo(C + b[0] * 95, C + 10 + b[1] * 95); g.stroke();
+      pts.push([b[0], b[1] + 0.1, b[2], hue(i / 15 + t * 0.04)]);
+    });
+    pts.sort((a, b) => a[2] - b[2]);
+    for (const [x, y, z, c] of pts) dot(g, C + x * 95, C + y * 95, 4.6 + z * 1.6, c, 0.65 + (z + 1) * 0.17);
+  },
+  jelly(g, t) {
+    const pulse = Math.sin(t * 2.4), w = 1 + pulse * 0.1, h = 1 - pulse * 0.12, bob = -pulse * 6 + Math.sin(t * 0.5) * 4, yaw = t * 0.3, tilt = 0.35, pts = [];
+    for (let k = 0; k <= 10; k++) {
+      const th = (k / 10) * (Math.PI / 2) * 1.05, n = Math.max(6, Math.round(34 * Math.sin(th)));
+      for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + k * 0.2, r = Math.sin(th) * 0.62 * w, y = -0.55 * h * Math.cos(th) - 0.15; const p = rot([Math.cos(a) * r, y, Math.sin(a) * r], tilt, yaw); pts.push([...p, hue(0.6 + k / 25 + t * 0.04), 0.9]); }
+    }
+    for (let k = 0; k < 10; k++) {
+      const a0 = (k / 10) * Math.PI * 2;
+      for (let s = 1; s <= 26; s++) { const f = s / 26, sway = Math.sin(t * 2.4 - f * 5 + k) * 0.09 * f, r = 0.6 * w * (1 - f * 0.35); const p = rot([Math.cos(a0) * r + sway, -0.1 + f * 1.05, Math.sin(a0) * r + Math.cos(t * 2 - f * 4 + k) * 0.06 * f], tilt, yaw); pts.push([...p, hue(0.75 + f * 0.3 + t * 0.04), 0.85 * (1 - f * 0.6)]); }
+    }
+    for (let k = 0; k < 4; k++) {
+      const a0 = (k / 4) * Math.PI * 2 + 0.4;
+      for (let s = 1; s <= 22; s++) { const f = s / 22, curl = Math.sin(f * 9 + t * 2 + k) * 0.08; const p = rot([Math.cos(a0) * (0.08 + curl), -0.1 + f * 0.8, Math.sin(a0) * (0.08 + curl)], tilt, yaw); pts.push([...p, hue(0.9 + f * 0.2 + t * 0.04), 0.8]); }
+    }
+    pts.sort((a, b) => a[2] - b[2]);
+    for (const [x, y, z, c, a] of pts) dot(g, C + x * 92, C - 4 + bob + y * 92, 1.7 + z * 0.8, c, a * (0.45 + (z + 1) * 0.28));
+  },
+  butterfly(g, t) {
+    const flap = Math.sin(t * 6) * 0.95, yaw = Math.sin(t * 0.5) * 0.3, tilt = 0.55, cx = Math.sin(t * 0.7) * 16, cy = Math.sin(t * 1.3) * 8 - Math.sin(t * 6) * 2, pts = [];
+    const inWing = (x, y) => { const up = ((x - 0.48) / 0.5) ** 2 + ((y + 0.32) / 0.42) ** 2 < 1, low = ((x - 0.34) / 0.32) ** 2 + ((y - 0.32) / 0.34) ** 2 < 1; return up || low; };
+    for (let i = 0; i < 26; i++) for (let j = 0; j < 30; j++) {
+      const x = 0.04 + (i / 25) * 0.94, y = -0.75 + (j / 29) * 1.4;
+      if (!inWing(x, y)) continue;
+      const spot = Math.hypot(x - 0.62, y + 0.35) < 0.12 || Math.hypot(x - 0.38, y - 0.36) < 0.08, edge = !inWing(x + 0.05, y) || !inWing(x, y + 0.06) || !inWing(x, y - 0.06);
+      for (const side of [1, -1]) { const p = rot([side * x * Math.cos(flap), y, x * Math.sin(flap)], tilt, yaw); pts.push([...p, spot ? ink() : hue(0.05 + x * 0.5 + (edge ? 0.35 : 0) + t * 0.03), spot ? 0.9 : 0.85]); }
+    }
+    for (let s = 0; s < 16; s++) { const y = -0.42 + (s / 15) * 0.95; pts.push([...rot([0, y, 0], tilt, yaw), ink(), 1]); }
+    for (const side of [1, -1]) for (let s = 1; s <= 10; s++) { const f = s / 10; pts.push([...rot([side * f * 0.25, -0.42 - f * 0.4, Math.sin(f * 3) * 0.05], tilt, yaw), ink(), 0.8]); }
+    pts.sort((a, b) => a[2] - b[2]);
+    for (const [x, y, z, c, a] of pts) dot(g, C + cx + x * 88, C + cy + y * 88, 1.8 + z * 0.7, c, a * (0.5 + (z + 1) * 0.25));
+  },
+  hourglass(g, t) {
+    const cycle = 7, ph = t % cycle, run = Math.min(1, ph / 6), flip = ph > 6 ? ease((ph - 6) / 1) * Math.PI : 0, yaw = t * 0.35;
+    const R = (y) => 0.07 + 0.52 * Math.abs(y) ** 0.85;
+    const place = ([x, y, z]) => { const c = Math.cos(flip), s = Math.sin(flip); return rot([x * c - y * s, x * s + y * c, z], 0.18, yaw); };
+    g.lineCap = 'round'; g.lineWidth = 1.1;
+    for (let k = 0; k <= 12; k++) { const y = -1 + (k / 12) * 2, r = R(y); g.strokeStyle = hue(0.55 + k / 30 + t * 0.03); g.beginPath(); for (let i = 0; i <= 40; i++) { const a = (i / 40) * Math.PI * 2, [px, py, pz] = place([Math.cos(a) * r, y, Math.sin(a) * r]); g.globalAlpha = 0.25 + (pz + 1) * 0.15; i ? g.lineTo(C + px * 88, C + py * 88) : g.moveTo(C + px * 88, C + py * 88); } g.stroke(); }
+    for (const y of [-1.06, 1.06]) { g.globalAlpha = 0.7; g.strokeStyle = ink(); g.lineWidth = 2.2; g.beginPath(); for (let i = 0; i <= 40; i++) { const a = (i / 40) * Math.PI * 2, [px, py] = place([Math.cos(a) * 0.66, y, Math.sin(a) * 0.66]); i ? g.lineTo(C + px * 88, C + py * 88) : g.moveTo(C + px * 88, C + py * 88); } g.stroke(); g.lineWidth = 1.1; }
+    const pts = [];
+    const topLevel = -0.08 - (1 - run) * 0.62, botLevel = 0.98 - run * 0.62;
+    for (let i = 0; i < 260; i++) {
+      const u = (i * 0.618) % 1, a = i * 2.39996, inTop = i % 2 === 0;
+      if (inTop) { const y = -0.08 - u * 0.62; if (y < topLevel) continue; const r = R(y) * Math.sqrt(((i * 0.37) % 1)) * 0.92; pts.push([...place([Math.cos(a) * r, y, Math.sin(a) * r]), hue(0.1 + u * 0.1 + t * 0.02)]); }
+      else { const y = 0.98 - u * 0.62; if (y < botLevel) continue; const cone = (y - botLevel) / (0.98 - botLevel + 1e-6), r = Math.min(R(y), 0.6 * cone + 0.03) * Math.sqrt(((i * 0.37) % 1)) * 0.92; pts.push([...place([Math.cos(a) * r, y, Math.sin(a) * r]), hue(0.1 + u * 0.1 + t * 0.02)]); }
+    }
+    if (ph < 6) for (let i = 0; i < 12; i++) { const y = -0.05 + ((t * 1.6 + i / 12) % 1) * (botLevel + 0.05); pts.push([...place([Math.sin(i * 7) * 0.01, y, 0]), hue(0.15 + t * 0.02)]); }
+    pts.sort((a, b) => a[2] - b[2]);
+    for (const [x, y, z, c] of pts) dot(g, C + x * 88, C + y * 88, 1.5 + z * 0.5, c, 0.85);
+  },
+  koi(g, t) {
+    const pts = [], swim = t * 0.7, tilt = 0.6;
+    const spine = (s) => { const a = swim - s * 0.95, r = 0.62 + Math.sin(t * 6 - s * 7) * 0.05 * s; return [Math.cos(a) * r, Math.sin(a) * r, a]; };
+    for (let k = 0; k <= 30; k++) {
+      const s = k / 30, [x, y, a] = spine(s), w = 0.2 * Math.sin(Math.PI * (s * 0.8 + 0.12)) * (s < 0.85 ? 1 : (1 - s) / 0.15 * 0.6 + 0.4), nx = Math.cos(a), ny = Math.sin(a);
+      for (let i = 0; i < 12; i++) { const b = (i / 12) * Math.PI * 2, off = Math.cos(b) * w, h = Math.sin(b) * w * 0.65; const patch = Math.sin(s * 11 + i * 0.9) > 0.55; pts.push([...rot([x + nx * off, y + ny * off, h], tilt, 0), patch ? 'rgb(255,255,255)' : hue(0.02 + s * 0.12 + t * 0.02)]); }
+    }
+    const [tx, ty, ta] = spine(1);
+    for (let i = 0; i < 26; i++) { const f = (i % 13) / 12, side = i < 13 ? 1 : -1, sp = Math.sin(t * 6 - 7) * 0.2; const d = [Math.cos(ta - Math.PI / 2), Math.sin(ta - Math.PI / 2)]; pts.push([...rot([tx + d[0] * f * 0.22 + Math.cos(ta) * side * f * (0.12 + sp * 0.1), ty + d[1] * f * 0.22 + Math.sin(ta) * side * f * (0.12 + sp * 0.1), 0], tilt, 0), hue(0.1 + f * 0.2 + t * 0.02)]); }
+    for (const side of [1, -1]) { const [px, py, pa] = spine(0.28), fl = Math.sin(t * 4) * 0.3; for (let i = 1; i <= 7; i++) { const f = i / 7; pts.push([...rot([px + Math.cos(pa) * side * (0.15 + f * 0.13), py + Math.sin(pa) * side * (0.15 + f * 0.13), -f * 0.05 + fl * f * 0.1], tilt, 0), hue(0.12 + t * 0.02)]); } }
+    pts.sort((a, b) => a[2] - b[2]);
+    for (const [x, y, z, c] of pts) dot(g, C + x * 115, C + y * 115, 2.1 + z * 0.8, c, 0.85);
+  },
+};
+const canvases = [...document.querySelectorAll('canvas[data-d]')].map((c) => { c.width = c.height = S; return [c.getContext('2d'), DRAW[c.dataset.d], c.hasAttribute('data-keep')]; });
+(function frame(ms) {
+  const t = (reduce ? ms * 0.25 : ms) / 1000;
+  for (const [g, draw, keep] of canvases) { g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; if (!keep) g.clearRect(0, 0, S, S); draw(g, t); }
+  requestAnimationFrame(frame);
+})(0);
+for (const b of document.querySelectorAll('[data-p]')) b.addEventListener('click', () => { palette = PALETTES[b.dataset.p]; for (const o of document.querySelectorAll('[data-p]')) o.setAttribute('aria-pressed', String(o === b)); });
+</script>
+</body>
+</html>

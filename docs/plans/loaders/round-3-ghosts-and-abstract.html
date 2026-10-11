@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thinking Loaders Three</title>
+<style>
+:root { --bg: #fafaf9; --card: #ffffff; --ink: #18181b; --muted: #71717a; --line: #e7e5e4; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0c0c0e; --card: #17171a; --ink: #f4f4f5; --muted: #a1a1aa; --line: #27272a; } }
+:root[data-theme="dark"] { --bg: #0c0c0e; --card: #17171a; --ink: #f4f4f5; --muted: #a1a1aa; --line: #27272a; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, sans-serif; }
+main { max-width: 900px; margin: 0 auto; padding: 24px 16px 40px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 24px 0 10px; }
+p.lead { color: var(--muted); margin: 0 0 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+canvas { width: 120px; height: 120px; display: block; }
+.name { font-size: 13px; font-weight: 600; text-align: center; }
+.name small { display: block; font-weight: 400; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.row button { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
+.row button[aria-pressed="true"] { background: var(--ink); color: var(--card); border-color: var(--ink); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Thinking loaders, round three</h1>
+  <p class="lead">Ghosts in real 3D, and abstract shapes in the spirit of the trefoil: things that fold back on themselves. Colour flows through all of them.</p>
+  <div class="row" role="group" aria-label="Colours">Colours:
+    <button type="button" data-p="aurora" aria-pressed="true">Aurora</button>
+    <button type="button" data-p="sunset" aria-pressed="false">Sunset</button>
+    <button type="button" data-p="ocean" aria-pressed="false">Ocean</button>
+    <button type="button" data-p="candy" aria-pressed="false">Candy</button>
+    <button type="button" data-p="ink" aria-pressed="false">Ink only</button>
+  </div>
+
+  <h2>Ghosts</h2>
+  <div class="grid">
+    <div class="card"><canvas data-d="ghost"></canvas><div class="name">Ghost<small>a 3D cloud of dots, turning</small></div></div>
+    <div class="card"><canvas data-d="ghostWire"></canvas><div class="name">Ghost, wire<small>stacked rings, the hem rippling</small></div></div>
+    <div class="card"><canvas data-d="ghostTrail"></canvas><div class="name">Ghost, drifting<small>leaves a fading trail</small></div></div>
+  </div>
+
+  <h2>Abstract</h2>
+  <div class="grid">
+    <div class="card"><canvas data-d="hopf"></canvas><div class="name">Hopf fibration<small>circles that all link each other</small></div></div>
+    <div class="card"><canvas data-d="lorenz"></canvas><div class="name">Lorenz attractor<small>chaos that never repeats</small></div></div>
+    <div class="card"><canvas data-d="tesseract"></canvas><div class="name">Tesseract<small>a 4D cube turning through itself</small></div></div>
+    <div class="card"><canvas data-d="mobius"></canvas><div class="name">Möbius strip<small>one side, one edge</small></div></div>
+    <div class="card"><canvas data-d="knot53"></canvas><div class="name">Torus knot (3, 5)<small>the trefoil's big sibling</small></div></div>
+    <div class="card"><canvas data-d="torusWave"></canvas><div class="name">Breathing torus<small>a wave running round it</small></div></div>
+    <div class="card"><canvas data-d="blob"></canvas><div class="name">Liquid sphere<small>surface waves on a dot sphere</small></div></div>
+    <div class="card"><canvas data-d="pond"></canvas><div class="name">Pond<small>the wave field, round</small></div></div>
+    <div class="card"><canvas data-d="sunflower"></canvas><div class="name">Sunflower<small>golden-angle spiral, tilting</small></div></div>
+  </div>
+</main>
+<script>
+const S = 240, C = S / 2, reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const PALETTES = {
+  aurora: [[90, 220, 180], [80, 160, 255], [190, 110, 255], [90, 220, 180]],
+  sunset: [[255, 120, 90], [255, 190, 80], [240, 90, 160], [255, 120, 90]],
+  ocean: [[40, 120, 220], [60, 210, 230], [120, 255, 200], [40, 120, 220]],
+  candy: [[255, 110, 180], [255, 200, 90], [110, 200, 255], [190, 130, 255], [255, 110, 180]],
+  ink: null,
+};
+let palette = PALETTES.aurora;
+const ink = () => getComputedStyle(document.body).color;
+function hue(f) {
+  if (!palette) return ink();
+  f = ((f % 1) + 1) % 1;
+  const n = palette.length - 1, i = Math.floor(f * n), k = f * n - i, a = palette[i], b = palette[i + 1];
+  return `rgb(${a.map((v, j) => Math.round(v + (b[j] - v) * k)).join(',')})`;
+}
+const rot = ([x, y, z], ax, ay) => { const cy = Math.cos(ay), sy = Math.sin(ay), cx = Math.cos(ax), sx = Math.sin(ax); const x1 = x * cy + z * sy, z1 = -x * sy + z * cy; return [x1, y * cx - z1 * sx, y * sx + z1 * cx]; };
+function dot(g, x, y, r, colour, a = 1) { g.globalAlpha = Math.max(0, Math.min(1, a)); g.fillStyle = colour; g.beginPath(); g.arc(x, y, Math.max(0.4, r), 0, Math.PI * 2); g.fill(); }
+// Dots drawn far to near, sized and faded by depth.
+function cloud(g, pts, scale, size = 2.2, cy = C) {
+  pts.sort((a, b) => a[2] - b[2]);
+  for (const [x, y, z, c, a = 1] of pts) dot(g, C + x * scale, cy + y * scale, size + z * size * 0.45, c, (0.35 + (z + 1) * 0.33) * a);
+}
+// A line through 3D points, far segments first.
+function tube(g, pts, scale, width, colourAt, closed = true) {
+  const n = pts.length, order = [...Array(closed ? n : n - 1).keys()].sort((a, b) => pts[a][2] - pts[b][2]);
+  g.lineCap = 'round';
+  for (const i of order) { const a = pts[i], b = pts[(i + 1) % n]; g.globalAlpha = 0.45 + (a[2] + 1) * 0.27; g.strokeStyle = colourAt(i); g.lineWidth = width + a[2] * width * 0.45; g.beginPath(); g.moveTo(C + a[0] * scale, C + a[1] * scale); g.lineTo(C + b[0] * scale, C + b[1] * scale); g.stroke(); }
+}
+
+// ---- Ghost: a dome on a short tube, its hem a travelling wave; two eyes on the front. ----
+function ghostRings(t) {
+  const rings = [];
+  for (let k = 0; k <= 16; k++) {
+    const v = k / 16, ring = [];
+    for (let i = 0; i < 30; i++) {
+      const a = (i / 30) * Math.PI * 2;
+      let y, r;
+      if (v < 0.5) { const th = (v / 0.5) * (Math.PI / 2); y = -0.2 - Math.cos(th) * 0.62; r = Math.sin(th) * 0.62; }
+      else { y = -0.2 + ((v - 0.5) / 0.5) * 0.85; r = 0.62 + (v - 0.5) * 0.12; }
+      if (k === 16) y += Math.sin(a * 6 + t * 4) * 0.08;
+      else if (k > 12) y += Math.sin(a * 6 + t * 4) * 0.08 * ((k - 12) / 4);
+      ring.push([Math.cos(a) * r, y, Math.sin(a) * r, v]);
+    }
+    rings.push(ring);
+  }
+  return rings;
+}
+function ghostAt(g, t, scale, cx, cy, alpha = 1) {
+  const turn = Math.sin(t * 0.7) * 0.9, tilt = 0.25 + Math.sin(t * 0.5) * 0.08, pts = [];
+  for (const ring of ghostRings(t)) for (const [x, y, z, v] of ring) { const p = rot([x, y, z], tilt, turn); pts.push([p[0], p[1], p[2], hue(v * 0.6 + t * 0.06), alpha]); }
+  const eyes = [];
+  for (const ex of [-0.22, 0.22]) for (let i = 0; i < 14; i++) { const rr = 0.1 * Math.sqrt((i + 0.5) / 14), a = i * 2.39996; eyes.push(rot([ex + Math.cos(a) * rr, -0.35 + Math.sin(a) * rr * 1.3, 0.64], tilt, turn)); }
+  pts.sort((a, b) => a[2] - b[2]);
+  for (const [x, y, z, c, a] of pts) dot(g, cx + x * scale, cy + y * scale, 2 + z * 0.9, c, (0.3 + (z + 1) * 0.33) * a);
+  for (const [x, y, z] of eyes) if (z > 0.1) dot(g, cx + x * scale, cy + y * scale, 2.6, ink(), 0.95 * alpha);
+}
+
+// ---- Shapes made once. ----
+const LORENZ = (() => { const pts = []; let x = 0.1, y = 0, z = 0; for (let i = 0; i < 7000; i++) { const dt = 0.006; x += 10 * (y - x) * dt; y += (x * (28 - z) - y) * dt; z += (x * y - (8 / 3) * z) * dt; if (i > 200) pts.push([x / 22, (z - 25) / 22, y / 22]); } return pts; })();
+const TESS = [...Array(16).keys()].map((i) => [0, 1, 2, 3].map((b) => (i >> b & 1 ? 1 : -1)));
+const TESS_EDGES = []; for (let i = 0; i < 16; i++) for (let b = 0; b < 4; b++) { const j = i ^ (1 << b); if (j > i) TESS_EDGES.push([i, j]); }
+const SPHERE = Array.from({ length: 360 }, (_, i) => { const y = 1 - (i / 359) * 2, r = Math.sqrt(1 - y * y), th = i * 2.39996; return [Math.cos(th) * r, y, Math.sin(th) * r]; });
+
+const DRAW = {
+  ghost(g, t) { ghostAt(g, t, 92, C, C + 8 + Math.sin(t * 1.6) * 6); },
+  ghostWire(g, t) {
+    const turn = t * 0.6, tilt = 0.3, bob = Math.sin(t * 1.6) * 6;
+    ghostRings(t).forEach((ring, k) => {
+      const pts = ring.map((p) => rot(p, tilt, turn));
+      g.lineWidth = 1.4; g.globalAlpha = 0.85; g.strokeStyle = hue(k / 16 * 0.7 - t * 0.15); g.beginPath();
+      pts.forEach(([x, y], i) => (i ? g.lineTo(C + x * 92, C + 8 + bob + y * 92) : g.moveTo(C + x * 92, C + 8 + bob + y * 92))); g.closePath(); g.stroke();
+    });
+    for (const ex of [-0.22, 0.22]) { const [x, y, z] = rot([ex, -0.35, 0.64], tilt, turn); if (z > 0.1) dot(g, C + x * 92, C + 8 + bob + y * 92, 5, ink(), 0.95); }
+  },
+  ghostTrail(g, t) {
+    for (let k = 4; k >= 0; k--) { const tt = t - k * 0.18, x = C + Math.sin(tt * 0.9) * 38, y = C + 6 + Math.sin(tt * 1.8) * 14; ghostAt(g, tt, 64, x, y, k ? 0.18 * (1 - k / 5) : 1); }
+  },
+  hopf(g, t) {
+    const lines = [];
+    for (const [lat, n] of [[0.25, 10], [-0.45, 10]]) for (let j = 0; j < n; j++) {
+      const lon = (j / n) * Math.PI * 2 + t * 0.4 * (lat > 0 ? 1 : -1), c = Math.sin(lat * Math.PI / 2), rr = Math.cos(lat * Math.PI / 2), a = rr * Math.cos(lon), b = rr * Math.sin(lon);
+      const pts = [];
+      for (let i = 0; i < 60; i++) {
+        const th = (i / 60) * Math.PI * 2, k = 1 / Math.sqrt(2 * (1 + c));
+        const x0 = k * (1 + c) * Math.cos(th), x1 = k * (a * Math.sin(th) - b * Math.cos(th)), x2 = k * (a * Math.cos(th) + b * Math.sin(th)), x3 = k * (1 + c) * Math.sin(th);
+        const d = 1 - x0 * 0.92;
+        pts.push(rot([x1 / d * 0.42, x3 / d * 0.42, x2 / d * 0.42], 0.5, t * 0.3));
+      }
+      lines.push({ pts, f: j / n + lat });
+    }
+    for (const { pts, f } of lines) tube(g, pts, 100, 1.4, () => hue(f + t * 0.05));
+  },
+  lorenz(g, t) {
+    const head = Math.floor((t * 300) % LORENZ.length), len = 3200, pts = [];
+    for (let i = 0; i < len; i++) { const p = LORENZ[(head - len + i + LORENZ.length * 2) % LORENZ.length]; pts.push([...rot(p, 0.15, t * 0.25), i]); }
+    g.lineCap = 'round'; g.lineWidth = 1.3;
+    for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i]; g.globalAlpha = (0.15 + 0.85 * (i / len) ** 1.5) * (0.6 + (a[2] + 1) * 0.2); g.strokeStyle = hue(i / len * 0.8 + t * 0.03); g.beginPath(); g.moveTo(C + a[0] * 88, C + 8 + a[1] * 88); g.lineTo(C + b[0] * 88, C + 8 + b[1] * 88); g.stroke(); }
+    const h = pts[pts.length - 1]; dot(g, C + h[0] * 88, C + 8 + h[1] * 88, 3, hue(0.8 + t * 0.03), 1);
+  },
+  tesseract(g, t) {
+    const a = t * 0.6, b = t * 0.35;
+    const P = TESS.map(([x, y, z, w]) => {
+      [x, w] = [x * Math.cos(a) - w * Math.sin(a), x * Math.sin(a) + w * Math.cos(a)];
+      [y, z] = [y * Math.cos(b) - z * Math.sin(b), y * Math.sin(b) + z * Math.cos(b)];
+      const k = 1 / (2.6 - w); return rot([x * k, y * k, z * k], 0.4, 0.5);
+    });
+    g.lineCap = 'round';
+    TESS_EDGES.forEach(([i, j], e) => { const p = P[i], q = P[j]; g.globalAlpha = 0.5 + (p[2] + q[2] + 2) * 0.12; g.strokeStyle = hue(e / TESS_EDGES.length + t * 0.05); g.lineWidth = 1.8; g.beginPath(); g.moveTo(C + p[0] * 105, C + p[1] * 105); g.lineTo(C + q[0] * 105, C + q[1] * 105); g.stroke(); });
+    P.forEach((p, i) => dot(g, C + p[0] * 105, C + p[1] * 105, 2.6 + p[2], hue(i / 16 + t * 0.05), 0.9));
+  },
+  mobius(g, t) {
+    const pts = [];
+    for (let i = 0; i < 90; i++) for (let j = 0; j < 7; j++) {
+      const u = (i / 90) * Math.PI * 2, v = (j / 6) * 2 - 1, w = Math.sin(u * 2 - t * 2) * 0.04;
+      const p = rot([(1 + (v / 2.6) * Math.cos(u / 2)) * Math.cos(u), (v / 2.6) * Math.sin(u / 2) + w, (1 + (v / 2.6) * Math.cos(u / 2)) * Math.sin(u)], 0.75, t * 0.5);
+      pts.push([p[0] * 0.78, p[1] * 0.78, p[2], hue(i / 90 - t * 0.15)]);
+    }
+    cloud(g, pts, 92, 1.7);
+  },
+  knot53(g, t) {
+    const pts = []; for (let i = 0; i < 400; i++) { const u = (i / 400) * Math.PI * 2, r = 2 + Math.cos(5 * u) * 0.9; pts.push(rot([r * Math.cos(3 * u) / 3.2, -Math.sin(5 * u) * 0.9 / 3.2, r * Math.sin(3 * u) / 3.2], 0.9 + Math.sin(t * 0.3) * 0.25, t * 0.5)); }
+    tube(g, pts, 92, 2.6, (i) => hue(i / 400 * 2 - t * 0.25));
+  },
+  torusWave(g, t) {
+    const pts = [];
+    for (let i = 0; i < 64; i++) for (let j = 0; j < 16; j++) {
+      const u = (i / 64) * Math.PI * 2, v = (j / 16) * Math.PI * 2, r = 0.36 + Math.sin(u * 3 - t * 3) * 0.08;
+      const p = rot([(1 + r * Math.cos(v)) * Math.cos(u), r * Math.sin(v), (1 + r * Math.cos(v)) * Math.sin(u)], 0.95, t * 0.35);
+      pts.push([p[0] * 0.72, p[1] * 0.72, p[2] * 0.72, hue(i / 64 + (r - 0.36) * 2 - t * 0.1)]);
+    }
+    cloud(g, pts, 92, 1.6);
+  },
+  blob(g, t) {
+    const pts = SPHERE.map(([x, y, z]) => { const lon = Math.atan2(z, x), w = Math.sin(y * 4 + t * 2.2) * Math.cos(lon * 3 + t * 1.3) * 0.16, r = 1 + w; const p = rot([x * r, y * r, z * r], 0.3, t * 0.4); return [p[0] * 0.72, p[1] * 0.72, p[2] * 0.72, hue(0.4 + w * 2.2 + t * 0.04)]; });
+    cloud(g, pts, 92, 1.9);
+  },
+  pond(g, t) {
+    const pts = [];
+    for (let i = 0; i < 420; i++) { const rr = Math.sqrt((i + 0.5) / 420), a = i * 2.39996, h = Math.sin(rr * 11 - t * 3) * 0.1 * (1 - rr * 0.4); const p = rot([Math.cos(a) * rr, h, Math.sin(a) * rr], 0.95, t * 0.2); pts.push([p[0], p[1], p[2], hue(rr * 0.8 - t * 0.3)]); }
+    cloud(g, pts, 92, 1.7, C + 4);
+  },
+  sunflower(g, t) {
+    const pts = [];
+    for (let i = 0; i < 380; i++) { const rr = Math.sqrt(i / 380), a = i * 2.39996 + t * 0.3, z = -rr * rr * 0.6 + Math.sin(rr * 9 - t * 2.5) * 0.04; const p = rot([Math.cos(a) * rr, z + 0.25, Math.sin(a) * rr], 1.1 + Math.sin(t * 0.5) * 0.25, 0); pts.push([p[0], p[1], p[2], hue(rr * 0.9 + t * 0.05)]); }
+    cloud(g, pts, 92, 1.8);
+  },
+};
+const canvases = [...document.querySelectorAll('canvas[data-d]')].map((c) => { c.width = c.height = S; return [c.getContext('2d'), DRAW[c.dataset.d]]; });
+(function frame(ms) {
+  const t = (reduce ? ms * 0.25 : ms) / 1000;
+  for (const [g, draw] of canvases) { g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.clearRect(0, 0, S, S); draw(g, t); }
+  requestAnimationFrame(frame);
+})(0);
+for (const b of document.querySelectorAll('[data-p]')) b.addEventListener('click', () => { palette = PALETTES[b.dataset.p]; for (const o of document.querySelectorAll('[data-p]')) o.setAttribute('aria-pressed', String(o === b)); });
+</script>
+</body>
+</html>
