@@ -230,17 +230,16 @@ function statsNodes(s, open) {
   head.append(el('span', `stats-end ${how}`.trim(), ended), el('span', 'stats-model', s.model));
   card.append(head);
 
+  // On top, the quick numbers: all the tokens this reply used (sent and written), total time, cost.
   const nums = el('div', 'stats-nums');
-  const num = (n, unit) => { const span = el('span', null, n); span.append(el('small', null, unit)); nums.append(span); };
-  if (s.input != null) num(fmt.int(s.output), 'tokens');
-  const speed = s.input != null && replySpeed(s);
-  if (speed) num(String(Math.round(speed)), 'tok/s');
+  const num = (n, unit) => { const span = el('span', null, n); if (unit) span.append(el('small', null, unit)); nums.append(span); };
+  if (s.input != null) num(fmt.int(s.input + s.output), 'tokens');
   num(fmt.secs(s.ms), 'total');
-  if (s.input != null) nums.append(el('span', 'stats-cost', s.cost ? fmt.usd(s.cost.input + s.cost.output) : 'Price unknown'));
+  if (s.input != null) num(s.cost ? fmt.usd(s.cost.input + s.cost.output) : 'Price unknown');
   card.append(nums);
 
-  // Time breakdown: each part's name, time and share sit above its piece of the bar. Replies saved
-  // before slop recorded the parts have only the total.
+  // Below, the details, one section each. Time: each part's name, time and share sit above its piece
+  // of the bar. Replies saved before slop recorded the parts have only the total.
   const parts = s.time ? PHASES.filter(([k]) => s.time[k] > 0) : [];
   if (parts.length) {
     const total = parts.reduce((sum, [k]) => sum + s.time[k], 0);
@@ -253,28 +252,46 @@ function statsNodes(s, open) {
       part.append(el('div', 'stats-part-name', name), time, el('div', 'stats-seg'));
       bar.append(part);
     }
-    card.append(statsLabel('Time breakdown'), bar);
+    const speed = s.input != null && replySpeed(s);
+    card.append(statsSection('Time', speed ? `writing at ${Math.round(speed)} tok/s` : '', bar));
   }
 
   if (s.input != null) {
-    const pct = s.limit && (s.context / s.limit) * 100;
-    card.append(statsLabel('Context', s.limit ? `${fmt.int(s.context)} of ${fmt.int(s.limit)} · ${pct > 0 && pct < 1 ? '<1' : Math.round(pct)}%` : `${fmt.int(s.context)} · limit unknown`));
-    if (s.limit) {
-      const ctx = el('div', 'stats-ctx');
-      const fill = el('span');
-      fill.style.width = `${Math.min(100, (s.context / s.limit) * 100)}%`;
-      ctx.append(fill);
-      card.append(ctx);
+    // Tokens: what was sent to the model (over every call, each sending the whole chat again), split
+    // into cached and new, and what it wrote. A part that's 0 is left out.
+    const bar = el('div', 'stats-tokens');
+    const legend = el('div', 'stats-legend');
+    for (const [k, name, n] of [['cached', 'Sent, cached', s.cached], ['new', 'Sent, new', s.input - s.cached], ['written', 'Written', s.output]]) {
+      if (!(n > 0)) continue;
+      const piece = el('span', k);
+      piece.style.flexGrow = String(n);
+      bar.append(piece);
+      const item = el('span', k, `${name} `);
+      item.append(el('b', null, fmt.int(n)));
+      legend.append(item);
     }
-    if (s.cached) card.append(el('div', 'stats-foot', `${fmt.int(s.cached)} of ${fmt.int(s.input)} tokens in were cached`));
+    card.append(statsSection('Tokens', s.calls ? `${s.calls} call${s.calls === 1 ? '' : 's'} to the model` : '', bar, legend));
+
+    const pct = s.limit && (s.context / s.limit) * 100;
+    const ctx = [];
+    if (s.limit) {
+      const fill = el('span');
+      fill.style.width = `${Math.min(100, pct)}%`;
+      ctx.push(el('div', 'stats-ctx'));
+      ctx[0].append(fill);
+    }
+    card.append(statsSection('Context', s.limit ? `${fmt.int(s.context)} of ${fmt.int(s.limit)} · ${pct > 0 && pct < 1 ? '<1' : Math.round(pct)}%` : `${fmt.int(s.context)} · limit unknown`, ...ctx));
   } else {
     card.append(el('div', 'stats-foot', 'Token counts arrive at the end of a reply, so a stopped one has none.'));
   }
   return [btn, card];
 }
 
-function statsLabel(name, value) {
+// One section of the card, under a thin line: its name on the left, a summary on the right, then what it shows.
+function statsSection(name, summary, ...body) {
+  const section = el('div', 'stats-sec');
   const label = el('div', 'stats-label', name);
-  if (value) label.append(el('span', null, value));
-  return label;
+  if (summary) label.append(el('span', null, summary));
+  section.append(label, ...body);
+  return section;
 }

@@ -390,7 +390,7 @@ async function complete(chat, carried = null) {
 
   // What this reply used: summed over every round, with timing from the first visible word.
   let model = s.model;
-  const used = { input: 0, output: 0, cached: 0, context: 0 };
+  const used = { input: 0, output: 0, cached: 0, context: 0, calls: 0 }; // calls: requests to the model for this reply
   const started = performance.now();
   // Where the time went: always in exactly one phase, from send to the end, so the four add up to the total.
   const time = { wait: 0, think: 0, tools: 0, write: 0 };
@@ -423,6 +423,7 @@ async function complete(chat, carried = null) {
     for (let round = 1; ; round++) {
       text = '';
       enter('wait');
+      used.calls++;
       act.asking(); // activity
       const { toolCalls, usage, finish: why, reasoned: thought } = await streamChat({
         settings: s,
@@ -522,7 +523,7 @@ async function complete(chat, carried = null) {
       ms: Math.round(ended - started),
       firstMs: firstAt && Math.round(firstAt - started),
       time: Object.fromEntries(Object.entries(time).map(([k, v]) => [k, Math.round(v)])),
-      ...(counted && { input: used.input, output: used.output, cached: used.cached, context: used.context, cost: costOf(info, used) }),
+      ...(counted && { input: used.input, output: used.output, cached: used.cached, context: used.context, cost: costOf(info, used), calls: used.calls }),
       limit: limitOf(info),
     };
   }

@@ -33,6 +33,15 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('.stats-btn');
   const card = await p.textContent('.stats-card');
   check('Stats card: how it ended, model, tokens, cost, context', card.startsWith('Completedclaude-haiku') && /\d+tokens/.test(card) && card.includes('$') && card.includes('of 200,000'));
+  // Tokens: the headline is everything this reply used, sent plus written; the bar splits it up.
+  const tokens = async (sel) => p.$eval(sel, (c) => ({
+    total: +c.querySelector('.stats-nums').textContent.match(/([\d,]+)tokens/)[1].replace(/,/g, ''),
+    parts: [...c.querySelectorAll('.stats-legend span')].map((x) => [x.className, +x.querySelector('b').textContent.replace(/,/g, '')]),
+    calls: c.querySelector('.stats-sec:has(.stats-tokens) .stats-label span')?.textContent,
+  }));
+  const used = await tokens('.stats-card');
+  check('the tokens headline is sent plus written, as the bar splits it', used.parts.some(([k]) => k === 'written') && used.total === used.parts.reduce((a, [, n]) => a + n, 0));
+  check('and says how many calls to the model the reply took', used.calls === '1 call to the model');
   // The time breakdown: every part from send to the end, so the parts add up to the total.
   const timing = async (sel) => p.$eval(sel, (c) => ({
     total: parseFloat(c.querySelector('.stats-nums').textContent.match(/([\d.]+) stotal/)[1]),
@@ -71,7 +80,9 @@ export default async function ({ browser, site, mock, check }) {
   check('a cut-off reply is marked', cut.includes('Cut off'));
   check('and says so under the reply, for everyone', (await p.textContent('.msg.assistant:last-of-type .reply-note')).startsWith('Cut off: the model reached the most it can write'));
   check('the output limit is sent only when LiteLLM gives one', mock.requests.some((r) => r.model === 'claude-haiku' && r.maxTokens === 8192) && mock.requests.at(-1).maxTokens === undefined);
-  check('cached input is shown when reported', cut.includes('tokens in were cached'));
+  check('cached input is shown when reported', cut.includes('Sent, cached'));
+  const cutUsed = await tokens('.msg.assistant:last-of-type .stats-card');
+  check('and the tokens still add up: cached and new are both part of what was sent', cutUsed.parts.length === 3 && cutUsed.total === cutUsed.parts.reduce((x, [, n]) => x + n, 0));
 
   // A reply the model finishes without writing anything stays, and says so.
   await send(p, 'thinkonly what is this repo');
