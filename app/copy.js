@@ -22,12 +22,20 @@ export async function replyHtml(markdown, view = window) {
   return doc.body.innerHTML;
 }
 
-// Draws the SVG at twice its size on white and swaps it for that PNG, shown at its own size.
-// One that can't be drawn stays as it is.
+// Swaps an SVG image for a PNG of it, shown at its own size. One that can't be drawn stays as it is.
 async function asPng(img, view) {
+  const drawn = await drawOnWhite(img.getAttribute('src'), view);
+  if (!drawn) return;
+  img.setAttribute('src', drawn.canvas.toDataURL('image/png'));
+  img.setAttribute('width', String(drawn.w));
+  img.setAttribute('height', String(drawn.h));
+}
+
+// Draws an image at twice its size on white: { canvas, w, h } (its own size), or null if it can't be drawn.
+export async function drawOnWhite(src, view = window) {
   const pic = new view.Image();
-  pic.src = img.getAttribute('src');
-  try { await pic.decode(); } catch { return; }
+  pic.src = src;
+  try { await pic.decode(); } catch { return null; }
   const w = pic.naturalWidth || 300;
   const h = pic.naturalHeight || 150;
   const canvas = view.document.createElement('canvas');
@@ -37,9 +45,7 @@ async function asPng(img, view) {
   g.fillStyle = '#ffffff';
   g.fillRect(0, 0, canvas.width, canvas.height);
   g.drawImage(pic, 0, 0, canvas.width, canvas.height);
-  img.setAttribute('src', canvas.toDataURL('image/png'));
-  img.setAttribute('width', String(w));
-  img.setAttribute('height', String(h));
+  return { canvas, w, h };
 }
 
 // `view` is the window the Copy button is in: the tab, or the mini window (each has its own clipboard access).

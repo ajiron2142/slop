@@ -28,6 +28,7 @@ import { patchPrompt, patchBlock } from './patch.js'; // patch
 import { GIT_TOOLS, gitPrompt, isGitTool, runGitTool, isRepo, refreshGit, gitStatusOf } from './folder-git.js'; // git
 import { SANDBOX_TOOLS, isSandboxTool, runSandboxTool, picturesNode, replyMarkdown } from './sandbox.js'; // sandbox
 import { editNode } from './edit.js'; // edit
+import { svgBlock, svgPrompt, svgForModel } from './svg.js'; // svg
 
 const state = {
   settings: null,
@@ -101,7 +102,7 @@ const activity = createActivity({ flow: createFlow() }); // activity, flow
 const messages = createMessages($('messages'), {
   onRetry: retry,
   activity: (m) => activity.node(state.active?.meta.id, m), // activity
-  codeBlock: patchBlock, // patch
+  codeBlock: (lang, text, n) => svgBlock(lang, text, n) ?? patchBlock(lang, text), // svg, patch
   extra: picturesNode, // sandbox
   copyText: replyMarkdown, // sandbox
   mine: (m) => editNode(m, editMessage), // edit
@@ -375,7 +376,7 @@ async function complete(chat, carried = null) {
   const folder = chat.folder;
   let tools;
   // A reply with no text (it only ran tools, or the model finished empty) has nothing to send back; some providers refuse one.
-  const history = carried ?? withoutErrors(chat.messages).filter((m) => m.role !== 'assistant' || m.content).map((m) => ({ role: m.role, content: toApiContent(m) }));
+  const history = carried ?? withoutErrors(chat.messages).filter((m) => m.role !== 'assistant' || m.content).map((m) => ({ role: m.role, content: m.role === 'assistant' ? svgForModel(toApiContent(m)) : toApiContent(m) })); // svg: pictures aren't sent back
 
   const msg = { role: 'assistant', content: '', ts: Date.now() };
   chat.messages.push(msg);
@@ -407,7 +408,7 @@ async function complete(chat, carried = null) {
     tools = offered.length ? offered : undefined;
     const names = (list) => list.map((t) => t.function.name); // flow: which place each tool reaches
     act.places([folder && { id: 'folder', kind: 'Folder', name: folder.name, tools: names([...FOLDER_TOOLS, ...(repo ? GIT_TOOLS : [])]) }, project && { id: 'gitlab', kind: 'GitLab project', name: project.path, sub: `branch ${project.ref}`, tools: names(GITLAB_TOOLS) }, hasPastes(chat.messages) && { id: 'paste', kind: 'Pasted text', name: 'Pastes in this chat', tools: names(PASTE_TOOLS) }, sandbox && { id: 'sandbox', kind: 'Sandbox', name: 'JavaScript, offline', tools: names(SANDBOX_TOOLS) }].filter(Boolean)); // flow, git, gitlab, smart paste, sandbox
-    const system = [today(), s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, project && gitlabPrompt(project), (folder || project) && patchPrompt([folder?.name, project?.path].filter(Boolean))].filter(Boolean).join('\n\n'); // git, gitlab, patch
+    const system = [today(), svgPrompt, s.systemPrompt.trim(), folder && folderPrompt(folder), repo && gitPrompt, project && gitlabPrompt(project), (folder || project) && patchPrompt([folder?.name, project?.path].filter(Boolean))].filter(Boolean).join('\n\n'); // svg, git, gitlab, patch
     history.unshift({ role: 'system', content: system });
     const reads = []; // sandbox: what the other tools returned in this reply, for the code to use as is
     // With a folder connected the model may ask to read files first: run those and ask again.

@@ -349,6 +349,22 @@ export async function startMock() {
         return res.end('data: [DONE]\n\n');
       }
 
+      if (text.startsWith('svgblock')) { // svg: pictures in ```svg blocks; two shown, three broken in different ways
+        const fence = (svg) => '```svg\n' + svg + '\n```';
+        const reply = [
+          'Here is the flow:',
+          fence('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" onload="window.__svgx = 1"><title>Flow</title><script>window.__svgx = 1</script><rect width="120" height="60" fill="#29335c"/></svg>'),
+          fence('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>'),
+          fence('<svg xmlns="http://www.w3.org/2000/svg"><rect></svg>'),
+          fence('<html><body>not a picture</body></html>'),
+          fence(`<svg xmlns="http://www.w3.org/2000/svg"><!-- ${'x'.repeat(210 * 1024)} --></svg>`),
+          'That is all.',
+        ].join('\n\n');
+        for (let i = 0; i < reply.length; i += 20000) sse(res, { choices: [{ delta: { content: reply.slice(i, i + 20000) } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] });
+        return res.end('data: [DONE]\n\n');
+      }
+
       if (text.startsWith('patch')) { // a reply carrying a diff block, streamed in pieces like any reply
         const block = text.startsWith('patchbad') ? PATCH.replace('@@ -1,3 +1,3 @@', 'this line is not part of a patch') : text.startsWith('patchmarker') ? PATCH.replace(' service: route', ' service: route\nEND_OF_PATCH') : PATCH;
         const reply = 'Here is the change:\n\n```diff\n' + block + '```\n\nPaste it in your repo.';

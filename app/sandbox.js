@@ -12,6 +12,7 @@
 // and components/composer.js, and the Dockerfile's sandbox/ line.
 
 import { el } from './dom.js';
+import { svgUrl } from './picture.js';
 
 const FRAME_URL = 'sandbox/sandbox.html';
 const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
@@ -111,14 +112,6 @@ export async function runSandboxTool(argsJson, inputs = {}) {
   return run.error
     ? { label: 'Ran code (failed)', result: `Error: the run failed.\n${sandboxResult(run)}`, pictures: run.pictures }
     : { label: 'Ran code', result: sandboxResult(run), pictures: run.pictures };
-}
-
-// An SVG as a data: URL, base64 so any text in it survives.
-export function svgUrl(svg) {
-  const bytes = new TextEncoder().encode(svg);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return `data:image/svg+xml;base64,${btoa(bin)}`;
 }
 
 // A reply's pictures, under its text: each in a block like a code block, "Picture 1 · SVG" and Copy SVG,

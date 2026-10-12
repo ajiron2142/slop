@@ -22,7 +22,7 @@ npm test
 
 **Speed:** `npm run bench` measures startup, sending, a round of tool calls, opening a long chat, streaming and folder search against the same fake servers with realistic network delays, and prints milliseconds. It isn't part of `npm test`; run it before and after a change meant to make something faster.
 
-It prints one line per suite and only the checks that fail; `npm test -- --all` prints every check. Run one suite with `npm test -- stats` (suites: `app`, `edit`, `folder`, `git`, `paste`, `patch`, `activity`, `flow`, `sandbox`, `mini`, `viewer`, `signin`, `titles`, `gitlab`, `stats`, `speed`).
+It prints one line per suite and only the checks that fail; `npm test -- --all` prints every check. Run one suite with `npm test -- stats` (suites: `app`, `edit`, `svg`, `folder`, `git`, `paste`, `patch`, `activity`, `flow`, `sandbox`, `mini`, `viewer`, `signin`, `titles`, `gitlab`, `stats`, `speed`).
 
 The `git` suite builds a small sample repository with the `git` command, so git needs to be installed (it fails with a clear message otherwise).
 
@@ -34,7 +34,7 @@ Each check prints `PASS` or `FAIL`; the command exits with an error if anything 
 run.mjs        starts the servers, runs every suite, prints the results
 servers.mjs    a small web server for the app and the fake LiteLLM (Node built-ins only)
 helpers.mjs    shared steps: open the app connected to the fake LiteLLM, send a message, pick a model
-suites/        app.mjs, edit.mjs, folder.mjs, git.mjs, paste.mjs, patch.mjs, activity.mjs, flow.mjs, sandbox.mjs, mini.mjs, viewer.mjs, signin.mjs, titles.mjs, gitlab.mjs, stats.mjs, speed.mjs
+suites/        app.mjs, edit.mjs, svg.mjs, folder.mjs, git.mjs, paste.mjs, patch.mjs, activity.mjs, flow.mjs, sandbox.mjs, mini.mjs, viewer.mjs, signin.mjs, titles.mjs, gitlab.mjs, stats.mjs, speed.mjs
 ```
 
 The only dependency is Playwright (it drives a real Chromium), pinned to one exact version in `package.json`. It never needs updating unless you want to. If you change the version, change the Docker image tag above to match.

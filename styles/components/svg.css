@@ -1,0 +1,27 @@
+/* SVG pictures (add-on): a ```svg block shown as a picture, in a block like a code block.
+   Its paper is white in every theme: the model draws for white. */
+.svg-block { margin: 0.9em 0; overflow: hidden; background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius-md); }
+.svg-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 12px;
+  font-family: var(--font-meta);
+  font-size: 12px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--ink) 7%, var(--bg));
+}
+.svg-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.svg-tabs { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; }
+.svg-tabs button { padding: 2px 9px; font: inherit; color: var(--muted); background: none; border: 0; cursor: pointer; }
+.svg-tabs button:hover { color: var(--ink); }
+.svg-tabs button[aria-selected="true"] { color: var(--ink); background: var(--bg); }
+.svg-copy { display: inline-flex; align-items: center; gap: 5px; padding: 0; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.svg-copy:hover { color: var(--ink); }
+.svg-copy .icon { width: 14px; height: 14px; }
+.svg-paper { padding: 12px; background: #ffffff; }
+.svg-paper[hidden], .svg-source[hidden] { display: none; }
+.svg-paper img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.svg-paper img.fill { width: 100%; max-height: 420px; object-fit: contain; } /* only a viewBox: as wide as the reply, within reason */
+.chat .body .svg-block > pre { margin: 0; border: 0; border-radius: 0; }
+.svg-note { margin: -0.4em 0 0.9em; font-family: var(--font-meta); font-size: 12.5px; color: var(--muted); }
