@@ -70,6 +70,15 @@ export default async function ({ browser, site, mock, check }) {
   await p.waitForSelector(`${reply} .tool-log`);
   check('after a reload only the saved one-line summary is left', !(await p.$('.activity')) && (await p.textContent(`${reply} .tool-log`)).startsWith('Searched paste'));
 
+  // The line's timer is the reply's total time: it keeps counting up when the stage changes.
+  await p.route(`${mock.url}/v1/chat/completions`, async (route) => { await new Promise((r) => setTimeout(r, 1200)); await route.continue(); });
+  await p.fill('#input', 'slow story please');
+  await p.press('#input', 'Enter');
+  await p.waitForFunction(() => document.querySelector('.msg.assistant.streaming .body')?.textContent.length > 20);
+  const total = parseFloat(await p.textContent('.msg.assistant.streaming .act-head .act-time'));
+  check('once it starts writing, the timer still counts from when you sent, not from 0', total >= 1.2);
+  await p.unroute(`${mock.url}/v1/chat/completions`);
+  await idle(p);
   check('no errors in the browser console', errors.length === 0);
   if (errors.length) console.log('    ', errors.join('\n     '));
   await context.close();

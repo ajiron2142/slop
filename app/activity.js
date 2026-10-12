@@ -1,8 +1,8 @@
 import { el } from './dom.js';
 
 // What a reply did (optional add-on): a folded line under "Assistant" that says what is happening
-// right now ("Waiting for claude-haiku 1.2s", "Thinking", "Running gitlab_read"), and once the reply
-// is done, how many steps it took. Open it for every step with its time; open a step for exactly what
+// right now ("Waiting for claude-haiku", "Thinking", "Running gitlab_read") with the reply's time so
+// far, counting from when you sent, and once the reply is done, how many steps it took. Open it for every step with its time; open a step for exactly what
 // was asked and what came back, or the model's thinking. Everything stays in this tab's memory: after
 // a reload a reply shows only its saved one-line summary, as it does without this add-on. None of it
 // is sent to the model.
@@ -41,7 +41,7 @@ export function createActivity({ now = () => performance.now(), flow = null } = 
     r.ui.tw.textContent = r.open ? '▾' : '▸';
     r.ui.spin.hidden = !running;
     r.ui.text.textContent = running ? doing : done;
-    r.ui.time.textContent = secs((running ? t - r.since : r.ended - r.t0));
+    r.ui.time.textContent = secs((running ? t : r.ended) - r.t0); // the whole reply, whatever it's doing now
     r.ui.head.setAttribute('aria-expanded', String(r.open));
     r.ui.list.hidden = !r.open;
     r.steps.forEach((s, i) => drawStep(r, s, i, t));
@@ -98,7 +98,7 @@ export function createActivity({ now = () => performance.now(), flow = null } = 
       const node = el('div', 'activity');
       const head = el('button', 'act-row act-head');
       head.type = 'button';
-      const r = { model, t0: now(), since: now(), state: 'wait', ended: null, finish: null, open: false, steps: [], node, places: [] }; // flow: places
+      const r = { model, t0: now(), state: 'wait', ended: null, finish: null, open: false, steps: [], node, places: [] }; // flow: places
       r.ui = { head, tw: el('span', 'act-tw'), spin: el('span', 'act-mark act-spin'), text: el('span', 'act-name'), time: el('span', 'act-time'), list: el('div', 'act-list') };
       head.append(r.ui.tw, r.ui.spin, r.ui.text, r.ui.time);
       node.append(head, r.ui.list);
@@ -114,7 +114,7 @@ export function createActivity({ now = () => performance.now(), flow = null } = 
       replies.set(`${chatId}:${msg.ts}`, r);
       timer ||= setInterval(tick, 250);
       draw(r);
-      const set = (state) => { if (r.state !== state) { r.state = state; r.since = now(); } };
+      const set = (state) => { r.state = state; };
       const closeThinking = () => { const s = r.steps.at(-1); if (s?.kind === 'think' && s.t1 == null) s.t1 = now(); };
       return {
         places(list) { r.places = list; draw(r); }, // flow: what this reply can reach, for the tree
