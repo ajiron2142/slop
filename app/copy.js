@@ -31,7 +31,8 @@ export async function replyHtml(markdown, view = window) {
 export function copySelection(e, view = window) {
   const sel = view.getSelection();
   if (!sel.rangeCount || sel.isCollapsed) return;
-  const box = view.document.createElement('div');
+  // Built in a document of its own: it's never shown, and the page's security policy forbids inline styles.
+  const box = view.document.implementation.createHTMLDocument('').createElement('div');
   for (let i = 0; i < sel.rangeCount; i++) box.append(sel.getRangeAt(i).cloneContents());
   for (const node of box.querySelectorAll('button, [hidden], .code-head, .picture-head')) node.remove();
   for (const node of box.querySelectorAll('*')) { node.removeAttribute('class'); node.removeAttribute('style'); }

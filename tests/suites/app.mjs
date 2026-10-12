@@ -358,4 +358,23 @@ async function onAPhone({ browser, site, mock, check }) {
   check('taps don\'t flash a tinted box', await p.$eval('#settings button', (b) => getComputedStyle(b).webkitTapHighlightColor === 'rgba(0, 0, 0, 0)'));
   check('no errors on the phone', errors.length === 0);
   await context.close();
+
+  // With the app's real security policy on (the other checks turn it off to reach the fake LiteLLM
+  // over http): copying part of a reply breaks none of its rules.
+  const strict = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
+  const sp = await strict.newPage();
+  await sp.addInitScript(() => { window.__violations = []; document.addEventListener('securitypolicyviolation', (e) => window.__violations.push(`${e.violatedDirective} ${e.blockedURI}`)); });
+  await sp.goto(site);
+  await sp.waitForSelector('#settings[open]');
+  await sp.click('#close-settings');
+  await sp.evaluate(() => {
+    const msg = Object.assign(document.createElement('article'), { className: 'msg assistant', innerHTML: '<div class="body"><p>Some <strong>bold</strong> text</p><table><tr><th>a</th></tr><tr><td>1</td></tr></table></div>' });
+    document.getElementById('messages').replaceChildren(msg);
+    const r = document.createRange(); r.selectNodeContents(msg.querySelector('.body')); getSelection().removeAllRanges(); getSelection().addRange(r);
+  });
+  await sp.keyboard.press('Control+C');
+  const broken = (await sp.evaluate(() => window.__violations)).filter((v) => !v.includes('config.json'));
+  check('with the real security policy on, copying part of a reply breaks none of its rules', broken.length === 0 && (await sp.evaluate(() => navigator.clipboard.readText())).includes('Some bold text'));
+  if (broken.length) console.log('    ', broken.join('\n     '));
+  await strict.close();
 }
