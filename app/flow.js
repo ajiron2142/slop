@@ -131,8 +131,6 @@ export function createFlow({ now = () => performance.now() } = {}) {
       const base = tree.getBoundingClientRect();
       const box = (id) => { const b = boxes.get(id).node.getBoundingClientRect(); return { l: b.left - base.left, t: b.top - base.top, b: b.bottom - base.top, m: b.top - base.top + b.height / 2 }; };
       const model = box('model'), you = box('you'), x = model.l + 14;
-      wires.setAttribute('width', tree.scrollWidth);
-      wires.setAttribute('height', tree.scrollHeight);
       const line = (id, d, state) => {
         let p = paths.get(id);
         if (!p) { p = document.createElementNS(SVG, 'path'); paths.set(id, p); wires.append(p); }

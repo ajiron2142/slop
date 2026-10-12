@@ -15,7 +15,7 @@
 
 .flow-tree { position: relative; display: grid; gap: 8px; justify-items: start; }
 .flow-kids { display: grid; gap: 8px; justify-items: start; margin-left: 28px; }
-.flow-wires { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+.flow-wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; } /* exactly the tree's size, so it never widens the chat */
 .flow-wires path { fill: none; stroke: var(--line); stroke-width: 1.5; transition: opacity 0.2s; }
 .flow-wires path.done { stroke: color-mix(in srgb, var(--add) 60%, var(--line)); }
 .flow-wires path.on { stroke: var(--accent); stroke-dasharray: 7 6; animation: flow-march 0.7s linear infinite; }

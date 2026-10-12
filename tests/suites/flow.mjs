@@ -90,6 +90,15 @@ export default async function ({ browser, site, mock, check }) {
   await p.mouse.move(5, 5);
   check('clicking the badge again shows everything', (await dimmed()) === 0);
 
+  // The chat never scrolls sideways because of the tree, at any desktop width.
+  const sideways = [];
+  for (const width of [1280, 1024, 820]) {
+    await p.setViewportSize({ width, height: 800 });
+    await p.waitForTimeout(150);
+    sideways.push(await p.evaluate(() => { const m = document.getElementById('messages'); return m.scrollWidth - m.clientWidth; }));
+  }
+  check('with the tree open, the chat never scrolls sideways', sideways.every((d) => d <= 0));
+
   // Narrow: the tree goes above the steps.
   await p.setViewportSize({ width: 560, height: 800 });
   await p.waitForTimeout(100);
