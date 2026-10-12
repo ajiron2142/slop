@@ -17,13 +17,15 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const FENCE = /^```svg[ \t]*\n([\s\S]*?)\n```[ \t]*$/gm;
 
 // For the system prompt: one line.
-export const svgPrompt = 'A ```svg code block in your reply is shown to the user as a picture, on white.';
+export const svgPrompt = 'A ```svg code block in your reply is shown to the user as a picture, on white. Write & as &amp;, draw lines before shapes so shapes sit on top, and fit the viewBox to the drawing.';
 
-// The rule: at most 200 KB, well-formed, with one <svg> root in the SVG namespace.
+// The rule: at most 200 KB, well-formed, with one <svg> root in the SVG namespace. A bare & (the most
+// common slip) gets its own plain note instead of the browser's parser message.
 // Returns { root } (the parsed <svg>) or { problem } (what's wrong, in words).
 function check(text) {
   const bytes = new TextEncoder().encode(text).length;
   if (bytes > MAX_BYTES) return { problem: `it's ${Math.ceil(bytes / 1024)} KB, and a picture can be at most ${MAX_BYTES / 1024} KB` };
+  if (/&(?!(?:[a-zA-Z][\w.-]*|#\d+|#x[0-9a-fA-F]+);)/.test(text)) return { problem: 'it has a bare & (an & must be written &amp;)' };
   const doc = new DOMParser().parseFromString(text, 'image/svg+xml'); // an inert document: nothing in it runs
   const error = doc.querySelector('parsererror');
   if (error) return { problem: `the SVG isn't well-formed (${error.textContent.trim().split('\n')[0].slice(0, 120)})` };

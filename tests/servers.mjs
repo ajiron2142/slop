@@ -365,6 +365,7 @@ export async function startMock() {
           fence('<svg xmlns="http://www.w3.org/2000/svg"><rect></svg>'),
           fence('<html><body>not a picture</body></html>'),
           fence(`<svg xmlns="http://www.w3.org/2000/svg"><!-- ${'x'.repeat(210 * 1024)} --></svg>`),
+          fence('<svg xmlns="http://www.w3.org/2000/svg"><text>R&D</text></svg>'),
           'That is all.',
         ].join('\n\n');
         for (let i = 0; i < reply.length; i += 20000) sse(res, { choices: [{ delta: { content: reply.slice(i, i + 20000) } }] });

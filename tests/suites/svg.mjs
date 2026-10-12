@@ -9,14 +9,14 @@ export default async function ({ browser, site, mock, check }) {
 
   await send(p, 'svgblock please');
   const asked = mock.requests.at(-1);
-  check('the model is told in one line, and offered no tools (no sandbox needed)', asked.system.includes('A ```svg code block in your reply is shown to the user as a picture, on white.') && !asked.hasTools);
+  check('the model is told in one line, and offered no tools (no sandbox needed)', asked.system.includes('A ```svg code block in your reply is shown to the user as a picture, on white. Write & as &amp;') && !asked.hasTools);
   const imgs = await p.$$eval(`${reply} .picture img`, (list) => list.map((i) => [i.src.slice(0, 26), i.alt, i.classList.contains('fill')]));
   check('a valid ```svg block shows as an image, its title as the alt text (else "Picture N")', imgs.length === 2 && imgs.every(([src]) => src === 'data:image/svg+xml;base64,')
     && imgs[0][1] === 'Flow' && imgs[1][1] === 'Picture 2' && !imgs[0][2] && imgs[1][2]);
   check('nothing inside it runs, and it\'s never part of the page', await p.evaluate((sel) => window.__svgx === undefined && !document.querySelector(`${sel} .body svg:not(.icon), ${sel} .body script`), reply));
   const notes = await p.$$eval(`${reply} .svg-note`, (list) => list.map((n) => n.textContent));
-  check('one that breaks the rule stays a code block, with a note saying why', notes.length === 3 && (await p.$$(`${reply} .code`)).length === 3
-    && notes[0].includes('isn\'t well-formed') && notes[1].includes('xmlns="http://www.w3.org/2000/svg"') && /211 KB, and a picture can be at most 200 KB/.test(notes[2]));
+  check('one that breaks the rule stays a code block, with a note saying why', notes.length === 4 && (await p.$$(`${reply} .code`)).length === 4
+    && notes[0].includes('isn\'t well-formed') && notes[1].includes('xmlns="http://www.w3.org/2000/svg"') && /211 KB, and a picture can be at most 200 KB/.test(notes[2]) && notes[3] === 'Not shown as a picture: it has a bare & (an & must be written &amp;).');
 
   const first = `${reply} .picture >> nth=0`;
   await p.click(`${first} >> [role=tab]:text-is("SVG")`);
