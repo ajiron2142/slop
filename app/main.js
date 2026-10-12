@@ -462,6 +462,7 @@ async function complete(chat, carried = null) {
       if (!toolCalls.length || finish === 'length') { if (text) history.push({ role: 'assistant', content: text }); break; }
       if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of tool calls.`);
       history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
+      if (text.trim()) { act.note(text.trim()); msg.content = msg.content.slice(0, -text.length); } // activity: what it wrote before its tool calls is a note among the steps, not the answer
       // The round's calls all start at once (they only read, so none waits on another); their results
       // go back in the order the model asked for them.
       state.streaming.toolsRunning = true;

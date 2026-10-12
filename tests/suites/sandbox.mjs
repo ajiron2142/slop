@@ -226,7 +226,7 @@ async function inTheApp({ browser, site, mock, check }) {
     return { text: await (await item.getType('text/plain')).text(), html: await (await item.getType('text/html')).text() };
   });
   const b64 = Buffer.from(SVG).toString('base64');
-  check('Copy reply: the text, a line per picture, the picture at the very bottom', copied.text.endsWith(`]\n\n![Picture 1][picture-1]\n\n[picture-1]: data:image/svg+xml;base64,${b64}`) && copied.text.startsWith('Let me work it out.'));
+  check('Copy reply: the text, a line per picture, the picture at the very bottom', copied.text.endsWith(`]\n\n![Picture 1][picture-1]\n\n[picture-1]: data:image/svg+xml;base64,${b64}`));
   check('the formatted copy carries it as a PNG, for Outlook and Teams, at its own size', /<img src="data:image\/png;base64,[^"]+" alt="Picture 1" width="120" height="60">/.test(copied.html) && !copied.html.includes('svg+xml'));
 
   await ask('sandbox:"again"');
@@ -252,7 +252,7 @@ async function inTheApp({ browser, site, mock, check }) {
 
   await ask('sandbox:let a = 1;\na.b.c');
   await idle(p);
-  check('code that fails is a failed step', (await stepsLine(p)) === 'Ran code (failed)' && (await p.textContent(`${reply} .act-step .act-mark`)) === '✕');
+  check('code that fails is a failed step', (await stepsLine(p)) === 'Ran code (failed)' && (await p.$$eval(`${reply} .act-step .act-mark`, (ms) => ms.map((m) => m.textContent))).includes('✕'));
   check('and the model hears the error', toolResult() === "Error: the run failed.\nTypeError: Cannot read properties of undefined (reading 'c') (line 2)");
 
   // Saved with the chat: reopening it brings back the chip and the pictures.

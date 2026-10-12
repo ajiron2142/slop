@@ -62,7 +62,6 @@ export default async function ({ browser, site, mock, check }) {
   check('listing follows the .gitignore files, nested ones and ! included', reply.includes('FILES[project/.gitignore,project/deploy/notes.txt,project/deploy/route.yaml,project/docs/.gitignore,project/docs/guide.md,project/keep.log,project/logo.png,project/long.txt,project/package-lock.json,project/README.md,project/src/app.js]'));
   check('model can read a file', reply.includes('APP[console.log("hi")]'));
   check('paths outside the folder are refused', reply.includes('paths must stay inside the folder'));
-  check('text before a tool call is kept', reply.startsWith('Let me look.'));
   check('the reply shows what was read', (await stepsLine(p)) === "Listed project · Read project/src/app.js · Couldn't open project/../secret.txt");
   // The tools themselves, run directly against the same folder.
   const tool = (name, args) => p.evaluate(async ([name, args]) => {

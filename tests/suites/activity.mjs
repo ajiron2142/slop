@@ -72,6 +72,19 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('#chat-list li:nth-child(1) .chat-open');
   await p.waitForSelector(`${reply} .activity`);
   check('switching chats and back keeps it, still opened as you left it', await p.isVisible(`${reply} .act-box.think`));
+
+  // What a model writes before its tool calls (Haiku does, where thinking models think it) is a note
+  // among the steps, not part of the answer; the model still gets it back.
+  await p.fill('#input', 'paste narrate: what failed?');
+  await p.press('#input', 'Enter');
+  await idle(p);
+  await p.waitForTimeout(100);
+  check('text written before tool calls stays out of the reply, which is just the answer', (await p.textContent(`${reply} .body`)).startsWith('SEARCH[') && !(await p.textContent(`${reply} .body`)).includes('Let me look'));
+  check('the line counts the notes', /^▸2 steps · 2 notes/.test(await p.textContent(`${reply} .act-head`)));
+  await p.click(`${reply} .act-head`);
+  const steps = await p.$$eval(`${reply} .act-step .act-name`, (xs) => xs.map((x) => x.textContent));
+  check('each note sits before the call it led to', steps.length === 4 && steps[0] === 'Note: Let me look (1).' && steps[1].startsWith('Searched paste') && steps[2] === 'Note: Let me look (2).' && steps[3].startsWith('Read paste'));
+  check('and the model still gets what it wrote back', mock.requests.at(-1).sent.includes('"content":"Let me look (1)."') && mock.requests.at(-1).sent.includes('"content":"Let me look (2)."'));
   await p.reload();
   await p.waitForSelector('#chat-list li[data-id]');
   await p.click('#chat-list li:nth-child(1) .chat-open');

@@ -7,8 +7,10 @@ import { el } from './dom.js';
 // a reload a reply shows only its saved one-line summary, as it does without this add-on. None of it
 // is sent to the model.
 //
-// Rules, all fixed: a step is one tool call (✓, or ✕ when its result starts with "Error:") or one
-// stretch of thinking, which appears only when the model sends reasoning; times are this browser's
+// Rules, all fixed: a step is one tool call (✓, or ✕ when its result starts with "Error:"), one
+// stretch of thinking, which appears only when the model sends reasoning, or one note: what the model
+// wrote in a round that ended in tool calls (some models write there what others think), which
+// main.js takes out of the reply, so the reply is what it wrote after its last call; times are this browser's
 // clock; an opened step is at most 200px tall and scrolls, nothing in it is cut; click in it and
 // Ctrl+A selects just that step.
 //
@@ -35,9 +37,10 @@ export function createActivity({ now = () => performance.now(), flow = null } = 
     const t = now();
     const tools = r.steps.filter((s) => s.kind === 'tool').length;
     const thinks = r.steps.filter((s) => s.kind === 'think');
+    const notes = r.steps.filter((s) => s.kind === 'note').length;
     const thought = thinks.reduce((sum, s) => sum + ((s.t1 ?? t) - s.t0), 0);
     const doing = { wait: `Waiting for ${r.model}`, think: 'Thinking', write: 'Writing', tool: `Running ${r.steps.at(-1)?.name ?? ''}` }[r.state];
-    const done = [tools && `${tools} step${tools === 1 ? '' : 's'}`, thinks.length && `thought ${secs(thought)}`, r.finish === 'stopped' && 'stopped'].filter(Boolean).join(' · ');
+    const done = [tools && `${tools} step${tools === 1 ? '' : 's'}`, notes && `${notes} note${notes === 1 ? '' : 's'}`, thinks.length && `thought ${secs(thought)}`, r.finish === 'stopped' && 'stopped'].filter(Boolean).join(' · ');
     r.ui.tw.textContent = r.open ? '▾' : '▸';
     r.ui.spin.hidden = !running;
     r.ui.text.textContent = running ? doing : done;
@@ -62,15 +65,15 @@ export function createActivity({ now = () => performance.now(), flow = null } = 
     const busy = s.t1 == null;
     ui.tw.textContent = s.open ? '▾' : '▸';
     ui.mark.className = busy ? 'act-mark act-spin' : 'act-mark';
-    ui.mark.textContent = busy ? '' : s.failed ? '✕' : '✓';
-    ui.name.textContent = s.kind === 'think' ? 'Thinking' : s.label ? `${s.label} · ${size(s.result)}` : `Running ${s.name}`;
-    ui.time.textContent = secs((s.t1 ?? t) - s.t0);
+    ui.mark.textContent = busy || s.kind === 'note' ? '' : s.failed ? '✕' : '✓';
+    ui.name.textContent = s.kind === 'think' ? 'Thinking' : s.kind === 'note' ? `Note: ${s.text}` : s.label ? `${s.label} · ${size(s.result)}` : `Running ${s.name}`;
+    ui.time.textContent = s.kind === 'note' ? '' : secs((s.t1 ?? t) - s.t0);
     ui.row.setAttribute('aria-expanded', String(Boolean(s.open)));
     ui.row.dataset.label = s.label ?? '';
     if (!s.open) { if (ui.box) ui.box.hidden = true; return; }
     if (!ui.box) {
       // A read-only text box, so Ctrl+A inside it selects just this step.
-      ui.box = el('textarea', `act-box${s.kind === 'think' ? ' think' : ''}`);
+      ui.box = el('textarea', `act-box${s.kind === 'tool' ? '' : ' think'}`);
       ui.box.readOnly = true;
       ui.box.rows = 1; // it grows to fit, up to MAX_BOX
       ui.box.spellcheck = false;
@@ -78,7 +81,7 @@ export function createActivity({ now = () => performance.now(), flow = null } = 
       ui.row.after(ui.box);
     }
     ui.box.hidden = false;
-    const text = s.kind === 'think' ? s.text : `${s.name} ${s.args}\n${s.result == null ? '(running)' : `→ ${size(s.result)}\n\n${s.result}`}`;
+    const text = s.kind !== 'tool' ? s.text : `${s.name} ${s.args}\n${s.result == null ? '(running)' : `→ ${size(s.result)}\n\n${s.result}`}`;
     if (ui.box.value !== text) {
       ui.box.value = text;
       ui.box.style.height = 'auto';
@@ -128,6 +131,7 @@ export function createActivity({ now = () => performance.now(), flow = null } = 
           set('think');
           if (s.open) draw(r);
         },
+        note(text) { const t = now(); r.steps.push({ kind: 'note', text, t0: t, t1: t }); draw(r); },
         writing() { if (r.state === 'write') return; closeThinking(); set('write'); draw(r); },
         tool(call) {
           closeThinking();

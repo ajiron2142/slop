@@ -217,6 +217,7 @@ export async function startMock() {
         const id = JSON.stringify(body.messages).match(/pasted id=\\"(\w+)\\"/)?.[1];
         const call = (name, args) => ({ index: 0, id: `c${results.length}`, type: 'function', function: { name, arguments: JSON.stringify(args) } });
         if (text.includes('think') && results.length !== 1) sse(res, { choices: [{ delta: { reasoning_content: results.length ? 'Line 601 has the error.' : 'I should search for errors first.' } }] });
+        if (text.includes('narrate') && results.length < 2) sse(res, { choices: [{ delta: { content: `Let me look (${results.length + 1}).` } }] }); // like Haiku: a line before each tool call
         if (results.length === 0) sse(res, { choices: [{ delta: { tool_calls: [call('search_paste', { id, query: 'ERROR' })] } }] });
         else if (results.length === 1) sse(res, { choices: [{ delta: { tool_calls: [call('read_paste', { id, start_line: 600, end_line: 602 })] } }] });
         else sse(res, { choices: [{ delta: { content: `SEARCH[${results[0].content.split('\n').slice(0, 2).join(' | ')}] READ[${results[1].content.replace(/\n/g, ' | ')}]` } }] });

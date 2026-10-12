@@ -105,6 +105,7 @@ export function createFlow({ now = () => performance.now() } = {}) {
         ui.badge.title = failed ? `${failed} call${failed === 1 ? '' : 's'} failed: click to pick them out` : '';
         // One ring per step, kept between draws so a filling ring keeps filling.
         for (const s of mine) {
+          if (s.kind === 'note') continue; // a note is text, not something the model did
           let mk = marks.get(s);
           if (!mk) { mk = el('span', 'flow-mk'); mk.dataset.step = r.steps.indexOf(s); marks.set(s, mk); ui.marks.append(mk); }
           const running = s.t1 == null && !ended;
@@ -114,7 +115,7 @@ export function createFlow({ now = () => performance.now() } = {}) {
           mk.title = s.kind === 'think' ? 'Thinking' : s.label ?? `Running ${s.name}`;
           mk.classList.toggle('flow-dim', focus?.bad === id && !s.failed);
         }
-        ui.marks.hidden = !mine.length;
+        ui.marks.hidden = !mine.some((s) => s.kind !== 'note');
       }
 
       // The steps beside it fade the same way.
