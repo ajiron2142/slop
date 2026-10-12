@@ -51,3 +51,6 @@
 
 /* The Stats card's time breakdown. */
 .theme-monokai { --time-wait: #4b5263; --time-think: #c678dd; --time-tools: #e5c07b; --time-write: var(--accent); }
+
+/* Pictures' paper (picture.css): a softer white, so it doesn't glare on the dark card. */
+.theme-monokai { --paper: #e6e8eb; }

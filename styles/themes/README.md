@@ -54,6 +54,8 @@ Set on `.chat` in the base and overridden by each theme:
 | `--user-bg`, `--user-ink` | Your message bubble |
 | `--bot-bg`, `--bot-ink` | Reply bubble |
 | `--code-bg` | Code background |
+| `--paper` | Under pictures (SVGs, sandbox drawings). Keep it light: pictures are drawn for white. Copy and PNG always use white |
+| `--time-wait`, `--time-think`, `--time-tools`, `--time-write` | The Stats card's time breakdown, and its token bar |
 | `--add`, `--del` | Green and red for what worked and what failed: errors, failed steps, added and removed lines |
 | `--code-keyword`, `--code-string`, `--code-number`, `--code-title`, `--code-attr`, `--code-comment` | Syntax colours in code blocks. Defaults to GitHub's light palette; each theme sets its own in one line at the end of its file, and a dark theme must. Optional: `--code-addition` / `--code-deletion` for diffs (default to the string and keyword colours) |
 | `--font-body`, `--font-display`, `--font-meta`, `--font-code` | Fonts for text, titles, labels, code |

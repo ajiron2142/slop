@@ -29,6 +29,7 @@
   --code-comment: #6e7781;
   --add: #2e9a4f; /* added and removed lines, new and deleted files */
   --del: #c4302b;
+  --paper: #ffffff; /* under pictures: always light, since they're drawn for white */
   --time-wait: #d4d4d8; /* the Stats card's time breakdown */
   --time-think: #a1a1aa;
   --time-tools: #c08a3e;

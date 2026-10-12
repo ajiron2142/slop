@@ -63,3 +63,6 @@
 
 /* The Stats card's time breakdown. */
 .theme-linen { --time-wait: #e6dfd3; --time-think: #c9bfae; --time-tools: #b98b5a; --time-write: #2b2824; }
+
+/* Pictures' paper (picture.css): its own page colour. */
+.theme-linen { --paper: var(--bg); }

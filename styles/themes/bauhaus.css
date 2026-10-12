@@ -80,3 +80,6 @@
 .theme-bauhaus { --time-wait: #d8d0bf; --time-think: var(--yellow); --time-tools: var(--accent); --time-write: var(--blue); }
 .theme-bauhaus .stats-time .stats-part .stats-seg, .theme-bauhaus .stats-card .stats-tokens span, .theme-bauhaus .stats-legend span::before { border-radius: 0; }
 .theme-bauhaus .stats-sec { border-top: 2px solid var(--ink); }
+
+/* Pictures' paper (picture.css): its own page colour. */
+.theme-bauhaus { --paper: var(--bg); }
