@@ -43,8 +43,9 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
 - Pictures are shown as `<img src="data:image/svg+xml,…">`, so nothing inside them can run. They're
   saved with the chat as part of the reply (`msg.pictures`), under its text, in order. They're never sent
   back to the model.
-- Each picture is in a block with the same frame and tinted header as a code block: "Picture 1 · SVG"
-  on the left and **Copy SVG** (copy icon) on the right, which copies the SVG text.
+- Each picture has the card every picture in slop has (`app/picture.js`, shared with ```svg blocks): its
+  title (its `<title>`, else "Picture 1"), **Image | SVG** tabs, and one **Copy** for what the tab shows
+  (a PNG, or the SVG text).
 - **Copy reply** follows one fixed rule, with nothing asked of the model: the reply's text exactly as
   written, then one short line per picture, `![Picture 1][picture-1]`, then at the very bottom the
   definitions, `[picture-1]: data:image/svg+xml;base64,…`. This is standard markdown, so the text stays

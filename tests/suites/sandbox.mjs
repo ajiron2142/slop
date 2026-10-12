@@ -204,19 +204,21 @@ async function inTheApp({ browser, site, mock, check }) {
   check('with it on, run_js is offered', sent.toolNames.includes('run_js'));
   check('the model gets the output and how many pictures it showed', toolResult() === '42\ndone\nShowed 1 picture (1 KB)');
   check('its step says it ran code', (await stepsLine(p)) === 'Ran code');
-  check('the picture shows under the reply\'s text, in a block like a code block', await p.$eval(reply, (m) => {
+  check('the picture shows under the reply\'s text, with the card every picture has', await p.$eval(reply, (m) => {
     const pic = m.querySelector('.pictures .picture');
     return Boolean(pic) && m.querySelector('.body').compareDocumentPosition(pic) & Node.DOCUMENT_POSITION_FOLLOWING
-      && pic.querySelector('.picture-head').textContent === 'Picture 1 · SVGCopy SVG';
+      && pic.querySelector('.picture-head').textContent === 'Picture 1ImageSVGCopy';
   }));
   check('as an image, so nothing inside it can run', await p.$eval(`${reply} .picture img`, (img, svg) => img.src === `data:image/svg+xml;base64,${btoa(svg)}` && img.naturalWidth === 120, SVG));
   await p.click(`${reply} .act-head`);
   check('the picture sits on white, as drawn', (await p.$eval(`${reply} .picture-paper`, (e) => getComputedStyle(e).backgroundColor)) === 'rgb(255, 255, 255)');
-  check('the model is told pictures show on white', await p.evaluate(async () => (await import('./app/sandbox.js')).SANDBOX_TOOLS[0].function.description.includes('on a white background')));
+  const told = await p.evaluate(async () => (await import('./app/sandbox.js')).SANDBOX_TOOLS[0].function.description);
+  check('the model is told pictures show on white, that it needn\'t repeat them, and that it\'s plain browser JavaScript', told.includes('on a white background; the user already sees it, so don\'t repeat it in your text') && told.includes('no require or import'));
   check('the reply tree shows the Sandbox as a place', await p.isVisible(`${reply} .flow-box[data-flow-box="sandbox"]`));
 
+  await p.click(`${reply} .picture [role=tab]:text-is("SVG")`);
   await p.click(`${reply} .picture-copy`);
-  check('Copy SVG copies the SVG text', (await p.evaluate(() => navigator.clipboard.readText())) === SVG && (await p.textContent(`${reply} .picture-copy`)) === 'Copied');
+  check('on the SVG tab, Copy copies the SVG text', (await p.evaluate(() => navigator.clipboard.readText())) === SVG && (await p.textContent(`${reply} .picture-copy`)) === 'Copied');
   await p.click(`${reply} .copy-reply`);
   await p.waitForTimeout(200);
   const copied = await p.evaluate(async () => {

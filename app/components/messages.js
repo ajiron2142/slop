@@ -10,8 +10,8 @@ const CHECK_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><pa
 
 // The conversation pane: renders messages, follows the bottom while streaming,
 // and handles the Copy (code and whole reply), Retry and Stats buttons. `activity(msg)` gives a reply's
-// activity line, shown in place of its "Read …" summary. `codeBlock(lang, text, n)` (the n-th block in that
-// language) lets an add-on show a
+// activity line, shown in place of its "Read …" summary. `codeBlock(lang, text, n, msg)` (the n-th block in that
+// language, in the reply msg) lets an add-on show a
 // finished reply's code block its own way: { node } replaces it, { note } goes under it. `extra(msg)`
 // gives a node to show under a reply's text, and `copyText(msg)` what its Copy button copies.
 // `mine(msg)` gives a node to show under one of your messages. While a reply is being written the pane
@@ -160,7 +160,7 @@ function fillBody(body, msg, streaming = false) {
     pre.replaceWith(wrap);
     wrap.append(head, pre);
     seen[lang] = (seen[lang] ?? 0) + 1;
-    const own = streaming ? null : blockHook(lang, code?.textContent ?? '', seen[lang]); // patch, svg
+    const own = streaming ? null : blockHook(lang, code?.textContent ?? '', seen[lang], msg); // patch, svg
     if (own?.node) wrap.replaceWith(own.node);
     else if (own?.note) wrap.after(own.note);
   }

@@ -102,7 +102,7 @@ const activity = createActivity({ flow: createFlow() }); // activity, flow
 const messages = createMessages($('messages'), {
   onRetry: retry,
   activity: (m) => activity.node(state.active?.meta.id, m), // activity
-  codeBlock: (lang, text, n) => svgBlock(lang, text, n) ?? patchBlock(lang, text), // svg, patch
+  codeBlock: (lang, text, n, msg) => svgBlock(lang, text, n, msg) ?? patchBlock(lang, text), // svg, patch
   extra: picturesNode, // sandbox
   copyText: replyMarkdown, // sandbox
   mine: (m) => editNode(m, editMessage), // edit

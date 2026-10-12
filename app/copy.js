@@ -1,4 +1,6 @@
 import { renderMarkdown } from './markdown.js';
+import { drawOnWhite } from './picture.js';
+import { svgBlocksAsImages } from './svg.js'; // svg
 
 // Copies a reply in two formats at once: formatted HTML, which Teams, Outlook and Word paste,
 // and the markdown as plain text for everything else. The HTML gets plain inline styles (the
@@ -17,6 +19,7 @@ const STYLES = [
 
 export async function replyHtml(markdown, view = window) {
   const doc = new DOMParser().parseFromString(renderMarkdown(markdown), 'text/html');
+  svgBlocksAsImages(doc); // svg: a ```svg block pastes as its picture
   for (const [selector, css] of STYLES) for (const node of doc.body.querySelectorAll(selector)) node.setAttribute('style', css);
   for (const img of doc.body.querySelectorAll('img[src^="data:image/svg+xml"]')) await asPng(img, view);
   return doc.body.innerHTML;
@@ -29,23 +32,6 @@ async function asPng(img, view) {
   img.setAttribute('src', drawn.canvas.toDataURL('image/png'));
   img.setAttribute('width', String(drawn.w));
   img.setAttribute('height', String(drawn.h));
-}
-
-// Draws an image at twice its size on white: { canvas, w, h } (its own size), or null if it can't be drawn.
-export async function drawOnWhite(src, view = window) {
-  const pic = new view.Image();
-  pic.src = src;
-  try { await pic.decode(); } catch { return null; }
-  const w = pic.naturalWidth || 300;
-  const h = pic.naturalHeight || 150;
-  const canvas = view.document.createElement('canvas');
-  canvas.width = w * 2;
-  canvas.height = h * 2;
-  const g = canvas.getContext('2d');
-  g.fillStyle = '#ffffff';
-  g.fillRect(0, 0, canvas.width, canvas.height);
-  g.drawImage(pic, 0, 0, canvas.width, canvas.height);
-  return { canvas, w, h };
 }
 
 // `view` is the window the Copy button is in: the tab, or the mini window (each has its own clipboard access).

@@ -28,14 +28,6 @@
   .tray-chip.sandbox.running .peek-eyes { opacity: 1; }
 }
 
-/* Pictures under a reply's text: the same frame and tinted header as a code block. */
-.pictures { display: grid; gap: 0.9em; margin: 0.9em 0; }
-.picture { overflow: hidden; background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius-md); }
-.picture-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; font-family: var(--font-meta); font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--ink) 7%, var(--bg)); }
-.picture-copy { display: inline-flex; align-items: center; gap: 5px; padding: 0; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
-.picture-copy:hover { color: var(--ink); }
-.picture-copy .icon { width: 14px; height: 14px; }
-/* Pictures are drawn for white and shown on white in every theme, so they look the same once shared. */
-.picture { --picture-paper: #ffffff; }
-.picture img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
-.picture-paper { display: block; padding: 10px; background: var(--picture-paper); }
+/* Pictures under a reply's text. */
+.pictures { margin: 0.9em 0; } /* each picture is a card from picture.css */
+

@@ -12,10 +12,9 @@
 // and components/composer.js, and the Dockerfile's sandbox/ line.
 
 import { el } from './dom.js';
-import { svgUrl } from './picture.js';
+import { svgUrl, pictureCard } from './picture.js';
 
 const FRAME_URL = 'sandbox/sandbox.html';
-const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
 const NO_ANSWER = 10000; // ms; the sandbox itself stops code at 5 s, so this only trips if it never loaded
 
 export const SANDBOX_TOOLS = [{
@@ -23,8 +22,9 @@ export const SANDBOX_TOOLS = [{
   function: {
     name: 'run_js',
     description: 'Run JavaScript in a sandbox with no network, page or storage, to work something out exactly (maths, dates, parsing, reshaping data). ' +
+      'Plain browser JavaScript: no require or import. ' +
       'Returns what console.log printed, then the value of the last expression, cut at 20,000 characters. Stopped after 5 seconds. ' +
-      'show(svgText) shows an SVG picture in your reply (at most 3 per run, 200 KB each), on a white background. ' +
+      'show(svgText) shows an SVG picture in your reply (at most 3 per run, 200 KB each), on a white background; the user already sees it, so don\'t repeat it in your text. ' +
       'Helpers: chart.bar(rows, options) and chart.line(rows, options) return a chart for show(); rows are like [[\'Mon\', 3], [\'Tue\', 5]], ' +
       'or [[\'Mon\', 3, 4], …] with options.names for up to 5 series; options.title, width, height. ' +
       'svg(width, height, ...children) and el(tag, attrs, ...children) build your own picture (text is escaped). ' +
@@ -114,37 +114,11 @@ export async function runSandboxTool(argsJson, inputs = {}) {
     : { label: 'Ran code', result: sandboxResult(run), pictures: run.pictures };
 }
 
-// A reply's pictures, under its text: each in a block like a code block, "Picture 1 · SVG" and Copy SVG,
-// on white in every theme (the model draws for white).
+// A reply's pictures, under its text, each with the card every picture has (picture.js).
 export function picturesNode(msg) {
   if (!msg.pictures?.length) return null;
   const list = el('div', 'pictures');
-  msg.pictures.forEach((svg, i) => {
-    const copy = el('button', 'picture-copy');
-    copy.type = 'button';
-    copy.innerHTML = COPY_ICON;
-    const label = el('span', '', 'Copy SVG');
-    copy.append(label);
-    copy.addEventListener('click', async () => {
-      try {
-        await copy.ownerDocument.defaultView.navigator.clipboard.writeText(svg);
-        label.textContent = 'Copied';
-      } catch {
-        label.textContent = 'Copy failed';
-      }
-      setTimeout(() => { label.textContent = 'Copy SVG'; }, 1200);
-    });
-    const head = el('div', 'picture-head');
-    head.append(el('span', '', `Picture ${i + 1} · SVG`), copy);
-    const img = el('img');
-    img.src = svgUrl(svg);
-    img.alt = `Picture ${i + 1}`;
-    const paper = el('div', 'picture-paper');
-    paper.append(img);
-    const block = el('div', 'picture');
-    block.append(head, paper);
-    list.append(block);
-  });
+  msg.pictures.forEach((svg, i) => list.append(pictureCard(svg, i + 1)));
   return list;
 }
 
