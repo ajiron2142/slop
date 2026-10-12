@@ -57,8 +57,17 @@ export default async function ({ browser, site, mock, check }) {
   await p.keyboard.press('Escape');
 
   await send(p, 'cut this reply short');
+  // Opening and closing Stats leaves its button where it was, so the mouse doesn't have to move;
+  // the card opens above it, in view.
+  const statsAt = () => p.$eval('.msg.assistant:last-of-type .stats-btn', (b) => Math.round(b.getBoundingClientRect().y));
+  const before = await statsAt();
   await p.click('.msg.assistant:last-of-type .stats-btn');
+  const opened = await statsAt();
+  const inView = await p.$eval('.msg.assistant:last-of-type .stats-card', (c) => { const r = c.getBoundingClientRect(), pane = c.closest('.messages').getBoundingClientRect(); return r.top >= pane.top && r.bottom <= pane.bottom; });
   const cut = await p.textContent('.msg.assistant:last-of-type .stats-card');
+  await p.click('.msg.assistant:last-of-type .stats-btn');
+  check('the Stats button stays put when its card opens and closes, and the card is in view', opened === before && (await statsAt()) === before && inView);
+  await p.click('.msg.assistant:last-of-type .stats-btn');
   check('a cut-off reply is marked', cut.includes('Cut off'));
   check('and says so under the reply, for everyone', (await p.textContent('.msg.assistant:last-of-type .reply-note')).startsWith('Cut off: the model reached the most it can write'));
   check('the output limit is sent only when LiteLLM gives one', mock.requests.some((r) => r.model === 'claude-haiku' && r.maxTokens === 8192) && mock.requests.at(-1).maxTokens === undefined);

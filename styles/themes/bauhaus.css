@@ -78,4 +78,4 @@
 
 /* The Stats card's time breakdown. */
 .theme-bauhaus { --time-wait: #d8d0bf; --time-think: var(--yellow); --time-tools: var(--accent); --time-write: var(--blue); }
-.theme-bauhaus .stats-seg { border-radius: 0; }
+.theme-bauhaus .stats-time .stats-part .stats-seg { border-radius: 0; }

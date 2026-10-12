@@ -53,11 +53,15 @@ export function createMessages(pane, { onRetry, activity = () => null, codeBlock
     if (!btn) return;
     if (btn.dataset.action === 'retry') return onRetry();
     if (btn.dataset.action === 'stats') {
+      // The card opens above its button and the chat scrolls by as much, so the button stays under
+      // the mouse (as far as the chat can scroll) and the card shows just above it.
       const card = btn.closest('.msg').querySelector('.stats-card');
+      const y = btn.getBoundingClientRect().top;
       card.hidden = !card.hidden;
       btn.setAttribute('aria-expanded', String(!card.hidden));
+      pane.scrollTop += btn.getBoundingClientRect().top - y;
       const ts = btn.closest('.msg').dataset.ts;
-      if (card.hidden) openStats.delete(ts); else { openStats.add(ts); card.scrollIntoView({ block: 'nearest' }); }
+      if (card.hidden) openStats.delete(ts); else openStats.add(ts);
       return;
     }
     const code = btn.closest('.code').querySelector('code');
@@ -121,14 +125,14 @@ function messageNode(msg, streaming, openStats, act) {
     node.append(el('div', 'reply-note', `No answer: the model finished without writing anything${msg.stats.reasoned ? ' (it sent only its reasoning, which isn\'t shown)' : ''}.`));
   }
   // Under a finished reply, on the right so they don't read as part of it: Stats (when detailed
-  // stats are on), then Copy (when there's something to copy).
+  // stats are on), then Copy (when there's something to copy). The Stats card opens above them.
   const copyText = msg.role === 'assistant' && !streaming ? copyHook(msg) : ''; // sandbox
   if (msg.role === 'assistant' && !streaming && (copyText || msg.stats)) {
     const actions = el('div', 'reply-actions');
     const stats = openStats && msg.stats ? statsNodes(msg.stats, openStats.has(String(msg.ts))) : [];
     if (stats.length) actions.append(stats[0]);
     if (copyText) actions.append(copyButton(copyText));
-    node.append(actions, ...stats.slice(1));
+    node.append(...stats.slice(1), actions);
   }
   if (msg.role === 'error') {
     const retry = el('button', 'btn retry', 'Retry');
