@@ -28,14 +28,16 @@ export async function startSite(root) {
 }
 
 const MODELS = ['claude-sonnet-4', 'claude-haiku', 'gpt-4o', 'gpt-4o-mini', 'llama-3.1-70b', 'mistral-large', 'gemini-pro', 'deepseek-v3'];
-// Context limits and prices, as LiteLLM's /v2/model/info reports them. llama is free (prices of 0);
-// models not listed here have no price, so their cost is unknown.
+// Context limits and prices, as LiteLLM's /v2/model/info reports them: in pages of 2, like newer
+// LiteLLM (which pages it), so claude-haiku is on page 2. llama is free (prices of 0); models not
+// listed here have no price, so their cost is unknown.
 const INFO = [
-  { model_name: 'claude-haiku', model_info: { max_input_tokens: 200000, max_output_tokens: 8192, input_cost_per_token: 0.8e-6, output_cost_per_token: 4e-6, cache_read_input_token_cost: 0.08e-6 } },
   { model_name: 'gpt-4o-mini', model_info: { max_input_tokens: 128000, input_cost_per_token: 0.15e-6, output_cost_per_token: 0.6e-6 } },
   { model_name: 'llama-3.1-70b', model_info: { max_input_tokens: 32768, input_cost_per_token: 0, output_cost_per_token: 0 } },
   { model_name: 'mistral-large', model_info: { max_input_tokens: 128000 } }, // known, but no price given
+  { model_name: 'claude-haiku', model_info: { max_input_tokens: 200000, max_output_tokens: 8192, input_cost_per_token: 0.8e-6, output_cost_per_token: 4e-6, cache_read_input_token_cost: 0.08e-6 } },
 ];
+const INFO_PAGE = 2;
 
 // A reply with the awkward markdown: nested code in a list, a table, a long line, a long block.
 const LONG_REPLY = `Here's a tricky reply.
@@ -144,7 +146,10 @@ export async function startMock() {
     if (rejected.has(req.headers.authorization?.slice(7))) return res.writeHead(401, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { message: 'token expired' } }));
     if (req.url === '/v1/models') return res.end(JSON.stringify({ data: Array.from({ length: 40 }, (_, i) => ({ id: MODELS[i % 8] + (i >= 8 ? `-v${Math.floor(i / 8)}` : '') })) }));
     // Like the deployments where only the v2 endpoint has the data.
-    if (req.url === '/v2/model/info') return res.end(JSON.stringify({ data: INFO }));
+    if (req.url.split('?')[0] === '/v2/model/info') {
+      const q = new URL(req.url, 'http://x').searchParams, page = Number(q.get('page') ?? 1), size = Number(q.get('size') ?? INFO_PAGE);
+      return res.end(JSON.stringify({ data: INFO.slice((page - 1) * size, page * size), total_count: INFO.length, current_page: page, size, total_pages: Math.ceil(INFO.length / size) }));
+    }
     if (req.url === '/model/info') return res.end(JSON.stringify({ data: [] }));
     // A key with a $50 monthly budget, $12.40 spent.
     if (req.url === '/key/info') {

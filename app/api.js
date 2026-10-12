@@ -84,15 +84,20 @@ export async function listModels(settings) {
   return [...new Set((body.data ?? []).map((m) => m.id).filter(Boolean))].sort();
 }
 
+const MAX_INFO_PAGES = 50; // a fixed stop, so a proxy that says thousands of pages can't hold the app up
+
 // Context limits and prices per model from LiteLLM's /v2/model/info, or /model/info on proxies
 // where that's the one with data. Optional: if the proxy allows neither, the meter just shows
 // tokens without limits or costs.
 export async function getModelInfo(settings) {
   for (const path of ['/v2/model/info', '/model/info']) {
     try {
-      const body = await (await request(settings, path)).json();
+      const first = await (await request(settings, path)).json();
+      // Newer LiteLLM pages the list (total_pages, size): the rest come at once, every page up to the last.
+      const pages = Math.min(Number(first.total_pages) || 1, MAX_INFO_PAGES);
+      const rest = await Promise.all(Array.from({ length: pages - 1 }, async (_, i) => (await request(settings, `${path}?page=${i + 2}${first.size ? `&size=${first.size}` : ''}`)).json()));
       const info = {};
-      for (const m of body.data ?? []) if (m.model_name && !info[m.model_name]) info[m.model_name] = m.model_info ?? {};
+      for (const m of [first, ...rest].flatMap((body) => body.data ?? [])) if (m.model_name && !info[m.model_name]) info[m.model_name] = m.model_info ?? {};
       if (Object.keys(info).length) return info;
     } catch {}
   }
