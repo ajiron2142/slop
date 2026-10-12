@@ -253,8 +253,8 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         }
         if (n !== asked) return;
         list.replaceChildren(...(items.length ? items.map((item) => {
-          const [name, note, off = false] = row(item);
-          const button = el('button', 'gitlab-project');
+          const [name, note, off = false, chosen = false] = row(item);
+          const button = el('button', `gitlab-project${chosen ? ' chosen' : ''}`); // chosen: a tinted row, semibold (base.css)
           button.type = 'button';
           button.disabled = off;
           button.append(...(typeof name === 'string' ? [el('span', '', name)] : name), ...(note ? [note] : []));
@@ -313,10 +313,9 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         return [...all.filter((x) => x.default), ...all.filter((x) => !x.default)];
       },
       row: (b) => {
-        const name = el('span', `gitlab-branch-name${b.name === project.ref ? ' chosen' : ''}`); // in use: a tinted row, semibold (base.css)
-        name.append(el('span', 'mark', b.name));
+        const name = el('span', 'gitlab-branch-name mark', b.name); // the row's name, semibold when it's the branch in use
         if (b.default) name.append(el('small', '', 'default'));
-        return [[name], el('small', 'gitlab-ago', ago(b.commit?.committed_date))];
+        return [[name], el('small', 'gitlab-ago', ago(b.commit?.committed_date)), false, b.name === project.ref];
       },
     });
     return b ? { ...project, ref: b.name } : null;
