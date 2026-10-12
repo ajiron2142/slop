@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microsoft 365 Check</title>
+<style>
+:root { --bg: #fafaf9; --card: #fff; --ink: #18181b; --muted: #71717a; --line: #e4e4e7; --ok: #2e7d4f; --bad: #c4302b; --warn: #a16207; }
+@media (prefers-color-scheme: dark) { :root { --bg: #0f0f11; --card: #18181b; --ink: #f4f4f5; --muted: #a1a1aa; --line: #3f3f46; --ok: #5cc48a; --bad: #f87171; --warn: #eab308; } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 system-ui, -apple-system, sans-serif; }
+main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 21px; margin: 0 0 6px; }
+p, li { color: var(--muted); }
+b, code { color: var(--ink); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 14px 0; }
+label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+input[type=text] { width: 100%; padding: 8px 10px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
+.scopes { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; }
+button { margin-top: 14px; font: inherit; font-weight: 600; padding: 8px 16px; border-radius: 8px; border: 0; background: var(--ink); color: var(--bg); cursor: pointer; }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.row:first-child { border-top: 0; }
+.row span:last-child { font-weight: 600; }
+.ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+.why { grid-column: 1 / -1; font-size: 13px; color: var(--muted); white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Microsoft 365 check</h1>
+  <p>Signs you in with your own app registration and makes three read-only requests to Microsoft Graph, to see what works without an admin. Nothing is sent anywhere else; the token stays in this tab's memory and is gone when you close it.</p>
+
+  <div class="card">
+    <p style="margin-top:0">Before you start, in your app registration (Entra ID → App registrations → yours → Authentication): add a <b>Single-page application</b> platform with this exact redirect URI:</p>
+    <p><code id="redirect"></code></p>
+    <label for="client">Application (client) ID</label>
+    <input id="client" type="text" autocomplete="off" spellcheck="false" placeholder="00000000-0000-0000-0000-000000000000">
+    <label for="tenant">Directory (tenant) ID, or "organizations"</label>
+    <input id="tenant" type="text" autocomplete="off" spellcheck="false" value="organizations">
+    <label>Ask for</label>
+    <div class="scopes" id="scopes"></div>
+    <button type="button" id="go">Sign in and check</button>
+  </div>
+
+  <div class="card" id="results" hidden></div>
+
+  <div class="card">
+    <p style="margin:0"><b>Reading the result.</b> If Microsoft shows <b>"Need admin approval"</b> after you sign in, your organisation doesn't let people agree to these permissions themselves: an admin has to grant them once, for everyone (Enterprise applications → your app → Permissions → Grant admin consent). Uncheck <b>Mail.Read</b> and try again to see whether the others work on their own.</p>
+  </div>
+</main>
+<script>
+// Sign-in with PKCE (no secret), then GET requests only. The verifier and the inputs live in
+// sessionStorage just across the sign-in redirect; the token never leaves memory.
+const SCOPES = [['User.Read', true], ['Mail.Read', true], ['Chat.Read', true], ['offline_access', false]];
+const GRAPH = 'https://graph.microsoft.com/v1.0';
+const CHECKS = [
+  ['Your profile (User.Read)', '/me?$select=displayName,mail', (d) => `${d.displayName} (${d.mail ?? 'no mail address'})`],
+  ['Your latest mail (Mail.Read)', '/me/messages?$top=3&$select=subject,receivedDateTime', (d) => `${d.value.length} message(s): ${d.value.map((m) => m.subject || '(no subject)').join(' · ')}`],
+  ['Your Teams chats (Chat.Read)', '/me/chats?$top=3', (d) => `${d.value.length} chat(s): ${d.value.map((c) => c.topic || c.chatType).join(' · ')}`],
+];
+// Microsoft's sign-in error codes that answer the question, in plain words.
+const CODES = {
+  AADSTS65001: 'Consent hasn\'t been given for these permissions. If you weren\'t offered a consent screen, an admin has to grant them.',
+  AADSTS90094: 'An admin has to approve this app: your organisation doesn\'t let people consent to it themselves.',
+  AADSTS90095: 'An admin has to approve this app: your organisation doesn\'t let people consent to it themselves.',
+  AADSTS50011: 'The redirect URI doesn\'t match. Add the exact one shown at the top, under "Single-page application".',
+  AADSTS9002326: 'The redirect URI is registered as "Web". Move it to "Single-page application".',
+  AADSTS7000218: 'The app expects a secret, so the redirect URI is under "Web". Move it to "Single-page application".',
+  AADSTS700016: 'No app with that client ID in that tenant. Check both IDs.',
+  AADSTS50020: 'Your account isn\'t in that tenant. Use your own tenant ID, or "organizations".',
+};
+const $ = (id) => document.getElementById(id);
+const redirect = location.origin + location.pathname;
+$('redirect').textContent = redirect;
+$('scopes').innerHTML = SCOPES.map(([s, on]) => `<label style="font-weight:400;margin:0"><input type="checkbox" value="${s}" ${on ? 'checked' : ''}> ${s}</label>`).join('');
+const saved = JSON.parse(sessionStorage.getItem('m365-check') || '{}');
+if (saved.client) $('client').value = saved.client;
+if (saved.tenant) $('tenant').value = saved.tenant;
+if (saved.scopes) for (const box of $('scopes').querySelectorAll('input')) box.checked = saved.scopes.includes(box.value);
+
+const b64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const explain = (text) => { const code = Object.keys(CODES).find((c) => text.includes(c)); return code ? `${CODES[code]}\n\n${text}` : text; };
+function show(rows) {
+  $('results').hidden = false;
+  $('results').innerHTML = rows.map(([what, state, cls, why]) => `<div class="row"><span>${esc(what)}</span><span class="${cls}">${esc(state)}</span>${why ? `<div class="why">${esc(why)}</div>` : ''}</div>`).join('');
+}
+
+$('go').addEventListener('click', async () => {
+  const client = $('client').value.trim(), tenant = $('tenant').value.trim() || 'organizations';
+  const scopes = [...$('scopes').querySelectorAll('input:checked')].map((b) => b.value);
+  if (!/^[0-9a-f-]{36}$/i.test(client)) return show([['Client ID', 'not valid', 'bad', 'It looks like 00000000-0000-0000-0000-000000000000 (Overview page of your app registration).']]);
+  const verifier = b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+  const state = b64url(crypto.getRandomValues(new Uint8Array(16)));
+  sessionStorage.setItem('m365-check', JSON.stringify({ client, tenant, scopes, verifier, state }));
+  const q = new URLSearchParams({ client_id: client, response_type: 'code', redirect_uri: redirect, response_mode: 'query', scope: ['openid', 'profile', ...scopes].join(' '), state, code_challenge: challenge, code_challenge_method: 'S256', prompt: 'select_account' });
+  location.assign(`https://login.microsoftonline.com/${encodeURIComponent(tenant)}/oauth2/v2.0/authorize?${q}`);
+});
+
+// Back from Microsoft: an error, or a code to swap for a token.
+(async () => {
+  const back = new URLSearchParams(location.search);
+  if (!back.has('code') && !back.has('error')) return;
+  history.replaceState(null, '', redirect); // the code is single-use; keep it out of the address bar
+  const s = JSON.parse(sessionStorage.getItem('m365-check') || '{}');
+  if (back.get('state') !== s.state) return show([['Sign-in', 'refused', 'bad', 'The answer didn\'t match this tab\'s sign-in. Start again.']]);
+  if (back.has('error')) return show([['Sign-in', back.get('error'), 'bad', explain(back.get('error_description') || '')]]);
+  const res = await fetch(`https://login.microsoftonline.com/${encodeURIComponent(s.tenant)}/oauth2/v2.0/token`, {
+    method: 'POST',
+    body: new URLSearchParams({ client_id: s.client, grant_type: 'authorization_code', code: back.get('code'), redirect_uri: redirect, code_verifier: s.verifier, scope: ['openid', 'profile', ...s.scopes].join(' ') }),
+  }).catch((e) => ({ ok: false, json: async () => ({ error: 'network', error_description: `${e.message}. Usually this means the redirect URI is under "Web" instead of "Single-page application".` }) }));
+  const token = await res.json();
+  if (!res.ok) return show([['Sign-in', token.error, 'bad', explain(token.error_description || '')]]);
+  const rows = [['Sign-in', 'worked', 'ok', `Granted: ${token.scope}`]];
+  for (const [what, path, summary] of CHECKS) {
+    const r = await fetch(GRAPH + path, { headers: { Authorization: `Bearer ${token.access_token}` } });
+    const d = await r.json().catch(() => ({}));
+    rows.push(r.ok ? [what, 'works', 'ok', summary(d)] : [what, `HTTP ${r.status}`, r.status === 403 ? 'warn' : 'bad', r.status === 403 ? `Not allowed with this token: the permission wasn't granted (or Teams/mail isn't licensed for you).\n${d.error?.message ?? ''}` : d.error?.message ?? '']);
+  }
+  show(rows);
+})();
+</script>
+</body>
+</html>

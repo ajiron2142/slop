@@ -47,6 +47,12 @@ Graph straight from the browser, signed in with your own Microsoft account (sign
 The model would get tools such as `outlook_search`, `outlook_read`, `calendar_list` and `teams_read`.
 Nothing is ever sent, changed or deleted (no `Mail.Send` or other write permission is asked for).
 
+**Try it first:** `docs/plans/m365-check.html` signs you in with your own app registration and makes three
+read-only Graph requests (profile, mail, Teams chats), saying in plain words what worked and, if it
+didn't, whether an admin is needed. Serve the repo locally (`python3 -m http.server 8000`) and open
+`http://localhost:8000/docs/plans/m365-check.html`; add that address as a Single-page application
+redirect URI.
+
 **What to check first, in your organisation** (each one can rule it out):
 - Can you register an app yourself (Entra ID, *Users can register applications*), or only an admin?
 - Can you agree to read-only permissions yourself (`Mail.Read`, `Calendars.Read`, `Chat.Read`), or does
