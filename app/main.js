@@ -55,6 +55,9 @@ const openSettings = (message) => { signInBox?.draw(); gitlab.draw(); settings.o
 const notice = $('notice');
 const notify = (text = '') => { notice.textContent = text; notice.hidden = !text; };
 const withoutErrors = (messages) => messages.filter((m) => m.role !== 'error');
+// A reply the provider's content filter blocked is left out of what's sent, with the message just
+// before it, so the filter isn't tripped again by every later message. Both stay on screen.
+const blockedOut = (messages) => messages.filter((m, i) => m.stats?.finish !== 'content_filter' && !(m.role === 'user' && messages[i + 1]?.stats?.finish === 'content_filter'));
 const MAX_TOOL_ROUNDS = 20;
 
 // Today's date and this computer's time zone, for the system prompt: "Today is Thursday, October 8,
@@ -376,7 +379,7 @@ async function complete(chat, carried = null) {
   const folder = chat.folder;
   let tools;
   // A reply with no text (it only ran tools, or the model finished empty) has nothing to send back; some providers refuse one.
-  const history = carried ?? withoutErrors(chat.messages).filter((m) => m.role !== 'assistant' || m.content).map((m) => ({ role: m.role, content: m.role === 'assistant' ? svgForModel(toApiContent(m)) : toApiContent(m) })); // svg: pictures aren't sent back
+  const history = carried ?? blockedOut(withoutErrors(chat.messages)).filter((m) => m.role !== 'assistant' || m.content).map((m) => ({ role: m.role, content: m.role === 'assistant' ? svgForModel(toApiContent(m)) : toApiContent(m) })); // svg: pictures aren't sent back
 
   const msg = { role: 'assistant', content: '', ts: Date.now() };
   chat.messages.push(msg);

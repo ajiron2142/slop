@@ -67,6 +67,9 @@ export default async function ({ browser, site, mock, check }) {
   check('a reply with nothing at all says so too', (await p.textContent('.msg.assistant:last-of-type .reply-note')) === 'No answer: the model finished without writing anything.');
   await send(p, 'filtered terminal output');
   check('a reply the provider\'s content filter stopped says that, not that the model wrote nothing', (await p.textContent('.msg.assistant:last-of-type .reply-note')).startsWith('Blocked: the provider\'s content filter stopped this reply.'));
+  await send(p, 'echo hi again');
+  check('then that message is left out of the chat, so the next one goes through', !mock.requests.at(-1).sent.includes('filtered terminal output') && mock.requests.at(-1).sent.includes('blank')
+    && (await p.textContent('.msg.user:nth-last-of-type(4) .body')) === 'filtered terminal output');
 
   await pickModel(p, 'gemini-pro');
   await send(p, 'echo unknown price');

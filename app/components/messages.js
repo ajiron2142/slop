@@ -114,7 +114,7 @@ function messageNode(msg, streaming, openStats, act) {
   if (msg.waiting) node.append(el('div', 'reply-note', 'Goes in when this step finishes.'));
   if (msg.role === 'assistant' && msg.stats?.finish === 'interrupted') node.append(el('div', 'reply-note', 'Interrupted.'));
   if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'content_filter') {
-    node.append(el('div', 'reply-note', 'Blocked: the provider\'s content filter stopped this reply. Something in the chat tripped it; rewording, or leaving part of a paste out, may help.'));
+    node.append(el('div', 'reply-note', 'Blocked: the provider\'s content filter stopped this reply. Your message above and this reply are left out of the chat from now on, so you can carry on; Edit your message to try it again without the part that tripped the filter.'));
   } else if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'length') {
     node.append(el('div', 'reply-note', 'Cut off: the model reached the most it can write in one reply. Say "continue" to get the rest.'));
   } else if (msg.role === 'assistant' && !streaming && msg.stats && msg.stats.finish !== 'stopped' && msg.stats.finish !== 'interrupted' && !msg.content) {
