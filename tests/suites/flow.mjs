@@ -81,6 +81,14 @@ export default async function ({ browser, site, mock, check }) {
   check('pointing at a ring picks out its step while the mouse is there', await has(box('folder'), 'flow-dim') && !(await has(`${reply} .act-step >> nth=2`, 'flow-dim')));
   await p.mouse.move(5, 5);
   check('and moving away shows everything', (await dimmed()) === 0);
+  await p.click(`${box('folder')} .flow-badge`);
+  await p.mouse.move(5, 5);
+  check('clicking a red badge picks out that place\'s failed calls: their rings and steps stay, the rest fade', !(await has(box('folder'), 'flow-dim')) && await has(box('paste'), 'flow-dim')
+    && (await p.$$eval(`${box('folder')} .flow-mk`, (xs) => xs.map((x) => x.classList.contains('flow-dim')).join())) === 'true,false'
+    && await has(`${reply} .act-step >> nth=1`, 'flow-dim') && !(await has(`${reply} .act-step >> nth=3`, 'flow-dim')));
+  await p.click(`${box('folder')} .flow-badge`);
+  await p.mouse.move(5, 5);
+  check('clicking the badge again shows everything', (await dimmed()) === 0);
 
   // Narrow: the tree goes above the steps.
   await p.setViewportSize({ width: 560, height: 800 });

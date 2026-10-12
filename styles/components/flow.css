@@ -32,6 +32,7 @@
 .flow-meta[hidden], .flow-marks[hidden] { display: none; }
 .flow-badge { position: absolute; top: -7px; right: -7px; box-sizing: border-box; width: 18px; height: 18px; font: 600 10px/18px var(--font-code); text-align: center; color: var(--bg); background: var(--del); border-radius: 50%; }
 .flow-badge:empty { display: none; }
+.flow-badge:not(:empty) { cursor: pointer; } /* picks out that place's failed calls */
 
 /* One ring per call, in order. */
 .flow-marks { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }

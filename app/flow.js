@@ -6,7 +6,8 @@ import { el } from './dom.js';
 // order: green worked, red failed, filling while it runs, grey for the model's thinking; a red badge
 // counts a place's failures. While the reply runs, the line to the place in use moves and everything
 // but what's happening now is faded. Point at, click or tap a box, ring or step to pick out its
-// partners; click it again, or empty space, to show everything. It draws only what activity.js
+// partners, or a red badge to pick out that place's failed calls; click it again, or empty space, to
+// show everything. It draws only what activity.js
 // already recorded, so it lives and goes with that: memory only, nothing sent to the model.
 //
 // Rules, all fixed: it's shown only when the chat has something connected (otherwise the model has
@@ -36,7 +37,7 @@ export function createFlow({ now = () => performance.now() } = {}) {
     const boxes = new Map(); // id → its parts
     const paths = new Map(); // id of the box a line leads to → the line
     const marks = new Map(); // step → its ring
-    let hover = null; // { step } or { box }: what the mouse is over
+    let hover = null; // { step }, { box } or { bad } (a place's failed calls): what the mouse is over
     let pick = null; // the same, clicked or tapped
     let order = '';
 
@@ -52,7 +53,7 @@ export function createFlow({ now = () => performance.now() } = {}) {
 
     // Which box a step belongs to.
     const placeOf = (s) => (s.kind === 'think' ? 'model' : r.places.find((p) => p.tools.includes(s.name))?.id ?? 'model');
-    const focusBox = (f) => (f?.step != null ? placeOf(r.steps[f.step]) : f?.box ?? null);
+    const focusBox = (f) => (f?.step != null ? placeOf(r.steps[f.step]) : f?.box ?? f?.bad ?? null);
     // While it runs and nothing is picked, what's happening now stands out.
     const current = () => {
       if (r.ended != null) return null;
@@ -101,7 +102,7 @@ export function createFlow({ now = () => performance.now() } = {}) {
         }
         ui.meta.hidden = !ui.meta.textContent;
         ui.badge.textContent = failed > 9 ? '9+' : failed || ''; // always a circle, so never more than two characters
-        ui.badge.title = failed ? `${failed} call${failed === 1 ? '' : 's'} failed` : '';
+        ui.badge.title = failed ? `${failed} call${failed === 1 ? '' : 's'} failed: click to pick them out` : '';
         // One ring per step, kept between draws so a filling ring keeps filling.
         for (const s of mine) {
           let mk = marks.get(s);
@@ -111,13 +112,14 @@ export function createFlow({ now = () => performance.now() } = {}) {
           if (running && !mk.firstChild) mk.innerHTML = RING;
           if (!running && mk.firstChild) mk.replaceChildren();
           mk.title = s.kind === 'think' ? 'Thinking' : s.label ?? `Running ${s.name}`;
+          mk.classList.toggle('flow-dim', focus?.bad === id && !s.failed);
         }
         ui.marks.hidden = !mine.length;
       }
 
       // The steps beside it fade the same way.
       r.steps.forEach((s, i) => {
-        const dim = Boolean(focus) && !(focus.step === i || (focus.box != null && at[i] === focus.box));
+        const dim = Boolean(focus) && !(focus.step === i || (focus.box != null && at[i] === focus.box) || (focus.bad != null && at[i] === focus.bad && s.failed));
         s.ui?.row.classList.toggle('flow-dim', dim);
         s.ui?.box?.classList.toggle('flow-dim', dim);
       });
@@ -144,14 +146,16 @@ export function createFlow({ now = () => performance.now() } = {}) {
       }
     }
 
-    // Point at, click or tap: a box picks its place, a ring or a step picks that step.
+    // Point at, click or tap: a box picks its place, a ring or a step picks that step, a badge its place's failures.
     const target = (e) => {
+      const badge = e.target.closest('.flow-badge');
+      if (badge?.textContent) return { bad: badge.closest('.flow-box').dataset.flowBox };
       const step = e.target.closest('.flow-mk, .act-step');
       if (step) return { step: Number(step.dataset.step) };
       const box = e.target.closest('.flow-box');
       return box ? { box: box.dataset.flowBox } : null;
     };
-    const same = (a, b) => (a && b ? a.step === b.step && a.box === b.box : a === b);
+    const same = (a, b) => (a && b ? a.step === b.step && a.box === b.box && a.bad === b.bad : a === b);
     r.node.addEventListener('pointerover', (e) => { if (e.pointerType !== 'mouse') return; const f = target(e); if (!same(f, hover)) { hover = f; draw(); } });
     r.node.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && hover) { hover = null; draw(); } });
     r.node.addEventListener('click', (e) => {
