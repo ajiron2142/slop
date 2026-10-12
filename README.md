@@ -87,7 +87,7 @@ app/                  behaviour
   paste.js            smart paste: long pastes stay in the tab and the model searches them (removable add-on)
   lines.js            line search and numbered ranges, shared by the folder tools and smart paste
   ignore.js           which files to leave out, read from the folder's .gitignore files (folder tools and git)
-  copy.js             Copy reply: formatted HTML for Teams/Outlook plus markdown, in one click
+  copy.js             Copy reply: formatted HTML for Teams/Outlook plus markdown, in one click; a partial copy (Ctrl+C) leaves the theme behind
   oidc.js             sign-in with an identity provider, when config.json sets it up (removable add-on)
   gitlab.js           GitLab, read-only: self-service connect in Settings, a project per chat, four tools (removable add-on)
   autotitle.js        names a chat after its first reply with one short request (removable add-on)

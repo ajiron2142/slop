@@ -2,7 +2,7 @@ import { el } from '../dom.js';
 import { renderMarkdown } from '../markdown.js';
 import { highlight } from '../highlight.js';
 import { fmt, replySpeed } from '../stats.js';
-import { copyReply } from '../copy.js';
+import { copyReply, copySelection } from '../copy.js';
 
 const LABEL = { user: 'You', assistant: 'Assistant', error: 'Error' };
 const COPY_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
@@ -37,6 +37,12 @@ export function createMessages(pane, { onRetry, activity = () => null, codeBlock
     built.set(m, { key, node });
     return node;
   };
+
+  // Copying part of the chat copies its words and formatting, not the theme's colours.
+  pane.addEventListener('copy', (e) => {
+    if (e.target.closest?.('textarea, input')) return; // the Edit box copies as it is
+    copySelection(e, pane.ownerDocument.defaultView);
+  });
 
   pane.addEventListener('scroll', () => {
     stick = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 40;

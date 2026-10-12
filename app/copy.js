@@ -25,6 +25,22 @@ export async function replyHtml(markdown, view = window) {
   return doc.body.innerHTML;
 }
 
+// Part of a reply copied with Ctrl+C or the menu: the selected text, and its HTML with nothing of the
+// theme in it (no classes, no styles from the page, no buttons or hidden parts), styled like Copy reply.
+// Without this the browser copies the page's colours, which Teams and Outlook keep.
+export function copySelection(e, view = window) {
+  const sel = view.getSelection();
+  if (!sel.rangeCount || sel.isCollapsed) return;
+  const box = view.document.createElement('div');
+  for (let i = 0; i < sel.rangeCount; i++) box.append(sel.getRangeAt(i).cloneContents());
+  for (const node of box.querySelectorAll('button, [hidden], .code-head, .picture-head')) node.remove();
+  for (const node of box.querySelectorAll('*')) { node.removeAttribute('class'); node.removeAttribute('style'); }
+  for (const [selector, css] of STYLES) for (const node of box.querySelectorAll(selector)) node.setAttribute('style', css);
+  e.clipboardData.setData('text/plain', sel.toString());
+  e.clipboardData.setData('text/html', box.innerHTML);
+  e.preventDefault();
+}
+
 // Swaps an SVG image for a PNG of it, shown at its own size. One that can't be drawn stays as it is.
 async function asPng(img, view) {
   const drawn = await drawOnWhite(img.getAttribute('src'), view);

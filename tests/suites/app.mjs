@@ -64,6 +64,16 @@ export default async function ({ browser, site, mock, check }) {
   });
   check('Copy reply puts formatted HTML on the clipboard for Teams and Outlook', copied.html.includes('<h2') && copied.html.includes('<table') && /<pre style="[^"]*background:#f6f8fa/.test(copied.html));
   check('…and the markdown as plain text', copied.text.startsWith("Here's a tricky reply.") && copied.text.includes('## A heading'));
+  // Selecting part of a reply and pressing Ctrl+C copies its words and formatting, never the theme.
+  await p.evaluate(() => { const body = document.querySelector('.msg.assistant .body'); const r = document.createRange(); r.selectNodeContents(body); getSelection().removeAllRanges(); getSelection().addRange(r); });
+  await p.keyboard.press('Control+C');
+  const part = await p.evaluate(async () => {
+    const [item] = await navigator.clipboard.read();
+    return { html: await (await item.getType('text/html')).text(), text: await (await item.getType('text/plain')).text() };
+  });
+  await p.evaluate(() => getSelection().removeAllRanges());
+  check('copying part of a reply copies its formatting with no theme in it', part.html.includes('<h2') && part.html.includes('<table') && /<pre style="[^"]*background:#f6f8fa/.test(part.html)
+    && !/class=|rgb\(|var\(--/.test(part.html) && !part.html.includes('<button') && part.text.startsWith("Here's a tricky reply."));
 
   // Model output can never run code here: every known trick is stripped before it's shown (DOMPurify).
   await send(p, 'xss: try everything');
