@@ -206,6 +206,8 @@
 .stats-legend { display: flex; flex-wrap: wrap; gap: 2px 16px; margin-top: 6px; font-size: 12px; color: var(--muted); }
 .stats-legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 5px; border-radius: 2px; }
 .stats-legend b { font-weight: 600; color: var(--ink); }
-.stats-tokens .cached, .stats-legend .cached::before { background: color-mix(in srgb, var(--time-write) 40%, transparent); }
-.stats-tokens .new, .stats-legend .new::before { background: var(--time-write); }
-.stats-tokens .written, .stats-legend .written::before { background: var(--time-tools); }
+/* In the order things happen, like the time bar: what was sent (the cached start, then the new part) in
+   greys, then what the model wrote, in the same colour as Writing, last in both bars. */
+.stats-tokens .cached, .stats-legend .cached::before { background: var(--time-wait); }
+.stats-tokens .new, .stats-legend .new::before { background: color-mix(in srgb, var(--muted) 75%, transparent); }
+.stats-tokens .written, .stats-legend .written::before { background: var(--time-write); }
