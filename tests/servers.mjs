@@ -387,6 +387,11 @@ export async function startMock() {
         return res.end('data: [DONE]\n\n');
       }
 
+      if (text.startsWith('filtered')) { // the provider's content filter stops the reply before any text
+        sse(res, { choices: [{ delta: {}, finish_reason: 'content_filter' }] });
+        return res.end('data: [DONE]\n\n');
+      }
+
       if (text.startsWith('thinkonly') || text.startsWith('blank')) { // finishes without writing an answer
         if (text.startsWith('thinkonly')) sse(res, { choices: [{ delta: { reasoning_content: 'I should search the repository first.' } }] });
         sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] });

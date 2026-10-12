@@ -65,6 +65,8 @@ export default async function ({ browser, site, mock, check }) {
   check('an empty reply isn\'t sent back to the model (some providers refuse it)', mock.requests.at(-1).text.startsWith('echo after') && !mock.requests.at(-1).emptyAssistant);
   await send(p, 'blank');
   check('a reply with nothing at all says so too', (await p.textContent('.msg.assistant:last-of-type .reply-note')) === 'No answer: the model finished without writing anything.');
+  await send(p, 'filtered terminal output');
+  check('a reply the provider\'s content filter stopped says that, not that the model wrote nothing', (await p.textContent('.msg.assistant:last-of-type .reply-note')).startsWith('Blocked: the provider\'s content filter stopped this reply.'));
 
   await pickModel(p, 'gemini-pro');
   await send(p, 'echo unknown price');

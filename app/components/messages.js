@@ -113,7 +113,9 @@ function messageNode(msg, streaming, openStats, act) {
   if (own) node.append(own);
   if (msg.waiting) node.append(el('div', 'reply-note', 'Goes in when this step finishes.'));
   if (msg.role === 'assistant' && msg.stats?.finish === 'interrupted') node.append(el('div', 'reply-note', 'Interrupted.'));
-  if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'length') {
+  if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'content_filter') {
+    node.append(el('div', 'reply-note', 'Blocked: the provider\'s content filter stopped this reply. Something in the chat tripped it; rewording, or leaving part of a paste out, may help.'));
+  } else if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'length') {
     node.append(el('div', 'reply-note', 'Cut off: the model reached the most it can write in one reply. Say "continue" to get the rest.'));
   } else if (msg.role === 'assistant' && !streaming && msg.stats && msg.stats.finish !== 'stopped' && msg.stats.finish !== 'interrupted' && !msg.content) {
     node.append(el('div', 'reply-note', `No answer: the model finished without writing anything${msg.stats.reasoned ? ' (it sent only its reasoning, which isn\'t shown)' : ''}.`));
@@ -205,7 +207,7 @@ function copyButton(text) {
   return btn;
 }
 
-const FINISH = { stop: 'Complete', length: 'Cut off (length limit)', stopped: 'Stopped by you', interrupted: 'Interrupted by your message', tool_calls: 'Complete' };
+const FINISH = { stop: 'Complete', length: 'Cut off (length limit)', stopped: 'Stopped by you', interrupted: 'Interrupted by your message', tool_calls: 'Complete', content_filter: 'Blocked by the provider\'s content filter' };
 
 // "Stats" button and the card it opens: what one reply used, cost and how long it took.
 function statsNodes(s, open) {
