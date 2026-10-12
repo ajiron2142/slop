@@ -110,6 +110,8 @@ export function createActivity({ now = () => performance.now(), flow = null } = 
         if (row === head) r.open = !r.open;
         else { const s = r.steps[row.dataset.step]; s.open = !s.open; }
         draw(r);
+        // Opened: the chat scrolls just enough to show all of it, the tree too (its top first if it's taller).
+        if (row === head && r.open) node.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
       });
       replies.set(`${chatId}:${msg.ts}`, r);
       timer ||= setInterval(tick, 250);

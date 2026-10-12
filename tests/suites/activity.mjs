@@ -40,7 +40,15 @@ export default async function ({ browser, site, mock, check }) {
   const head = await p.textContent(`${reply} .act-head`);
   check('when done, the line says how many steps and how long it thought', /^▸2 steps · thought \d+\.\ds\d+\.\ds$/.test(head));
   check('it starts folded', await p.isHidden(`${reply} .act-list`));
+  await p.setViewportSize({ width: 1280, height: 600 }); // short enough that what opens doesn't fit below the line, tall enough for all of it
+  await p.evaluate(() => { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; });
   await p.click(`${reply} .act-head`);
+  await p.waitForTimeout(400);
+  check('opening it scrolls the chat so all of what opened is in view', await p.evaluate((sel) => {
+    const pane = document.getElementById('messages').getBoundingClientRect(), act = document.querySelector(`${sel} .activity`).getBoundingClientRect();
+    return act.bottom <= pane.bottom + 1 && act.top >= pane.top - 1;
+  }, reply));
+  await p.setViewportSize({ width: 1280, height: 800 });
   const names = await rows();
   check('opened, it lists every step in order, thinking only where the model sent some', names.length === 4 && names[0] === 'Thinking' && names[1].startsWith('Searched paste for "ERROR" · ') && names[2].startsWith('Read paste lines 600–602 · 4 lines') && names[3] === 'Thinking');
   check('each step has its time', (await p.$$eval(`${reply} .act-step .act-time`, (xs) => xs.every((x) => /^\d+\.\ds$/.test(x.textContent)))));
