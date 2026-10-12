@@ -261,12 +261,12 @@ export default async function ({ browser, site, mock, check }) {
       }));
     }
   }
-  // New chat's + and the sidebar button are in the same place open or closed, so the mouse never moves.
-  const spots = () => p.evaluate(() => ['#collapse-btn', '#new-chat .icon'].map((sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return `${Math.round(b.x)},${Math.round(b.y)}`; }).join(' '));
+  // New chat's +, the sidebar button and the settings gear are in the same place open or closed, so the mouse never moves.
+  const spots = () => p.evaluate(() => ['#collapse-btn', '#new-chat .icon', '#settings-btn .icon'].map((sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return `${Math.round(b.x)},${Math.round(b.y)}`; }).join(' '));
   const open = await spots();
   await p.click('#collapse-btn');
   await p.waitForTimeout(300);
-  check('New chat\'s + and the sidebar button stay in the same place when the sidebar closes', (await spots()) === open);
+  check('New chat\'s +, the sidebar button and the settings gear stay in the same place when the sidebar closes', (await spots()) === open);
   check('the sidebar slides open and shut, quickly', await p.evaluate(() => getComputedStyle(document.getElementById('app')).transitionProperty.includes('grid-template-columns') && parseFloat(getComputedStyle(document.getElementById('app')).transitionDuration) <= 0.2));
   await p.reload();
   await p.waitForSelector('#chat-list li[data-id]', { state: 'attached' });
