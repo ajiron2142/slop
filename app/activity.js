@@ -1,6 +1,6 @@
 import { el } from './dom.js';
 
-// What a reply did (optional add-on): a folded line under "Assistant" that says what is happening
+// What a reply did (optional add-on): a folded line under "Model" that says what is happening
 // right now ("Waiting for claude-haiku", "Thinking", "Running gitlab_read") with the reply's time so
 // far, counting from when you sent, and once the reply is done, how many steps it took. Open it for every step with its time; open a step for exactly what
 // was asked and what came back, or the model's thinking. Everything stays in this tab's memory: after

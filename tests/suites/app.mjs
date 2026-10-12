@@ -45,6 +45,8 @@ export default async function ({ browser, site, mock, check }) {
   check('code blocks get a header with Copy', md.codes === 2 && !md.copyInsidePre);
   check('table, heading and code inside a list render', md.table && md.heading && md.nested);
   check('long code lines scroll inside the block', md.scrolls);
+  const who = await p.$eval('.msg.assistant .who', (w) => [w.textContent, w.title]);
+  check('a reply is labelled Model, with the exact model it came from on hover', who[0] === 'Model' && who[1] === await p.textContent('#model-picker .model'));
   await p.waitForFunction(() => document.querySelector('.msg.assistant .body pre .hljs-keyword'));
   check('code blocks get syntax colours', await p.evaluate(() => {
     const k = document.querySelector('.msg.assistant .body pre .hljs-keyword');
