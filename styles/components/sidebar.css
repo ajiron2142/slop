@@ -1,5 +1,6 @@
-/* Sidebar: new chat, search, chat list, settings. Opening and closing it slides (base.css, .app);
-   the + of New chat and the settings gear stay in the same place either way. */
+/* Sidebar: new chat, search, chat list, settings. Opening and closing it slides (base.css, .app) while
+   the chat already has its new width (sidebar.js), so the chat doesn't rewrap as it moves; the + of
+   New chat and the settings gear stay in the same place either way. */
 .sidebar {
   overflow: hidden; /* while it slides open, what doesn't fit yet is hidden */
   display: flex;
@@ -16,7 +17,7 @@
 
 /* Collapsed (wide screens): a slim rail with just the toggle, new chat and settings. */
 @media (min-width: 761px) {
-  .app.collapsed { grid-template-columns: 56px minmax(0, 1fr) auto; }
+  .app.collapsed { grid-template-columns: var(--sidebar-closed) minmax(0, 1fr) auto; }
   .app.collapsed .search,
   .app.collapsed .chat-list,
   .app.collapsed .sidebar .label { display: none; }

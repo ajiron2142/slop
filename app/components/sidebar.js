@@ -53,6 +53,7 @@ export function createSidebar({ app, list, search, menuButton, collapseButton, s
   // The same button collapses the sidebar on a wide window and closes the slide-over on a narrow one.
   collapseButton.addEventListener('click', () => {
     if (narrow.matches) return close();
+    holdChat(!app.classList.contains('collapsed'));
     setCollapsed(!app.classList.contains('collapsed'));
     onCollapse(app.classList.contains('collapsed'));
   });
@@ -67,6 +68,19 @@ export function createSidebar({ app, list, search, menuButton, collapseButton, s
   }
 
   function close() { app.classList.remove('sidebar-open'); }
+
+  // While the sidebar slides, the chat already has the width it will end with, so its text and code
+  // don't rewrap on every frame; it lets go when the slide ends. No slide (reduced motion), no hold.
+  const chat = app.querySelector('.chat');
+  const letGo = (e) => { if (e.target === app && !app.getAnimations().length) chat.style.width = ''; }; // not while a newer slide runs
+  app.addEventListener('transitionend', letGo);
+  app.addEventListener('transitioncancel', letGo);
+  function holdChat(collapsing) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const to = parseFloat(getComputedStyle(app).getPropertyValue(collapsing ? '--sidebar-closed' : '--sidebar-open'));
+    const panel = app.querySelector('#panel').getBoundingClientRect().width; // the side panel's column, 0 when it's shut
+    chat.style.width = `${app.getBoundingClientRect().width - to - panel}px`;
+  }
 
   const api = {
     close,

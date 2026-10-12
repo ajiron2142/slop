@@ -266,8 +266,18 @@ export default async function ({ browser, site, mock, check }) {
   // New chat's +, the sidebar button and the settings gear are in the same place open or closed, so the mouse never moves.
   const spots = () => p.evaluate(() => ['#collapse-btn', '#new-chat .icon', '#settings-btn .icon'].map((sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return `${Math.round(b.x)},${Math.round(b.y)}`; }).join(' '));
   const open = await spots();
-  await p.click('#collapse-btn');
+  // The chat takes its new width the moment the sidebar starts to slide, so it doesn't rewrap as it moves.
+  const atClick = await p.evaluate(() => { document.getElementById('collapse-btn').click(); return document.getElementById('chat').getBoundingClientRect().width; });
   await p.waitForTimeout(300);
+  const settled = await p.evaluate(() => ({ width: document.getElementById('chat').getBoundingClientRect().width, held: document.getElementById('chat').style.width }));
+  check('the chat takes its new width at once while the sidebar slides, then lets go', Math.abs(atClick - settled.width) < 1 && settled.held === '');
+  const twice = await p.evaluate(() => new Promise((done) => { // clicked again mid-slide: still the width it ends with
+    const b = document.getElementById('collapse-btn'), chat = document.getElementById('chat');
+    b.click();
+    setTimeout(() => { b.click(); done(chat.getBoundingClientRect().width); }, 60);
+  }));
+  await p.waitForTimeout(300);
+  check('and clicked again halfway, it takes the width it ends with', Math.abs(twice - settled.width) < 1);
   check('New chat\'s +, the sidebar button and the settings gear stay in the same place when the sidebar closes', (await spots()) === open);
   check('the sidebar slides open and shut, quickly', await p.evaluate(() => getComputedStyle(document.getElementById('app')).transitionProperty.includes('grid-template-columns') && parseFloat(getComputedStyle(document.getElementById('app')).transitionDuration) <= 0.2));
   await p.reload();

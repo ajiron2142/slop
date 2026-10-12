@@ -125,7 +125,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 :is([aria-selected="true"], [aria-checked="true"], .chosen) > .mark { font-weight: 600; }
 
 /* Sidebar, chat, and the side panel (an empty column until something opens it). */
-.app { display: grid; grid-template-columns: 260px minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); height: 100vh; height: 100dvh; transition: grid-template-columns 0.18s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.app { --sidebar-open: 260px; --sidebar-closed: 56px; display: grid; grid-template-columns: var(--sidebar-open) minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); height: 100vh; height: 100dvh; transition: grid-template-columns 0.18s cubic-bezier(0.2, 0.8, 0.2, 1); }
 @media (prefers-reduced-motion: reduce) { .app { transition: none; } }
 
 .btn {
