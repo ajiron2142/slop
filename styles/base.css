@@ -110,34 +110,18 @@ body { overflow: hidden; }
 button, input, textarea, select { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 
-/* Chosen or on, one mark everywhere: the name turns semibold and a thin line is drawn under it like a pen
-   stroke. The chosen model and theme, the GitLab branch in use, the Sandbox while it's on. Wrap the name
-   in .mark; it's marked when its parent is [aria-selected="true"], [aria-checked="true"] or .chosen.
-   (The chat you're in is different: it's where you are, not a choice, so it keeps its tinted row.) */
+/* Chosen or on, one look everywhere: the row is tinted, like the chat you're in, and the name semibold.
+   The chosen model and theme, the GitLab branch in use, the Sandbox while it's on. Wrap the name in
+   .mark; it's marked when its parent is [aria-selected="true"], [aria-checked="true"] or .chosen. */
 :root {
-  --pen: 0.35s cubic-bezier(0.1, 1, 0.2, 1); /* the line: darts off, coasts to the end */
   --ink-time: 0.2s; /* grey to ink, where something turns on */
 }
-.mark { position: relative; }
-.mark::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -3px;
-  height: 1.5px;
-  background: currentColor;
-  border-radius: 2px;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--pen);
-}
-[aria-selected="true"] > .mark, [aria-checked="true"] > .mark, .chosen > .mark { font-weight: 600; }
-[aria-selected="true"] > .mark::after, [aria-checked="true"] > .mark::after, .chosen > .mark::after { transform: scaleX(1); }
-@media (prefers-reduced-motion: reduce) { .mark::after { transition: none; } }
+:is([aria-selected="true"], [aria-checked="true"], .chosen):has(> .mark) { background: var(--surface); }
+:is([aria-selected="true"], [aria-checked="true"], .chosen) > .mark { font-weight: 600; }
 
 /* Sidebar, chat, and the side panel (an empty column until something opens it). */
-.app { display: grid; grid-template-columns: 260px minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); height: 100vh; height: 100dvh; }
+.app { display: grid; grid-template-columns: 260px minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr); height: 100vh; height: 100dvh; transition: grid-template-columns 0.18s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@media (prefers-reduced-motion: reduce) { .app { transition: none; } }
 
 .btn {
   display: inline-flex;

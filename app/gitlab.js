@@ -302,7 +302,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
   }
 
   // The branch list, grown out of the chip: the default branch first, then the most recently pushed,
-  // each with how long ago its last commit was. The one in use is marked like any choice: semibold, with a line.
+  // each with how long ago its last commit was. The one in use is marked like any choice: a tinted row, semibold.
   async function pickBranch(project, chipEl) {
     const b = await choose({
       className: 'branches',
@@ -313,7 +313,7 @@ export function createGitlab({ box, menuItem, chat, getSettings, saveSettings, o
         return [...all.filter((x) => x.default), ...all.filter((x) => !x.default)];
       },
       row: (b) => {
-        const name = el('span', `gitlab-branch-name${b.name === project.ref ? ' chosen' : ''}`); // in use: semibold with a line (base.css)
+        const name = el('span', `gitlab-branch-name${b.name === project.ref ? ' chosen' : ''}`); // in use: a tinted row, semibold (base.css)
         name.append(el('span', 'mark', b.name));
         if (b.default) name.append(el('small', '', 'default'));
         return [[name], el('small', 'gitlab-ago', ago(b.commit?.committed_date))];

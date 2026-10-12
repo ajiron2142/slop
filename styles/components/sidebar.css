@@ -1,26 +1,27 @@
-/* Sidebar: new chat, search, chat list, settings. */
+/* Sidebar: new chat, search, chat list, settings. Opening and closing it slides (base.css, .app);
+   the + of New chat stays in the same place either way, under the sidebar button. */
 .sidebar {
+  overflow: hidden; /* while it slides open, what doesn't fit yet is hidden */
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-height: 0;
-  padding: 14px 12px;
+  padding: 14px 8px; /* the same sides open or closed, so nothing moves */
   border-right: 1px solid var(--line);
 }
-.sidebar-top { display: flex; gap: 8px; }
-.sidebar-top .btn { flex: 1; }
+.sidebar-top { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.sidebar-top #new-chat { box-sizing: border-box; height: 36px; align-self: stretch; justify-content: flex-start; padding-left: 11px; white-space: nowrap; }
 .sidebar .btn .icon { width: 16px; height: 16px; }
 .settings-btn { margin-top: auto; }
 
 /* Collapsed (wide screens): a slim rail with just the toggle, new chat and settings. */
 @media (min-width: 761px) {
   .app.collapsed { grid-template-columns: 56px minmax(0, 1fr) auto; }
-  .app.collapsed .sidebar { padding-inline: 8px; }
-  .app.collapsed .sidebar-top { flex-direction: column; }
   .app.collapsed .search,
   .app.collapsed .chat-list,
   .app.collapsed .sidebar .label { display: none; }
   .app.collapsed .sidebar .btn { padding: 8px 0; }
+  .app.collapsed .sidebar-top #new-chat { justify-content: center; padding-left: 0; }
 }
 
 .search {
@@ -35,7 +36,7 @@
   outline: none;
 }
 .search:focus { border-color: var(--accent); }
-.chat-list { flex: 1; min-height: 0; margin: 0 -4px; padding: 0; overflow-y: auto; list-style: none; }
+.chat-list { flex: 1; min-height: 0; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
 .chat-list li { display: flex; align-items: center; border-radius: var(--radius-md); }
 .chat-list li:hover, .chat-list li.active { background: var(--surface); }
 .chat-open {

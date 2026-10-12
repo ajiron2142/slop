@@ -14,8 +14,8 @@ the reply. Nothing it runs can reach the network, the page, your files or your s
   paperclip button becomes a **+** button, and its menu lists each item with an icon: Attach files, then
   Connect folder, Connect GitLab project and **Sandbox**. Tapping Sandbox switches it on or off, and the
   menu stays open so you see it change. Off, the row's word and box are grey; on, they turn ink and the word
-  is marked like every choice in slop: semibold, with a thin line drawn under it like a pen stroke (0.35 s,
-  a curve that darts off and coasts to the end; the grey turns ink in 0.2 s). The chosen model, theme and
+  is marked like every choice in slop: a tinted row, the word semibold (the grey turns ink in 0.2 s). The
+  chosen model, theme and
   GitLab branch use the same mark (`.mark` in base.css). No colour of its own, so it fits every theme; no rattle. Chosen in
   https://claude.ai/artifact/7nu4n65XvY4q5XGMYq59wp ("Snappy, sharper curve"). It also adds a **Sandbox**
   chip under the message box, whose × switches it off again.
@@ -133,7 +133,7 @@ now (thinking, reading a file, running code). Lighter than the reply tree; to be
 ## Phase 2 as built
 
 - The paperclip is a **+**, and each menu item has an icon. The Sandbox row is a checkbox item
-  (`aria-checked`); when it's on, its word and box are ink with a line under the word. Being in the menu, it's always there, so + always
+  (`aria-checked`); when it's on, its word and box are ink, the row tinted and the word semibold. Being in the menu, it's always there, so + always
   opens the menu now (before, with no folder support and no GitLab, it opened the file chooser).
 - On is saved per chat (`meta.sandbox`), like a GitLab project; a new chat starts with it off.
 - A run that ends in an error is a failed step (✕): its result starts `Error: the run failed.`, then the

@@ -34,7 +34,7 @@
 .picker-search { box-sizing: border-box; width: 100%; padding: 10px 12px; font-size: 14px; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--line); outline: none; }
 .picker-list { max-height: 320px; margin: 0; padding: 4px; overflow-y: auto; list-style: none; }
 .picker-option { padding: 7px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: var(--radius-sm); cursor: pointer; }
-.picker-option.active { background: var(--surface); }
+.picker-option.active { box-shadow: inset 0 0 0 1.5px var(--line); } /* where the keyboard or mouse is; what's chosen is tinted (base.css) */
 .picker-group { padding: 8px 10px 4px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .picker-empty { padding: 10px; color: var(--muted); }
 .picker.block .model { width: 100%; max-width: none; text-align: left; }

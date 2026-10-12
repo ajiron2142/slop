@@ -173,14 +173,14 @@ async function inTheApp({ browser, site, mock, check }) {
     return {
       word: getComputedStyle(sbx).color, box: getComputedStyle(sbx.querySelector('.icon')).color,
       ink: getComputedStyle(files).color, grey: getComputedStyle(files.querySelector('.icon')).color,
-      line: getComputedStyle(sbx.querySelector('.mark'), '::after').transform,
+      row: getComputedStyle(sbx).backgroundColor,
       weight: getComputedStyle(sbx.querySelector('.mark')).fontWeight,
     };
   });
   await p.click('#attach-btn');
   check('the + menu lists Sandbox, with an icon, switched off', await p.isVisible(row) && (await p.getAttribute(row, 'aria-checked')) === 'false' && Boolean(await p.$(`${row} svg.icon`)));
   let seen = await look();
-  check('off, its word and box are grey, with no line', seen.word === seen.grey && seen.box === seen.grey && seen.line === 'matrix(0, 0, 0, 1, 0, 0)' && seen.weight === '400');
+  check('off, its word and box are grey, its row plain', seen.word === seen.grey && seen.box === seen.grey && seen.row === 'rgba(0, 0, 0, 0)' && seen.weight === '400');
   check('every item in the menu has an icon', await p.$$eval('#attach-menu button:not([hidden])', (bs) => bs.every((b) => b.querySelector('svg.icon'))));
   await p.keyboard.press('Escape');
   await ask('hello');
@@ -190,10 +190,10 @@ async function inTheApp({ browser, site, mock, check }) {
   await p.click('#attach-btn');
   await p.click(row);
   check('tapping Sandbox switches it on, and the menu stays open to show it', await p.isVisible('#attach-menu') && (await p.getAttribute(row, 'aria-checked')) === 'true');
+  await p.mouse.move(5, 5); // off the row, so its look isn't the hover's
   await p.waitForTimeout(500);
   seen = await look();
-  check('on, its word and box turn ink, and the word is marked like any choice: semibold, with a line', seen.word === seen.ink && seen.box === seen.ink && seen.line === 'matrix(1, 0, 0, 1, 0, 0)' && seen.weight === '600');
-  check('its line is drawn with the shared pen stroke, like every other mark', await p.$eval(`${row} .mark`, (m) => { const a = getComputedStyle(m, '::after'); return `${a.transitionDuration} ${a.transitionTimingFunction}`; }) === '0.35s cubic-bezier(0.1, 1, 0.2, 1)');
+  check('on, its word and box turn ink, and it\'s marked like any choice: a tinted row, semibold', seen.word === seen.ink && seen.box === seen.ink && seen.row !== 'rgba(0, 0, 0, 0)' && seen.weight === '600');
   await p.keyboard.press('Escape');
   check('a Sandbox chip shows it\'s on', (await p.textContent(chip)) === 'Sandbox×' && Boolean(await p.$(`${chip} svg.peek`)));
   check('the chip is still while nothing runs', !(await p.$eval(chip, (c) => c.classList.contains('running'))));
@@ -295,7 +295,7 @@ async function inTheApp({ browser, site, mock, check }) {
   await p.emulateMedia({ reducedMotion: 'reduce' });
   await p.click('#attach-btn');
   await p.click(row);
-  check('with reduce motion on, the line appears at once', (await look()).line === 'matrix(1, 0, 0, 1, 0, 0)');
+  check('with reduce motion on, it\'s marked at once', (await look()).weight === '600');
   await p.evaluate(() => document.querySelector('#tray .tray-chip.sandbox').classList.add('running'));
   check('with reduce motion on, a running chip doesn\'t move but peeks', await p.$eval(chip, (c) => getComputedStyle(c.querySelector('.peek-lid')).animationName === 'none' && getComputedStyle(c.querySelector('.peek-eyes')).opacity === '1'));
 

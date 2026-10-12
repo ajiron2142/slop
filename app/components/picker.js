@@ -54,7 +54,7 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
       if (title && group.length) nodes.push(el('li', 'picker-group', title));
       for (const item of group) {
         const li = el('li', 'picker-option');
-        li.append(el('span', 'mark', item.name)); // chosen: semibold with a line (base.css)
+        li.append(el('span', 'mark', item.name)); // chosen: a tinted row, semibold (base.css)
         li.id = `${id}-opt-${visible.length}`;
         li.setAttribute('role', 'option');
         li.setAttribute('aria-selected', String(item.id === value));

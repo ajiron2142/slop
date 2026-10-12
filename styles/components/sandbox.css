@@ -1,6 +1,6 @@
 /* Sandbox (optional add-on): its row in the + menu, its chip, and pictures in a reply.
    Off, the menu row's word and box are grey; on, they turn ink, and the word is marked like any choice:
-   semibold with a line drawn under it (.mark, base.css). The chip shows it's on; while code runs, the
+   a tinted row and a semibold name (.mark, base.css). The chip shows it's on; while code runs, the
    chip's box lifts its lid and peeks out. */
 
 .attach-menu [data-action="sandbox"] { color: var(--muted); transition: color var(--ink-time) ease; }

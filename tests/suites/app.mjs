@@ -23,11 +23,9 @@ export default async function ({ browser, site, mock, check }) {
   check('model picked by keyboard', (await p.textContent('#model-picker .model')).includes('mini'));
   await p.click('#model-picker .model');
   check('recent models listed first', (await p.textContent('#model-picker .picker-list')).startsWith('Recent'));
-  const chosen = await p.$$eval('#model-picker .picker-option', (lis) => lis.map((li) => [li.getAttribute('aria-selected'), getComputedStyle(li.querySelector('.mark')).fontWeight, getComputedStyle(li.querySelector('.mark'), '::after').transform]));
-  check('the chosen model is marked like any choice: semibold, with a line; the rest plain', chosen.some(([sel]) => sel === 'true')
-    && chosen.every(([sel, w, t]) => (sel === 'true' ? w === '600' && t === 'matrix(1, 0, 0, 1, 0, 0)' : w === '400' && t === 'matrix(0, 0, 0, 1, 0, 0)')));
-  const pen = await p.evaluate(() => { const a = getComputedStyle(document.querySelector('#model-picker .mark'), '::after'); return `${a.transitionDuration} ${a.transitionTimingFunction}`; });
-  check('the mark is drawn with the shared pen stroke (base.css)', pen === '0.35s cubic-bezier(0.1, 1, 0.2, 1)');
+  const chosen = await p.$$eval('#model-picker .picker-option', (lis) => lis.map((li) => [li.getAttribute('aria-selected'), getComputedStyle(li.querySelector('.mark')).fontWeight, getComputedStyle(li).backgroundColor, getComputedStyle(li.querySelector('.mark'), '::after').content]));
+  check('the chosen model is marked like any choice: a tinted row, semibold, no line; the rest plain', chosen.some(([sel]) => sel === 'true')
+    && chosen.every(([sel, w, bg, line]) => line === 'none' && (sel === 'true' ? w === '600' && bg !== 'rgba(0, 0, 0, 0)' : w === '400' && bg === 'rgba(0, 0, 0, 0)')));
   await p.keyboard.press('Escape');
 
   // Streaming and markdown.
@@ -263,8 +261,13 @@ export default async function ({ browser, site, mock, check }) {
       }));
     }
   }
+  // New chat's + and the sidebar button are in the same place open or closed, so the mouse never moves.
+  const spots = () => p.evaluate(() => ['#collapse-btn', '#new-chat .icon'].map((sel) => { const b = document.querySelector(sel).getBoundingClientRect(); return `${Math.round(b.x)},${Math.round(b.y)}`; }).join(' '));
+  const open = await spots();
   await p.click('#collapse-btn');
   await p.waitForTimeout(300);
+  check('New chat\'s + and the sidebar button stay in the same place when the sidebar closes', (await spots()) === open);
+  check('the sidebar slides open and shut, quickly', await p.evaluate(() => getComputedStyle(document.getElementById('app')).transitionProperty.includes('grid-template-columns') && parseFloat(getComputedStyle(document.getElementById('app')).transitionDuration) <= 0.2));
   await p.reload();
   await p.waitForSelector('#chat-list li[data-id]', { state: 'attached' });
   check('collapsed sidebar is remembered', await p.evaluate(() => document.getElementById('app').classList.contains('collapsed')));
