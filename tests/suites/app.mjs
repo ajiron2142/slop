@@ -373,8 +373,10 @@ async function onAPhone({ browser, site, mock, check }) {
     const r = document.createRange(); r.selectNodeContents(msg.querySelector('.body')); getSelection().removeAllRanges(); getSelection().addRange(r);
   });
   await sp.keyboard.press('Control+C');
+  await sp.evaluate(async () => (await import('./app/copy.js')).replyHtml('| a | b |\n| --- | --- |\n| 1 | `x` |\n\n```js\nlet y\n```')); // what Copy reply puts in
+  await sp.waitForTimeout(100); // violations are reported a moment later
   const broken = (await sp.evaluate(() => window.__violations)).filter((v) => !v.includes('config.json'));
-  check('with the real security policy on, copying part of a reply breaks none of its rules', broken.length === 0 && (await sp.evaluate(() => navigator.clipboard.readText())).includes('Some bold text'));
+  check('with the real security policy on, copying part of a reply, or a whole one, breaks none of its rules', broken.length === 0 && (await sp.evaluate(() => navigator.clipboard.readText())).includes('Some bold text'));
   if (broken.length) console.log('    ', broken.join('\n     '));
   await strict.close();
 }

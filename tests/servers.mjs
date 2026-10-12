@@ -371,6 +371,7 @@ export async function startMock() {
           fence('<html><body>not a picture</body></html>'),
           fence(`<svg xmlns="http://www.w3.org/2000/svg"><!-- ${'x'.repeat(210 * 1024)} --></svg>`),
           fence('<svg xmlns="http://www.w3.org/2000/svg"><text>R&D</text></svg>'),
+          fence('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="10"><title>Fine</title><!-- shapes & lines --><style><![CDATA[ rect { fill: #3b78c4 } /* a & b */ ]]></style><rect width="30" height="10"/></svg>'),
           'That is all.',
         ].join('\n\n');
         for (let i = 0; i < reply.length; i += 20000) sse(res, { choices: [{ delta: { content: reply.slice(i, i + 20000) } }] });

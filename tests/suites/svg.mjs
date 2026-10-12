@@ -11,7 +11,7 @@ export default async function ({ browser, site, mock, check }) {
   const asked = mock.requests.at(-1);
   check('the model is told in one line, and offered no tools (no sandbox needed)', asked.system.includes('A ```svg code block in your reply is shown to the user as a picture, on white. Write & as &amp;') && !asked.hasTools);
   const imgs = await p.$$eval(`${reply} .picture img`, (list) => list.map((i) => [i.src.slice(0, 26), i.alt, i.classList.contains('fill')]));
-  check('a valid ```svg block shows as an image, its title as the alt text (else "Picture N")', imgs.length === 2 && imgs.every(([src]) => src === 'data:image/svg+xml;base64,')
+  check('a valid ```svg block shows as an image, its title as the alt text (else "Picture N"); an & in a comment or CDATA is fine', imgs.length === 3 && imgs[2][1] === 'Fine' && imgs.every(([src]) => src === 'data:image/svg+xml;base64,')
     && imgs[0][1] === 'Flow' && imgs[1][1] === 'Picture 2' && !imgs[0][2] && imgs[1][2]);
   check('nothing inside it runs, and it\'s never part of the page', await p.evaluate((sel) => window.__svgx === undefined && !document.querySelector(`${sel} .body svg:not(.icon), ${sel} .body script`), reply));
   const notes = await p.$$eval(`${reply} .svg-note`, (list) => list.map((n) => n.textContent));
@@ -32,7 +32,7 @@ export default async function ({ browser, site, mock, check }) {
   await p.waitForTimeout(300);
   const copied = await p.evaluate(async () => { const [item] = await navigator.clipboard.read(); return { text: await (await item.getType('text/plain')).text(), html: await (await item.getType('text/html')).text() }; });
   check('Copy reply keeps the SVG in the text', copied.text.includes('```svg\n<svg xmlns="http://www.w3.org/2000/svg" width="120"'));
-  check('and its formatted copy (Outlook, Teams) has each picture as a PNG, a broken one as code', (copied.html.match(/<img src="data:image\/png;base64,/g) ?? []).length === 2
+  check('and its formatted copy (Outlook, Teams) has each picture as a PNG, a broken one as code', (copied.html.match(/<img src="data:image\/png;base64,/g) ?? []).length === 3
     && copied.html.includes('alt="Flow"') && !copied.html.includes('svg+xml') && copied.html.includes('&lt;rect&gt;&lt;/svg&gt;'));
 
   await send(p, 'echo and then');

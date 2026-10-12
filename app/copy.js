@@ -7,22 +7,43 @@ import { svgBlocksAsImages } from './svg.js'; // svg
 // kind Outlook understands), so it pastes in neutral colours whatever theme is on screen. SVG images
 // become PNG in the HTML, since Outlook blocks SVG ones; the markdown keeps them as SVG.
 const MONO = 'font-family:Consolas,Menlo,monospace';
-const STYLES = [
-  ['code', `${MONO};font-size:90%;background:#f2f2f2;padding:1px 4px;border-radius:3px`],
-  ['pre', `${MONO};font-size:13px;line-height:1.5;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:10px 12px;white-space:pre-wrap`],
-  ['pre code', 'background:none;padding:0;font-size:inherit'],
-  ['table', 'border-collapse:collapse'],
-  ['th, td', 'border:1px solid #d0d7de;padding:4px 8px;text-align:left;vertical-align:top'],
-  ['th', 'border:1px solid #d0d7de;padding:4px 8px;text-align:left;background:#f6f8fa'],
-  ['blockquote', 'margin:0;padding-left:10px;border-left:3px solid #d0d7de;color:#555'],
-];
+const STYLES = {
+  code: `${MONO};font-size:90%;background:#f2f2f2;padding:1px 4px;border-radius:3px`,
+  pre: `${MONO};font-size:13px;line-height:1.5;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:10px 12px;white-space:pre-wrap`,
+  table: 'border-collapse:collapse',
+  th: 'border:1px solid #d0d7de;padding:4px 8px;text-align:left;background:#f6f8fa',
+  td: 'border:1px solid #d0d7de;padding:4px 8px;text-align:left;vertical-align:top',
+  blockquote: 'margin:0;padding-left:10px;border-left:3px solid #d0d7de;color:#555',
+};
+const PRE_CODE = 'background:none;padding:0;font-size:inherit'; // code inside a code block
+const VOID = new Set(['img', 'br', 'hr', 'input', 'col', 'wbr']);
+
+// The HTML of a node's children with the styles above written in as text. Setting a style attribute
+// on an element, even one never shown, counts against the page's security policy (style-src 'self').
+function styledHtml(root) {
+  const attr = (v) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  const text = (v) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const out = [];
+  const walk = (node, inPre) => {
+    if (node.nodeType === 3) { out.push(text(node.data)); return; }
+    if (node.nodeType !== 1) return;
+    const tag = node.localName;
+    const css = tag === 'code' && inPre ? PRE_CODE : STYLES[tag];
+    const attrs = [...node.attributes].filter((a) => a.name !== 'style').map((a) => ` ${a.name}="${attr(a.value)}"`).join('');
+    out.push(`<${tag}${attrs}${css ? ` style="${css}"` : ''}>`);
+    if (VOID.has(tag)) return;
+    for (const child of node.childNodes) walk(child, inPre || tag === 'pre');
+    out.push(`</${tag}>`);
+  };
+  for (const child of root.childNodes) walk(child, false);
+  return out.join('');
+}
 
 export async function replyHtml(markdown, view = window) {
   const doc = new DOMParser().parseFromString(renderMarkdown(markdown), 'text/html');
   svgBlocksAsImages(doc); // svg: a ```svg block pastes as its picture
-  for (const [selector, css] of STYLES) for (const node of doc.body.querySelectorAll(selector)) node.setAttribute('style', css);
   for (const img of doc.body.querySelectorAll('img[src^="data:image/svg+xml"]')) await asPng(img, view);
-  return doc.body.innerHTML;
+  return styledHtml(doc.body);
 }
 
 // Part of a reply copied with Ctrl+C or the menu: the selected text, and its HTML with nothing of the
@@ -31,14 +52,12 @@ export async function replyHtml(markdown, view = window) {
 export function copySelection(e, view = window) {
   const sel = view.getSelection();
   if (!sel.rangeCount || sel.isCollapsed) return;
-  // Built in a document of its own: it's never shown, and the page's security policy forbids inline styles.
-  const box = view.document.implementation.createHTMLDocument('').createElement('div');
+  const box = new view.DOMParser().parseFromString('<div></div>', 'text/html').body.firstChild; // never shown
   for (let i = 0; i < sel.rangeCount; i++) box.append(sel.getRangeAt(i).cloneContents());
   for (const node of box.querySelectorAll('button, [hidden], .code-head, .picture-head')) node.remove();
   for (const node of box.querySelectorAll('*')) { node.removeAttribute('class'); node.removeAttribute('style'); }
-  for (const [selector, css] of STYLES) for (const node of box.querySelectorAll(selector)) node.setAttribute('style', css);
   e.clipboardData.setData('text/plain', sel.toString());
-  e.clipboardData.setData('text/html', box.innerHTML);
+  e.clipboardData.setData('text/html', styledHtml(box));
   e.preventDefault();
 }
 
