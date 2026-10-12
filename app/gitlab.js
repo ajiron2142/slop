@@ -56,7 +56,7 @@ export const GITLAB_TOOLS = [
     end_line: int('Last line to read.'),
   }, ['path']),
   tool('gitlab_api', `A read-only GitLab API request (GET) for the connected project: anything GitLab's REST API has under /projects/:id/, such as pipelines, jobs and their logs, merge requests, commits and issues. JSON comes back indented; long answers come back ${MAX_LINES} lines at a time, and the note says how many there are, so ask for any part (like the end of a job log) with start_line.`, {
-    path: str('The API path after /projects/:id/, with any query, e.g. "pipelines?ref=main&per_page=5", "pipelines/123/jobs", "jobs/456/trace", "merge_requests?state=opened". Empty, or only a query like "?statistics=true", for the project itself (created_at, last_activity_at, default_branch, …).'),
+    path: str('The API path after /projects/:id/, with any query, e.g. "pipelines?ref=main&per_page=5", "pipelines/123/jobs", "jobs/456/trace", "merge_requests?state=opened", "repository/compare?from=main&to=feat/x" (what changed between two branches). Empty, or only a query like "?statistics=true", for the project itself (created_at, last_activity_at, default_branch, …).'),
     start_line: int('First line to read (from 1).'),
     end_line: int('Last line to read.'),
   }, ['path']),
