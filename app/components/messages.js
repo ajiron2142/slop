@@ -207,7 +207,10 @@ function copyButton(text) {
   return btn;
 }
 
-const FINISH = { stop: 'Complete', length: 'Cut off (length limit)', stopped: 'Stopped by you', interrupted: 'Interrupted by your message', tool_calls: 'Complete', content_filter: 'Blocked by the provider\'s content filter' };
+// How a reply ended, first in its Stats card: grey when it ended normally, coloured when it didn't.
+const FINISH = { stop: ['Completed', ''], tool_calls: ['Completed', ''], length: ['Cut off: hit the length limit', 'bad'], content_filter: ['Blocked by the provider\'s content filter', 'bad'], stopped: ['Stopped by you', 'odd'], interrupted: ['Interrupted by your message', 'odd'] };
+const PHASES = [['wait', 'Waiting'], ['think', 'Thinking'], ['tools', 'Tools'], ['write', 'Writing']];
+const MIN_PHASE = 72; // px: the narrowest a part of the time bar gets, so its label above fits
 
 // "Stats" button and the card it opens: what one reply used, cost and how long it took.
 function statsNodes(s, open) {
@@ -217,22 +220,57 @@ function statsNodes(s, open) {
   btn.setAttribute('aria-expanded', String(open));
   const card = el('div', 'stats-card');
   card.hidden = !open;
-  const rows = [['Model', s.model]];
+
+  const [ended, how] = FINISH[s.finish] ?? [s.finish, 'odd'];
+  const head = el('div', 'stats-head');
+  head.append(el('span', `stats-end ${how}`.trim(), ended), el('span', 'stats-model', s.model));
+  card.append(head);
+
+  const nums = el('div', 'stats-nums');
+  const num = (n, unit) => { const span = el('span', null, n); span.append(el('small', null, unit)); nums.append(span); };
+  if (s.input != null) num(fmt.int(s.output), 'tokens');
+  const speed = s.input != null && replySpeed(s);
+  if (speed) num(String(Math.round(speed)), 'tok/s');
+  num(fmt.secs(s.ms), 'total');
+  if (s.input != null) nums.append(el('span', 'stats-cost', s.cost ? fmt.usd(s.cost.input + s.cost.output) : 'Price unknown'));
+  card.append(nums);
+
+  // Time breakdown: each part's name, time and share sit above its piece of the bar. Replies saved
+  // before slop recorded the parts have only the total.
+  const parts = s.time ? PHASES.filter(([k]) => s.time[k] > 0) : [];
+  if (parts.length) {
+    const total = parts.reduce((sum, [k]) => sum + s.time[k], 0);
+    const bar = el('div', 'stats-time');
+    bar.style.gridTemplateColumns = parts.map(([k]) => `minmax(${MIN_PHASE}px, ${s.time[k]}fr)`).join(' ');
+    for (const [k, name] of parts) {
+      const part = el('div', `stats-part ${k}`);
+      const time = el('div', 'stats-part-time', fmt.secs(s.time[k]));
+      time.append(el('small', null, `${Math.round((s.time[k] / total) * 100)}%`));
+      part.append(el('div', 'stats-part-name', name), time, el('div', 'stats-seg'));
+      bar.append(part);
+    }
+    card.append(statsLabel('Time breakdown'), bar);
+  }
+
   if (s.input != null) {
-    rows.push(['Tokens', `${fmt.int(s.input)} in + ${fmt.int(s.output)} out = ${fmt.int(s.input + s.output)}`]);
-    if (s.cached) rows.push(['Cached', `${fmt.int(s.cached)} of ${fmt.int(s.input)} in`]);
-    rows.push(['Context', s.limit ? `${fmt.int(s.context)} of ${fmt.int(s.limit)} (${Math.round((s.context / s.limit) * 100)}%)` : fmt.int(s.context)]);
-    const speed = replySpeed(s);
-    if (speed) rows.push(['Speed', `${Math.round(speed)} tok/s`]);
+    const pct = s.limit && (s.context / s.limit) * 100;
+    card.append(statsLabel('Context', s.limit ? `${fmt.int(s.context)} of ${fmt.int(s.limit)} · ${pct > 0 && pct < 1 ? '<1' : Math.round(pct)}%` : `${fmt.int(s.context)} · limit unknown`));
+    if (s.limit) {
+      const ctx = el('div', 'stats-ctx');
+      const fill = el('span');
+      fill.style.width = `${Math.min(100, (s.context / s.limit) * 100)}%`;
+      ctx.append(fill);
+      card.append(ctx);
+    }
+    if (s.cached) card.append(el('div', 'stats-foot', `${fmt.int(s.cached)} of ${fmt.int(s.input)} tokens in were cached`));
+  } else {
+    card.append(el('div', 'stats-foot', 'Token counts arrive at the end of a reply, so a stopped one has none.'));
   }
-  rows.push(['Time', s.firstMs ? `${fmt.secs(s.firstMs)} to start · ${fmt.secs(s.ms)} total` : `${fmt.secs(s.ms)} total`]);
-  if (s.files) rows.push(['Folder', `Read ${s.files} file${s.files > 1 ? 's' : ''} in ${s.rounds} round${s.rounds > 1 ? 's' : ''}`]);
-  if (s.cost) {
-    const total = s.cost.input + s.cost.output;
-    rows.push(['Cost', total === 0 ? 'Free' : `${fmt.usd(s.cost.input)} in + ${fmt.usd(s.cost.output)} out = ${fmt.usd(total)}`]);
-  }
-  rows.push(['Finished', FINISH[s.finish] ?? s.finish, s.finish === 'length' ? 'warn' : '']);
-  if (s.input == null) rows.push(['', 'Token counts arrive at the end of a reply, so a stopped one has none.', 'note']);
-  for (const [k, v, cls = ''] of rows) card.append(el('span', `k ${cls}`, k), el('span', `v ${cls}`, v));
   return [btn, card];
+}
+
+function statsLabel(name, value) {
+  const label = el('div', 'stats-label', name);
+  if (value) label.append(el('span', null, value));
+  return label;
 }

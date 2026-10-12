@@ -60,3 +60,6 @@
 
 /* Code colours: warm red, denim, ochre and violet. */
 .theme-linen { --code-keyword: #b03a2e; --code-string: #2b5a8a; --code-number: #8a5a00; --code-title: #6b45b0; --code-attr: #2f6f5f; --code-comment: #8f897f; }
+
+/* The Stats card's time breakdown. */
+.theme-linen { --time-wait: #e6dfd3; --time-think: #c9bfae; --time-tools: #b98b5a; --time-write: #2b2824; }

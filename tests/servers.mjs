@@ -394,7 +394,10 @@ export async function startMock() {
       }
 
       if (text.startsWith('thinkonly') || text.startsWith('blank')) { // finishes without writing an answer
-        if (text.startsWith('thinkonly')) sse(res, { choices: [{ delta: { reasoning_content: 'I should search the repository first.' } }] });
+        if (text.startsWith('thinkonly')) {
+          sse(res, { choices: [{ delta: { reasoning_content: 'I should search the repository first.' } }] });
+          await new Promise((r) => setTimeout(r, 300)); // thinks a while, so the Stats card has thinking time to show
+        }
         sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] });
         if (body.stream_options?.include_usage) sse(res, usage(body, 'x'.repeat(40)));
         return res.end('data: [DONE]\n\n');

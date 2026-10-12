@@ -32,7 +32,15 @@ export default async function ({ browser, site, mock, check }) {
   check('Stats button appears when turned on', (await p.$$('.stats-btn')).length === 1);
   await p.click('.stats-btn');
   const card = await p.textContent('.stats-card');
-  check('Stats card: model, tokens, context, cost, finished', card.includes('claude-haiku') && /\d+ in \+ \d+ out = \d+/.test(card) && card.includes('of 200,000') && card.includes('Cost') && card.includes('Complete'));
+  check('Stats card: how it ended, model, tokens, cost, context', card.startsWith('Completedclaude-haiku') && /\d+tokens/.test(card) && card.includes('$') && card.includes('of 200,000'));
+  // The time breakdown: every part from send to the end, so the parts add up to the total.
+  const timing = async (sel) => p.$eval(sel, (c) => ({
+    total: parseFloat(c.querySelector('.stats-nums').textContent.match(/([\d.]+) stotal/)[1]),
+    parts: [...c.querySelectorAll('.stats-part')].map((x) => [x.querySelector('.stats-part-name').textContent, parseFloat(x.querySelector('.stats-part-time').textContent)]),
+  }));
+  const quick = await timing('.stats-card');
+  check('the time breakdown has waiting and writing, adding up to the total', quick.parts.map(([n]) => n).join() === 'Waiting,Writing'
+    && Math.abs(quick.parts.reduce((a, [, t]) => a + t, 0) - quick.total) <= 0.1 * quick.parts.length);
 
   await pickModel(p, 'llama');
   await send(p, 'a second, longer reply'); // long enough to time: a speed needs time between the first word and the last
@@ -54,12 +62,14 @@ export default async function ({ browser, site, mock, check }) {
   check('a cut-off reply is marked', cut.includes('Cut off'));
   check('and says so under the reply, for everyone', (await p.textContent('.msg.assistant:last-of-type .reply-note')).startsWith('Cut off: the model reached the most it can write'));
   check('the output limit is sent only when LiteLLM gives one', mock.requests.some((r) => r.model === 'claude-haiku' && r.maxTokens === 8192) && mock.requests.at(-1).maxTokens === undefined);
-  check('cached input is shown when reported', cut.includes('Cached'));
+  check('cached input is shown when reported', cut.includes('tokens in were cached'));
 
   // A reply the model finishes without writing anything stays, and says so.
   await send(p, 'thinkonly what is this repo');
   check('a reply with only reasoning says so under it', (await p.textContent('.msg.assistant:last-of-type .reply-note')) === 'No answer: the model finished without writing anything (it sent only its reasoning, which isn\'t shown).');
   check('and still has its stats, but nothing to copy', await p.isVisible('.msg.assistant:last-of-type .stats-btn') && !(await p.$('.msg.assistant:last-of-type .copy-reply')));
+  await p.click('.msg.assistant:last-of-type .stats-btn');
+  check('reasoning counts as thinking time', (await timing('.msg.assistant:last-of-type .stats-card')).parts.some(([n]) => n === 'Thinking'));
   await send(p, 'blank');
   await send(p, 'echo after that');
   check('an empty reply isn\'t sent back to the model (some providers refuse it)', mock.requests.at(-1).text.startsWith('echo after') && !mock.requests.at(-1).emptyAssistant);
@@ -81,12 +91,16 @@ export default async function ({ browser, site, mock, check }) {
   const mistral = await p.$$eval('.meter-model', (bs) => bs.map((b) => b.textContent).find((t) => t.startsWith('mistral-large')));
   check('a model LiteLLM lists without a price shows an unknown cost, not Free', mistral.includes('—') && !mistral.includes('Free') && (await p.textContent('#meter-pop')).includes('Cost —'));
   await p.keyboard.press('Escape');
+  await p.click('.msg.assistant:last-of-type .stats-btn');
+  check('and so does its Stats card', (await p.textContent('.msg.assistant:last-of-type .stats-card')).includes('Price unknown'));
 
   await p.reload();
   await p.waitForSelector('#chat-list li[data-id]', { state: 'attached' });
   await p.click('#chat-list li:first-child .chat-open');
   await p.waitForTimeout(300);
   check('stats and the setting survive a reload', (await p.$$('.stats-btn')).length >= 3 && !(await p.isHidden('#meter-row')));
+  await p.click('.msg.assistant:last-of-type .stats-btn');
+  check('the time breakdown is saved with the reply', (await p.$$('.msg.assistant:last-of-type .stats-part')).length > 0);
 
   await p.fill('#input', 'a long one to stop');
   await p.press('#input', 'Enter');
@@ -96,7 +110,7 @@ export default async function ({ browser, site, mock, check }) {
   await p.waitForTimeout(100);
   await p.click('.msg.assistant:last-of-type .stats-btn');
   const stopped = await p.textContent('.msg.assistant:last-of-type .stats-card');
-  check('a stopped reply says so, without token counts', stopped.includes('Stopped by you') && !stopped.includes(' in + '));
+  check('a stopped reply says so, without token counts', stopped.startsWith('Stopped by you') && !stopped.includes('tokens') && stopped.includes('Token counts arrive'));
 
   // A chat bigger than the picked model can take: red meter and a hint.
   await p.click('#new-chat');

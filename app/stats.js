@@ -77,5 +77,5 @@ export const fmt = {
   usd: (n) => (n === 0 ? 'Free' : n < 0.0001 ? '<$0.0001' : n < 0.01 ? `$${n.toFixed(4)}` : `$${n.toFixed(3)}`),
   usdShort: (n) => (n === 0 ? 'Free' : n < 0.01 ? '<$0.01' : `$${n.toFixed(2)}`),
   usd2: (n) => `$${(n ?? 0).toFixed(2)}`,
-  secs: (ms) => `${(ms / 1000).toFixed(1)} s`,
+  secs: (ms) => (ms < 60_000 ? `${(ms / 1000).toFixed(1)} s` : `${Math.floor(ms / 60_000)} m ${Math.floor((ms % 60_000) / 1000)} s`),
 };

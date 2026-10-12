@@ -75,3 +75,7 @@
 
 /* Code colours: red, yellow and blue on black. */
 .theme-bauhaus .body pre { --code-keyword: #ff6a4d; --code-string: #f4c430; --code-number: #ff9e3d; --code-title: #7aaeff; --code-attr: #c9c2b4; --code-comment: #8f8a80; }
+
+/* The Stats card's time breakdown. */
+.theme-bauhaus { --time-wait: #d8d0bf; --time-think: var(--yellow); --time-tools: var(--accent); --time-write: var(--blue); }
+.theme-bauhaus .stats-seg { border-radius: 0; }

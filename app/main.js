@@ -390,8 +390,13 @@ async function complete(chat, carried = null) {
 
   // What this reply used: summed over every round, with timing from the first visible word.
   let model = s.model;
-  const used = { input: 0, output: 0, cached: 0, context: 0, files: 0, rounds: 0 };
+  const used = { input: 0, output: 0, cached: 0, context: 0 };
   const started = performance.now();
+  // Where the time went: always in exactly one phase, from send to the end, so the four add up to the total.
+  const time = { wait: 0, think: 0, tools: 0, write: 0 };
+  let phase = 'wait';
+  let phaseAt = started;
+  const enter = (next, t = performance.now()) => { time[phase] += t - phaseAt; phase = next; phaseAt = t; };
   let firstAt = null;
   let finish = null;
   let reasoned = false; // in the last round
@@ -417,6 +422,7 @@ async function complete(chat, carried = null) {
     // With a folder connected the model may ask to read files first: run those and ask again.
     for (let round = 1; ; round++) {
       text = '';
+      enter('wait');
       act.asking(); // activity
       const { toolCalls, usage, finish: why, reasoned: thought } = await streamChat({
         settings: s,
@@ -424,9 +430,13 @@ async function complete(chat, carried = null) {
         tools,
         maxTokens: maxOutputOf(state.modelInfo[model]),
         signal: controller.signal,
-        onReasoning: act.thinking, // activity
+        onReasoning: (delta) => {
+          if (phase !== 'think') enter('think');
+          act.thinking(delta); // activity
+        },
         onRetry: (e, wait) => notify(e ? `The model is busy (${e.message}). Trying again in ${Math.round(wait / 1000)} s…` : ''),
         onDelta: (delta) => {
+          if (phase !== 'write') enter('write');
           act.writing(); // activity
           firstAt ??= performance.now();
           text += delta;
@@ -454,6 +464,7 @@ async function complete(chat, carried = null) {
       // The round's calls all start at once (they only read, so none waits on another); their results
       // go back in the order the model asked for them.
       state.streaming.toolsRunning = true;
+      enter('tools');
       const done = await Promise.all(toolCalls.map(async (call) => {
         const name = call.function.name;
         const stepDone = act.tool(call); // activity
@@ -469,13 +480,11 @@ async function complete(chat, carried = null) {
       toolCalls.forEach((call, i) => {
         const name = call.function.name;
         const { label, result, pictures } = done[i];
-        if (name === 'read_file' && !result.startsWith('Error:')) used.files++;
         if (pictures?.length) (msg.pictures ??= []).push(...pictures); // sandbox
         if (!isSandboxTool(name)) reads.push({ tool: name, args: call.function.arguments, text: result }); // sandbox: for later rounds
         (msg.tools ??= []).push(label);
         history.push({ role: 'tool', tool_call_id: call.id, content: result });
       });
-      used.rounds++;
       if (state.streaming.notes.length) { finish = 'interrupted'; break; } // the next break: these tools are done
       if (msg.content) msg.content += '\n\n';
       if (state.active === chat) render();
@@ -493,6 +502,8 @@ async function complete(chat, carried = null) {
       chat.messages.push({ role: 'error', content: e.message + hint });
     }
   }
+  const ended = performance.now();
+  enter(null, ended);
   act.end(finish); // activity
   cancelAnimationFrame(frame);
   clearTimeout(frame);
@@ -508,11 +519,11 @@ async function complete(chat, carried = null) {
       model,
       finish,
       ...(!msg.content && reasoned && { reasoned }),
-      ms: Math.round(performance.now() - started),
+      ms: Math.round(ended - started),
       firstMs: firstAt && Math.round(firstAt - started),
+      time: Object.fromEntries(Object.entries(time).map(([k, v]) => [k, Math.round(v)])),
       ...(counted && { input: used.input, output: used.output, cached: used.cached, context: used.context, cost: costOf(info, used) }),
       limit: limitOf(info),
-      ...(used.files && { files: used.files, rounds: used.rounds }),
     };
   }
   const { notes } = state.streaming;

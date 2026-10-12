@@ -48,3 +48,6 @@
 /* Code colours: One Monokai's. */
 .theme-monokai { --add: #98c379; --del: #e06c75; }
 .theme-monokai { --code-keyword: #e06c75; --code-string: #e5c07b; --code-number: #c678dd; --code-title: #98c379; --code-attr: #56b6c2; --code-comment: #676f7d; }
+
+/* The Stats card's time breakdown. */
+.theme-monokai { --time-wait: #4b5263; --time-think: #c678dd; --time-tools: #e5c07b; --time-write: var(--accent); }
