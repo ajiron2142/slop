@@ -75,14 +75,22 @@ export async function exportAll() {
 const isMessage = (m) =>
   m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string';
 
+// What Import restores, and nothing else. Chat: id, title, created, updated, titled. Message: role,
+// content, ts, files (images, text files, paste chips) and pictures. Each is optional, anything not
+// listed is left out, and a field in the wrong form is left out on its own. Not restored: stats, tool
+// summaries, a chat's sandbox switch or GitLab project; a paste's text is never in an export.
 const isFile = (f) =>
   f && typeof f.name === 'string' &&
   ((f.kind === 'image' && typeof f.dataUrl === 'string' && f.dataUrl.startsWith('data:image/')) ||
-   (f.kind === 'text' && typeof f.text === 'string'));
+   (f.kind === 'text' && typeof f.text === 'string') ||
+   (f.kind === 'paste' && typeof f.id === 'string' && Number.isInteger(f.lines)));
 
 const cleanFiles = (files) =>
-  files.filter(isFile).map(({ kind, name, dataUrl, text }) =>
-    kind === 'image' ? { kind, name, dataUrl } : { kind, name, text });
+  files.filter(isFile).map(({ kind, name, dataUrl, text, id, lines }) =>
+    kind === 'image' ? { kind, name, dataUrl } : kind === 'paste' ? { kind, id, lines, name } : { kind, name, text });
+
+const MAX_PICTURE = 200 * 1024; // as the sandbox allows
+const isPicture = (x) => typeof x === 'string' && /^\s*<svg[\s>]/.test(x) && new TextEncoder().encode(x).length <= MAX_PICTURE;
 
 export async function importData(data) {
   if (data?.version !== 1 || !Array.isArray(data.chats)) {
@@ -97,17 +105,19 @@ export async function importData(data) {
       skipped++;
       continue;
     }
-    const messages = chat.messages.filter(isMessage).map(({ role, content, ts, files }) => ({
+    const messages = chat.messages.filter(isMessage).map(({ role, content, ts, files, pictures }) => ({
       role,
       content,
       ts: Number(ts) || 0,
       ...(Array.isArray(files) && { files: cleanFiles(files) }),
+      ...(Array.isArray(pictures) && pictures.some(isPicture) && { pictures: pictures.filter(isPicture) }),
     }));
     const meta = {
       id: m.id,
       title: String(m.title ?? 'Imported chat').slice(0, 200),
       created: Number(m.created) || Date.now(),
       updated: Number(m.updated) || Date.now(),
+      ...(m.titled === true && { titled: true }),
     };
     await saveChat(meta, messages);
     existing.add(m.id);

@@ -346,6 +346,29 @@ export default async function ({ browser, site, mock, check }) {
   await p.fill('#input', '');
   await p.dispatchEvent('#input', 'input');
 
+  // Export, then Import, gives back the chat: its title state, attachments (paste chips without their
+  // text), and each reply's pictures. What Import doesn't know, or gets in the wrong form, is left out.
+  const trip = await p.evaluate(async () => {
+    const store = await import('./app/storage.js');
+    const pic = '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"><rect width="4" height="4"/></svg>';
+    const meta = { id: 'roundtrip', title: 'Round trip', created: 1, updated: 2, titled: true, sandbox: true };
+    const messages = [
+      { role: 'user', content: 'see the log', ts: 10, files: [{ kind: 'paste', id: 'p1', lines: 1200, name: '1.2k lines' }, { kind: 'text', name: 'a.txt', text: 'hi' }] },
+      { role: 'assistant', content: 'here', ts: 11, pictures: [pic, 42, '<b>not a picture</b>'], stats: { model: 'x' }, odd: 'field' },
+    ];
+    await store.saveChat(meta, messages);
+    const exported = JSON.parse(JSON.stringify(await store.exportAll()));
+    await store.deleteChat('roundtrip');
+    await store.importData(exported);
+    const back = { meta: (await store.listChatMeta()).find((m) => m.id === 'roundtrip'), messages: await store.loadMessages('roundtrip') };
+    await store.deleteChat('roundtrip');
+    return { back, pic };
+  });
+  const [you, model] = trip.back.messages;
+  check('Import gives back what Export saved: the title state, paste chips (no text) and pictures', trip.back.meta.titled === true
+    && JSON.stringify(you.files) === JSON.stringify([{ kind: 'paste', id: 'p1', lines: 1200, name: '1.2k lines' }, { kind: 'text', name: 'a.txt', text: 'hi' }])
+    && JSON.stringify(model.pictures) === JSON.stringify([trip.pic]) && you.ts === 10 && model.ts === 11);
+  check('and leaves out what it doesn\'t restore or doesn\'t know', !('sandbox' in trip.back.meta) && !('stats' in model) && !('odd' in model));
   check('no errors in the browser console', errors.length === 0);
   if (errors.length) console.log('    ', errors.join('\n     '));
   await context.close();
