@@ -96,6 +96,19 @@ of design decisions to learn.
 
 *Suggested order:* feature mode (prompt only), then learn/quiz, then learn-a-repo on top of it; arena last, if ever.
 
+## Chat list and search (ideas, not built)
+
+- **A ⋯ menu on each chat: Pin, Rename, Delete.** Replaces the × and the double-click rename, which are hard to
+  find. Pinned chats sit at the top; one saved true/false per chat. Small. Mock it up (phone and desktop)
+  before building.
+- **Search that matches words, not the whole phrase.** Today "pipeline timeout" only finds those two words
+  next to each other. Fixed rule: every word must appear somewhere in the chat, in any order; title matches
+  first, then newest. Tiny, deterministic, no library. Optional second step, only if wanted: one typo of
+  tolerance for words of 5+ letters (hand-written, fixed; a fuzzy-search library would need a very good reason).
+  A snippet of the match under the title would need sidebar room: mock it up first.
+- **Drag to reorder chats.** Needs a saved order, touch and keyboard support, and clashes with newest-first.
+  Pinning covers most of it; only if still wanted afterwards.
+
 ## MCP (only once there's a server to connect to)
 
 slop isn't an MCP client. One client could cover many tools (OpenShift, Argo CD, …), but it's only worth
