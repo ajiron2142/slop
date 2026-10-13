@@ -53,6 +53,49 @@ no tenant or client IDs go in the repo. The token lasts while the tab is open.
   on the page's thread, so a pathological one hangs it. Leaning to remove regex search (keep plain text):
   simplest, and models rarely need it. Needs a decision.
 
+## Ideas to talk through (not decided, nothing built)
+
+Each of these must still pass the manifesto test: small, simple, and a lot of value. Talk before building.
+
+### Arena (many tries, best one survives)
+
+An orchestrator spawns several sub-agents that each try to implement the same idea; their results are
+compared and the best one is kept. Output stays a git patch the user reviews (read-only rule).
+*Opinion:* the most expensive idea here (N times the tokens) and the heaviest change: the reply loop is
+one reply at a time per chat, so this reaches into all of it (an earlier two-models-side-by-side "arena"
+was set aside for this reason). "Best" also needs a rule, not a guess: only fixed, stated criteria such as
+"the test suite passes" would fit the deterministic-rules principle. Lowest priority. Cheaper cousin: run
+the same prompt in two tabs and compare by hand.
+
+### Feature mode (probe the problem, prototype the options)
+
+Describe a feature; the AI asks what problem you are really solving, then you prototype two or more
+approaches interactively (like the mockup artifacts) and compare pros, cons and workflow before choosing
+one to implement.
+*Opinion:* high value and fits how this project already works (mockup first, ask before building). It
+can start tiny: a system prompt/mode that asks clarifying questions and produces two short mockups
+with trade-offs, no new machinery. Build only the prompt first, see if it is enough. Best candidate.
+
+### Learn and quiz mode
+
+Ask about a subject ("teach me Go"); the AI teaches in steps and gives interactive quizzes to test you.
+*Opinion:* good value, easy to keep small: a mode prompt plus a quiz block (question, choices, answer
+revealed on click) rendered in the reply. Quiz results stay in memory (ephemeral) unless you decide
+progress is worth saving. Keep it deterministic: the quiz format is fixed, the model fills it in.
+
+### Learn a repo (understand code the AI wrote for you)
+
+Connect a repo (like this one, through the existing read-only GitLab/folder tools) and have the AI walk
+you through the core logic and the main design decisions, then quiz you on them, so you can maintain
+what Claude wrote and do not end up with slop you do not understand.
+*Opinion:* the most valuable of the four for this project's author, and it reuses learn mode plus the
+folder tools, so it should be built as a thin layer on top of the quiz mode, not separately. A useful
+fixed rule: questions must cite a file and line, and the model must open the file first (no answers from
+memory), so the quiz stays checkable. Possible later input: the repo's own CLAUDE.md and docs as the list
+of design decisions to learn.
+
+*Suggested order:* feature mode (prompt only), then learn/quiz, then learn-a-repo on top of it; arena last, if ever.
+
 ## MCP (only once there's a server to connect to)
 
 slop isn't an MCP client. One client could cover many tools (OpenShift, Argo CD, …), but it's only worth
