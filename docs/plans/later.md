@@ -101,11 +101,15 @@ of design decisions to learn.
 - **A ⋯ menu on each chat: Pin, Rename, Delete.** Replaces the × and the double-click rename, which are hard to
   find. Pinned chats sit at the top; one saved true/false per chat. Small. Mock it up (phone and desktop)
   before building.
-- **Search that matches words, not the whole phrase.** Today "pipeline timeout" only finds those two words
-  next to each other. Fixed rule: every word must appear somewhere in the chat, in any order; title matches
-  first, then newest. Tiny, deterministic, no library. Optional second step, only if wanted: one typo of
-  tolerance for words of 5+ letters (hand-written, fixed; a fuzzy-search library would need a very good reason).
-  A snippet of the match under the title would need sidebar room: mock it up first.
+- **Search that matches words, with a results pane under the box.** Like the search of a docs site
+  (Zensical, MkDocs): a simple pane under the search box lists each matching chat with a preview line
+  around the exact match, the matched words marked, and clicking one opens that chat. Fixed rules: every
+  word must appear somewhere in the chat, in any order (today "pipeline timeout" only matches those words
+  side by side); title matches first, then newest; the preview is the first match, cut at a fixed length.
+  Plain code in `storage.js` and the sidebar, no library (the text index already exists). Optional, only if
+  missed afterwards: one typo of tolerance for words of 5+ letters, hand-written and fixed. Not meaning-based
+  or "ask the model about old chats": more complexity than gain. Mock it up (phone and desktop) before
+  building; the sidebar is narrow, so the pane may need to open over the chat list.
 - **Drag to reorder chats.** Needs a saved order, touch and keyboard support, and clashes with newest-first.
   Pinning covers most of it; only if still wanted afterwards.
 
