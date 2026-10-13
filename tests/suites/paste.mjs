@@ -50,6 +50,12 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('.tray-chip.paste .tray-remove');
   check('× removes the paste', (await p.$$('.tray-chip.paste')).length === 0);
 
+  // A paste belongs to its chat: another chat, with a paste of its own, can't read it by id.
+  const firstId = mock.requests.map((r) => r.sent.match(/pasted id=\\"(\w+)\\"/)?.[1]).find(Boolean);
+  await paste('other\n'.repeat(600));
+  await ask(`rogue read_paste {"id":"${firstId}","start_line":600,"end_line":601}`);
+  check('a paste from another chat can\'t be read', (await p.textContent('.msg.assistant:last-of-type .body')).startsWith('GOT[Error:') && !(await p.textContent('.msg.assistant:last-of-type .body')).includes('ERROR database timeout'));
+
   // After a reload the paste is gone, and the model is told so.
   await p.reload();
   await p.waitForSelector('#chat-list li[data-id]', { state: 'attached' });

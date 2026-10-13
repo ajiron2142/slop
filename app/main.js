@@ -361,6 +361,14 @@ function stop() {
 // A tool call whose arguments aren't valid JSON isn't run. The model is told what it sent, and the
 // call goes back to the provider with {} as its arguments, since some providers refuse a request
 // that carries broken JSON. Returns null for a call that's fine.
+// A tool runs only if this reply offered it, as agent tools do: any other call gets an error as its
+// result, so the model can carry on.
+function notOffered(call, tools) {
+  const name = call.function.name;
+  if (tools?.some((t) => t.function.name === name)) return null;
+  return { label: `Not available: ${name}`, result: `Error: ${name} isn't available in this chat, so it wasn't run. Use only the tools you were given.` };
+}
+
 function unreadable(call) {
   const sent = call.function.arguments || '{}';
   try { JSON.parse(sent); return null; } catch (e) {
@@ -470,7 +478,7 @@ async function complete(chat, carried = null) {
       const done = await Promise.all(toolCalls.map(async (call) => {
         const name = call.function.name;
         const stepDone = act.tool(call); // activity
-        const run = unreadable(call) ?? (isPasteTool(name) ? runPasteTool(name, call.function.arguments) // smart paste
+        const run = notOffered(call, tools) ?? unreadable(call) ?? (isPasteTool(name) ? runPasteTool(name, call.function.arguments, chat.messages) // smart paste
           : isSandboxTool(name) ? await runCode(chat, call.function.arguments, reads) // sandbox
           : isGitTool(name) ? await runGitTool(folder, name, call.function.arguments) // git
           : isGitlabTool(name) ? await gitlab.run(project, name, call.function.arguments, controller.signal) // gitlab

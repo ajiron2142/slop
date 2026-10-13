@@ -82,6 +82,7 @@ Done.`;
 //   "git …"      (with git tools) reads the log and the uncommitted changes, then reports both
 //   "gitlab …"   (with GitLab tools) uses every GitLab tool once (and one path without the project), then reports
 //   "badjson …"  (with tools) a tool call whose arguments are cut off, then reports the result it got;
+//   "rogue <tool> <json>" calls that tool with that JSON, offered or not, then reports what came back;
 //                any request carrying broken tool-call JSON is refused with 400, as strict providers do
 //   "slowgitlab …" (with GitLab tools) a GitLab search that never answers, to check Stop
 //   "thinkonly …" sends only reasoning, then finishes; "blank …" finishes with nothing at all
@@ -197,6 +198,14 @@ export async function startMock() {
         }
       }
 
+      if (text.startsWith('rogue ')) { // calls the named tool whether or not it was offered, then reports what came back
+        const [, name, args] = text.split("\n")[0].match(/^rogue (\S+) ?(.*)$/);
+        const results = body.messages.filter((m) => m.role === 'tool');
+        if (!results.length) sse(res, { choices: [{ delta: { tool_calls: [{ index: 0, id: 'r1', type: 'function', function: { name, arguments: args || '{}' } }] } }] });
+        else sse(res, { choices: [{ delta: { content: `GOT[${results[0].content}]` } }] });
+        sse(res, { choices: [{ delta: {}, finish_reason: results.length ? 'stop' : 'tool_calls' }] });
+        return res.end('data: [DONE]\n\n');
+      }
       if (body.tools && text.startsWith('notools')) {
         return res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: { message: 'litellm.UnsupportedParamsError: tools is not supported' } }));
       }

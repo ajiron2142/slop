@@ -85,11 +85,13 @@ export const PASTE_TOOLS = [
 
 export const isPasteTool = (name) => name === 'search_paste' || name === 'read_paste';
 
-export function runPasteTool(name, argsJson) {
+// messages: the chat's own; a paste is read only by the chat it was attached to.
+export function runPasteTool(name, argsJson, messages) {
   try {
     const args = JSON.parse(argsJson || '{}');
-    const lines = pastes.get(String(args.id));
-    if (!lines) throw new Error('no paste with that id; it may have been lost on a reload');
+    const mine = messages.some((m) => m.files?.some((f) => f.kind === 'paste' && f.id === String(args.id)));
+    const lines = mine && pastes.get(String(args.id));
+    if (!lines) throw new Error('no paste with that id in this chat; it may have been lost on a reload');
     if (name === 'read_paste') {
       const { from, last, text } = numberedRange(lines, args.start_line, args.end_line);
       return { label: `Read paste lines ${from}–${last}`, result: text };

@@ -162,6 +162,9 @@ export default async function ({ browser, site, mock, check }) {
   const sent = mock.requests.at(-1);
   check('API gets the image and the inlined text files', sent.images === 1 && sent.hasFile && sent.model.includes('mini'));
   check('the system prompt starts with the date and time zone', /^Today is \w+day, \w+ \d{1,2}, \d{4}\. The user's time zone is .+ \(UTC[+-]\d\d:\d\d\)\.$/m.test(sent.system.split('\n')[0]));
+  // A tool runs only if this reply offered it; any other call gets an error back, and the reply goes on.
+  await send(p, 'rogue made_up_tool {}');
+  check('a tool that wasn\'t offered isn\'t run: the model is told, and the reply goes on', (await p.textContent('.msg.assistant:last-of-type .body')).startsWith("GOT[Error: made_up_tool isn't available in this chat"));
   check('your message is sent exactly as you typed it', !/Today is|app-note|Current date/.test(sent.sent.split('"role":"user"').slice(1).join('')));
   check('the time is not saved or shown in the chat', !(await p.textContent('#messages')).includes('Current date'));
   check('sent message shows thumbnail and file chips', (await p.$$('.msg.user .file-thumb')).length === 1 && (await p.$$('.msg.user .file-chip')).length === 2);

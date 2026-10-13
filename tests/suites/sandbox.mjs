@@ -186,6 +186,9 @@ async function inTheApp({ browser, site, mock, check }) {
   await ask('hello');
   await idle(p);
   check('with the sandbox off, a chat sends no tools', !mock.requests.at(-1).hasTools);
+  await ask('rogue run_js {"code":"return 6 * 7"}');
+  await idle(p);
+  check('and code the model sends anyway isn\'t run', (await p.textContent('.msg.assistant:last-of-type .body')).startsWith("GOT[Error: run_js isn't available in this chat"));
 
   await p.click('#attach-btn');
   await p.click(row);
