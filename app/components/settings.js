@@ -7,6 +7,7 @@ export function createSettings({ getSettings, onSave, onTest, onForgetKey, onDel
   const dialog = $('settings');
   const fields = { baseUrl: $('set-base-url'), apiKey: $('set-api-key'), systemPrompt: $('set-system') };
   const status = $('settings-status');
+  $('key-form').addEventListener('submit', (e) => e.preventDefault()); // Enter in the key box submits nothing
 
   const showStats = $('set-stats');
   showStats.addEventListener('change', () => onSave({ showStats: showStats.checked }, { quiet: true }));

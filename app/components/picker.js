@@ -15,7 +15,8 @@ export function createPicker(root, { label, empty = 'Nothing to pick', onSelect,
   const pop = el('div', 'picker-pop');
   pop.hidden = true;
   const search = el('input', 'picker-search');
-  search.type = 'text';
+  search.type = 'search'; // not a username, as far as password managers go
+  search.autocomplete = 'off';
   search.placeholder = `Search ${label.toLowerCase()}…`;
   search.setAttribute('role', 'combobox');
   search.setAttribute('aria-controls', `${id}-list`);

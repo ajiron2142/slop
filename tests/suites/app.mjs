@@ -11,6 +11,16 @@ export default async function ({ browser, site, mock, check }) {
   await p.click('#save-settings');
   await p.waitForSelector('#model-picker .model:not([disabled])');
   check('save shows status', (await p.textContent('#settings-status')).includes('Saved'));
+  // Chrome takes the text box before a password field as its username, form or no form: the key has a
+  // form of its own with its own username, so a model search is never saved as one.
+  check('the API key has its own form and username, so password managers never pair it with another box', await p.evaluate(() => {
+    const key = document.getElementById('set-api-key');
+    const user = key.form?.querySelector('input[autocomplete="username"]');
+    return key.type === 'password' && Boolean(user) && [...key.form.elements].filter((x) => x.tagName === 'INPUT').length === 2
+      && document.querySelector('.picker-search').type === 'search';
+  }));
+  await p.press('#set-api-key', 'Enter');
+  check('Enter in the key box doesn\'t close or reload anything', await p.evaluate(() => document.getElementById('settings').open));
   await p.click('#close-settings');
 
   // Model picker: 40 models, searchable, keyboard, recent group.

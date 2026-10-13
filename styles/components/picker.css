@@ -31,7 +31,8 @@
   border-radius: var(--radius-lg);
   box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.4);
 }
-.picker-search { box-sizing: border-box; width: 100%; padding: 10px 12px; font-size: 14px; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--line); outline: none; }
+.picker-search::-webkit-search-cancel-button { display: none; } /* a search box, looking like the plain box it was */
+.picker-search { -webkit-appearance: none; appearance: none; box-sizing: border-box; width: 100%; padding: 10px 12px; font-size: 14px; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--line); outline: none; }
 .picker-list { max-height: 320px; margin: 0; padding: 4px; overflow-y: auto; list-style: none; }
 .picker-option { padding: 7px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-radius: var(--radius-sm); cursor: pointer; }
 .picker-option.active { box-shadow: inset 0 0 0 1.5px var(--line); } /* where the keyboard or mouse is; what's chosen is tinted (base.css) */

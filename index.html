@@ -125,9 +125,14 @@
       <input id="set-base-url" type="url" autofocus placeholder="https://litellm.example.com" autocomplete="off" spellcheck="false">
     </label>
     <div id="signin" class="signin" hidden></div><!-- sign-in: filled by app/oidc.js when config.json sets it up -->
-    <label>API key
-      <input id="set-api-key" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false">
-    </label>
+    <!-- The key has a form and a username of its own, so a password manager that offers to save it
+         never takes another box (like the model search) as its username. -->
+    <form id="key-form" class="key-form">
+      <input type="text" name="username" autocomplete="username" value="LiteLLM API key" hidden>
+      <label>API key
+        <input id="set-api-key" type="password" placeholder="sk-..." autocomplete="current-password" spellcheck="false">
+      </label>
+    </form>
     <label>System prompt (optional)
       <textarea id="set-system" rows="3"></textarea>
     </label>
