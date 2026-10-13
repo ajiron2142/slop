@@ -45,6 +45,14 @@ no tenant or client IDs go in the repo. The token lasts while the tab is open.
 
 **Already there:** Copy under a reply pastes formatted text (and sandbox pictures as PNG) into Outlook and Teams.
 
+## Next, from the Codex review (agreed worth doing, not built yet)
+
+- **Delete all clears memory too.** It wipes everything saved, but pastes (and activity lines) stay in the
+  open tab until a reload. Fix: a small cleanup hook in the paste and activity add-ons. About 5 lines and a check.
+- **Regex search can freeze the page.** The folder and paste search tools run the model's regular expression
+  on the page's thread, so a pathological one hangs it. Leaning to remove regex search (keep plain text):
+  simplest, and models rarely need it. Needs a decision.
+
 ## MCP (only once there's a server to connect to)
 
 slop isn't an MCP client. One client could cover many tools (OpenShift, Argo CD, …), but it's only worth
