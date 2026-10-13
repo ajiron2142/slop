@@ -1,6 +1,5 @@
 import { renderMarkdown } from './markdown.js';
 import { drawOnWhite } from './picture.js';
-import { svgBlocksAsImages } from './svg.js'; // svg
 
 // Copies a reply in two formats at once: formatted HTML, which Teams, Outlook and Word paste,
 // and the markdown as plain text for everything else. The HTML gets plain inline styles (the
@@ -41,7 +40,6 @@ function styledHtml(root) {
 
 export async function replyHtml(markdown, view = window) {
   const doc = new DOMParser().parseFromString(renderMarkdown(markdown), 'text/html');
-  svgBlocksAsImages(doc); // svg: a ```svg block pastes as its picture
   for (const img of doc.body.querySelectorAll('img[src^="data:image/svg+xml"]')) await asPng(img, view);
   return styledHtml(doc.body);
 }

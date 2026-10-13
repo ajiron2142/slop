@@ -310,13 +310,6 @@ export async function startMock() {
         return res.end('data: [DONE]\n\n');
       }
 
-      if (body.tools && text.startsWith('sandboxdup:')) { // sandbox: shows a picture, then repeats the same SVG in a ```svg block
-        const results = body.messages.filter((m) => m.role === 'tool'), code = text.slice('sandboxdup:'.length);
-        if (!results.length) sse(res, { choices: [{ delta: { tool_calls: [{ index: 0, id: 'd1', type: 'function', function: { name: 'run_js', arguments: JSON.stringify({ code }) } }] } }] });
-        else sse(res, { choices: [{ delta: { content: 'Here it is again:\n\n```svg\n' + code.match(/show\('(.+)'\)/s)[1] + '\n```' } }] });
-        sse(res, { choices: [{ delta: {}, finish_reason: results.length ? 'stop' : 'tool_calls' }] });
-        return res.end('data: [DONE]\n\n');
-      }
       if (body.tools && text.startsWith('sandbox:')) { // sandbox: runs the code after "sandbox:", then says what came back
         const results = body.messages.filter((m) => m.role === 'tool');
         if (!results.length) sse(res, { choices: [{ delta: { content: 'Let me work it out.', tool_calls: [{ index: 0, id: 's1', type: 'function', function: { name: 'run_js', arguments: JSON.stringify({ code: text.slice('sandbox:'.length).split('\n\n<file name=')[0] }) } }] } }] });
@@ -378,24 +371,6 @@ export async function startMock() {
           '<details open ontoggle="window.__xss=1"><summary>x</summary></details>',
         ].join('\n\n');
         sse(res, { choices: [{ delta: { content: reply } }] });
-        sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] });
-        return res.end('data: [DONE]\n\n');
-      }
-
-      if (text.startsWith('svgblock')) { // svg: pictures in ```svg blocks; two shown, three broken in different ways
-        const fence = (svg) => '```svg\n' + svg + '\n```';
-        const reply = [
-          'Here is the flow:',
-          fence('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60" onload="window.__svgx = 1"><title>Flow</title><script>window.__svgx = 1</script><rect width="120" height="60" fill="#29335c"/></svg>'),
-          fence('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4"/></svg>'),
-          fence('<svg xmlns="http://www.w3.org/2000/svg"><rect></svg>'),
-          fence('<html><body>not a picture</body></html>'),
-          fence(`<svg xmlns="http://www.w3.org/2000/svg"><!-- ${'x'.repeat(210 * 1024)} --></svg>`),
-          fence('<svg xmlns="http://www.w3.org/2000/svg"><text>R&D</text></svg>'),
-          fence('<svg xmlns="http://www.w3.org/2000/svg" width="30" height="10"><title>Fine</title><!-- shapes & lines --><style><![CDATA[ rect { fill: #3b78c4 } /* a & b */ ]]></style><rect width="30" height="10"/></svg>'),
-          'That is all.',
-        ].join('\n\n');
-        for (let i = 0; i < reply.length; i += 20000) sse(res, { choices: [{ delta: { content: reply.slice(i, i + 20000) } }] });
         sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] });
         return res.end('data: [DONE]\n\n');
       }

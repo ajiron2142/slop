@@ -1,7 +1,7 @@
 import { el } from './dom.js';
 import { highlight } from './highlight.js';
 
-// A picture in a reply, the one look every picture has (sandbox pictures, ```svg blocks): its title,
+// A picture in a reply, the one look every picture has (sandbox pictures): its title,
 // two tabs, Image and SVG (the source), and one Copy that copies what the tab shows, the image as a
 // PNG or the SVG text. The SVG is shown as an image (a data: URL), never as part of the page, so
 // nothing in it can run. On white in every theme: pictures are drawn for white.

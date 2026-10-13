@@ -176,7 +176,7 @@ function fillBody(body, msg, streaming = false) {
     pre.replaceWith(wrap);
     wrap.append(head, pre);
     seen[lang] = (seen[lang] ?? 0) + 1;
-    const own = streaming ? null : blockHook(lang, code?.textContent ?? '', seen[lang], msg); // patch, svg
+    const own = streaming ? null : blockHook(lang, code?.textContent ?? '', seen[lang], msg); // patch
     if (own?.node) wrap.replaceWith(own.node);
     else if (own?.note) wrap.after(own.note);
   }

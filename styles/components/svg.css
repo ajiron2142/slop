@@ -1,3 +1,0 @@
-/* SVG pictures (add-on): the note under a ```svg block that isn't shown as a picture. The picture
-   itself is styles/components/picture.css. */
-.svg-note { margin: -0.4em 0 0.9em; font-family: var(--font-meta); font-size: 12.5px; color: var(--muted); }
