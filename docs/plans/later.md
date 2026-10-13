@@ -45,7 +45,7 @@ no tenant or client IDs go in the repo. The token lasts while the tab is open.
 
 **Already there:** Copy under a reply pastes formatted text (and sandbox pictures as PNG) into Outlook and Teams.
 
-## Next, from the Codex review (agreed worth doing, not built yet)
+## Next (agreed worth doing, not built yet)
 
 - **Delete all clears memory too.** It wipes everything saved, but pastes (and activity lines) stay in the
   open tab until a reload. Fix: a small cleanup hook in the paste and activity add-ons. About 5 lines and a check.
@@ -53,21 +53,14 @@ no tenant or client IDs go in the repo. The token lasts while the tab is open.
   on the page's thread, so a pathological one hangs it. Leaning to remove regex search (keep plain text):
   simplest, and models rarely need it. Needs a decision.
 
+- **"Remember this key" box.** Off keeps the LiteLLM key only while the tab is open. Small; worth doing before
+  slop is used on shared computers.
+
 ## Ideas to talk through (not decided, nothing built)
 
 Each of these must still pass the manifesto test: small, simple, and a lot of value. Talk before building.
 
-### Arena (many tries, best one survives)
-
-An orchestrator spawns several sub-agents that each try to implement the same idea; their results are
-compared and the best one is kept. Output stays a git patch the user reviews (read-only rule).
-*Opinion:* the most expensive idea here (N times the tokens) and the heaviest change: the reply loop is
-one reply at a time per chat, so this reaches into all of it (an earlier two-models-side-by-side "arena"
-was set aside for this reason). "Best" also needs a rule, not a guess: only fixed, stated criteria such as
-"the test suite passes" would fit the deterministic-rules principle. Lowest priority. Cheaper cousin: run
-the same prompt in two tabs and compare by hand.
-
-### Feature mode (probe the problem, prototype the options)
+### Plan a feature with mockups (questions first, then two prototypes to compare)
 
 Describe a feature; the AI asks what problem you are really solving, then you prototype two or more
 approaches interactively (like the mockup artifacts) and compare pros, cons and workflow before choosing
@@ -88,13 +81,13 @@ progress is worth saving. Keep it deterministic: the quiz format is fixed, the m
 Connect a repo (like this one, through the existing read-only GitLab/folder tools) and have the AI walk
 you through the core logic and the main design decisions, then quiz you on them, so you can maintain
 what Claude wrote and do not end up with slop you do not understand.
-*Opinion:* the most valuable of the four for this project's author, and it reuses learn mode plus the
+*Opinion:* the most valuable of these for this project's author, and it reuses learn mode plus the
 folder tools, so it should be built as a thin layer on top of the quiz mode, not separately. A useful
 fixed rule: questions must cite a file and line, and the model must open the file first (no answers from
 memory), so the quiz stays checkable. Possible later input: the repo's own CLAUDE.md and docs as the list
 of design decisions to learn.
 
-*Suggested order:* feature mode (prompt only), then learn/quiz, then learn-a-repo on top of it; arena last, if ever.
+*Suggested order:* plan-a-feature mode (prompt only), then learn/quiz, then learn-a-repo on top of it.
 
 ## Chat list and search (ideas, not built)
 
@@ -110,24 +103,12 @@ of design decisions to learn.
   missed afterwards: one typo of tolerance for words of 5+ letters, hand-written and fixed. Not meaning-based
   or "ask the model about old chats": more complexity than gain. Mock it up (phone and desktop) before
   building; the sidebar is narrow, so the pane may need to open over the chat list.
-- **Drag to reorder chats.** Needs a saved order, touch and keyboard support, and clashes with newest-first.
-  Pinning covers most of it; only if still wanted afterwards.
+- **Reordering chats.** Dragging is the complex way: touch and keyboard support, and a saved order that
+  clashes with newest-first. The simple way: **Move up / Move down** in the ⋯ menu, which works on touch and
+  keyboard with no drag code, plus one saved order number per chat. Pinning may already cover it: only if
+  still wanted afterwards, and then the menu version.
 
 ## MCP (only once there's a server to connect to)
 
 slop isn't an MCP client. One client could cover many tools (OpenShift, Argo CD, …), but it's only worth
 building once an MCP server exists that a page in the browser can reach.
-
-## Set aside
-
-- **Redo on the last reply.** Built Edit instead: saving your last message unchanged asks again, and
-  usually it's better to tell the model what to fix, so it keeps the context of what it said.
-- **A short answer for a repeated tool call** ("Same result as step 3" when the model calls the same tool
-  with the same arguments twice in one reply). Saves some tokens, but a file can change between the two
-  calls, and the savings are small. Not worth the rule.
-- **An always-on figure of what's happening now** (thinking, reading a file, running code), lighter than
-  the reply tree. To be mocked up on its own.
-- **Asking two models side by side** ("arena"). The reply loop is one reply at a time per chat; two at once
-  reaches into all of it. Compare with two tabs and a fixed set of test questions instead.
-- **Remembering the key only while the tab is open** (a "Remember this key" box). Small; worth it before
-  slop is used on shared computers.
