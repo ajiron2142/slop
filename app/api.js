@@ -145,7 +145,7 @@ export async function streamChat({ settings, messages, tools, maxTokens, signal,
   const decoder = new TextDecoder();
   const calls = [];
   let usage = null;
-  let finish = null;
+  let finish = null; // how the provider says it ended; null if the stream just stopped (a lost connection)
   let reasoned = false; // the model sent reasoning (not shown), whatever it then wrote
   let buffer = '';
   read: for (;;) {
@@ -157,7 +157,7 @@ export async function streamChat({ settings, messages, tools, maxTokens, signal,
       const line = raw.trim();
       if (!line.startsWith('data:')) continue;
       const data = line.slice(5).trim();
-      if (data === '[DONE]') break read;
+      if (data === '[DONE]') { finish ??= 'stop'; break read; } // [DONE] is also the provider saying it's done
       let chunk;
       try { chunk = JSON.parse(data); } catch { continue; }
       if (chunk.error) throw new ApiError(chunk.error.message || 'Stream error', 'http');

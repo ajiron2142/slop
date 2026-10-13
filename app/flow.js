@@ -86,7 +86,7 @@ export function createFlow({ now = () => performance.now() } = {}) {
         const busy = !ended && mine.some((s) => s.t1 == null) || (!ended && ((id === 'model' && r.state === 'wait') || (id === 'reply' && r.state === 'write')));
         const place = r.places.find((p) => p.id === id);
         let state = busy ? 'on' : 'done'; // every box drawn has done something: places appear only once used
-        if (id === 'reply' && ended) state = r.finish === 'stopped' ? 'stopped' : r.finish ? 'done' : 'bad';
+        if (id === 'reply' && ended) state = r.finish === 'stopped' ? 'stopped' : r.finish && r.finish !== 'unfinished' ? 'done' : 'bad';
         stateOf[id] = state;
         ui.node.className = `flow-box ${state}${failed ? ' has-bad' : ''}${fb && fb !== id ? ' flow-dim' : ''}`;
         if (id === 'you') ui.name.textContent = 'Your message';

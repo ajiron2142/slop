@@ -458,7 +458,7 @@ async function complete(chat, carried = null) {
           frame = wait < 16 ? requestAnimationFrame(paint) : setTimeout(paint, wait);
         },
       });
-      finish = why ?? 'stop';
+      finish = why ?? 'unfinished'; // the stream stopped without saying how it ended: the connection was lost
       reasoned = thought;
       if (usage) {
         used.input += usage.input;
@@ -466,8 +466,8 @@ async function complete(chat, carried = null) {
         used.cached += usage.cached;
         used.context = usage.input + usage.output;
       }
-      // A cut-off reply may end in a half-written tool call, so nothing more runs after one.
-      if (!toolCalls.length || finish === 'length') { if (text) history.push({ role: 'assistant', content: text }); break; }
+      // A cut-off or unfinished reply may end in a half-written tool call, so nothing more runs after one.
+      if (!toolCalls.length || finish === 'length' || finish === 'unfinished') { if (text) history.push({ role: 'assistant', content: text }); break; }
       if (round > MAX_TOOL_ROUNDS) throw new Error(`Stopped after ${MAX_TOOL_ROUNDS} rounds of tool calls.`);
       history.push({ role: 'assistant', content: text || null, tool_calls: toolCalls });
       if (text.trim()) { act.note(text.trim()); msg.content = msg.content.slice(0, -text.length); } // activity: what it wrote before its tool calls is a note among the steps, not the answer

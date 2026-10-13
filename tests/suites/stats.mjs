@@ -84,6 +84,19 @@ export default async function ({ browser, site, mock, check }) {
   const cutUsed = await tokens('.msg.assistant:last-of-type .stats-card');
   check('and the tokens still add up: cached and new are both part of what was sent', cutUsed.parts.length === 3 && cutUsed.total === cutUsed.parts.reduce((x, [, n]) => x + n, 0));
 
+  // A reply counts as finished only when the stream says it ended: a lost connection keeps the text and says so.
+  await send(p, 'dropped connection');
+  await p.click('.msg.assistant:last-of-type .stats-btn');
+  check('a reply whose connection dropped keeps its text and says it didn\'t finish', (await p.textContent('.msg.assistant:last-of-type .body')).includes('The first half of the answer')
+    && (await p.textContent('.msg.assistant:last-of-type .reply-note')).startsWith("Didn't finish: the connection ended")
+    && (await p.textContent('.msg.assistant:last-of-type .stats-head')).startsWith("Didn't finish"));
+  await send(p, 'droppedtool connection');
+  check('a tool call cut off by a lost connection isn\'t run', !(await p.$('.msg.assistant:last-of-type .tool-log')) && (await p.textContent('.msg.assistant:last-of-type .reply-note')).startsWith("Didn't finish"));
+  await send(p, 'nodone please');
+  check('a stream that says how it finished counts as finished without [DONE]', !(await p.$('.msg.assistant:last-of-type .reply-note')));
+  await send(p, 'doneonly please');
+  check('and so does one that ends with [DONE]', !(await p.$('.msg.assistant:last-of-type .reply-note')));
+
   // A reply the model finishes without writing anything stays, and says so.
   await send(p, 'thinkonly what is this repo');
   check('a reply with only reasoning says so under it', (await p.textContent('.msg.assistant:last-of-type .reply-note')) === 'No answer: the model finished without writing anything (it sent only its reasoning, which isn\'t shown).');

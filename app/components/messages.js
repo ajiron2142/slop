@@ -121,6 +121,8 @@ function messageNode(msg, streaming, openStats, act) {
   if (msg.role === 'assistant' && msg.stats?.finish === 'interrupted') node.append(el('div', 'reply-note', 'Interrupted.'));
   if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'content_filter') {
     node.append(el('div', 'reply-note', 'Blocked: the provider\'s content filter stopped this reply. Your message above and this reply are left out of the chat from now on, so you can carry on; Edit your message to try it again without the part that tripped the filter.'));
+  } else if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'unfinished') {
+    node.append(el('div', 'reply-note', 'Didn\'t finish: the connection ended before the reply was complete. Say "continue" to get the rest.'));
   } else if (msg.role === 'assistant' && !streaming && msg.stats?.finish === 'length') {
     node.append(el('div', 'reply-note', 'Cut off: the model reached the most it can write in one reply. Say "continue" to get the rest.'));
   } else if (msg.role === 'assistant' && !streaming && msg.stats && msg.stats.finish !== 'stopped' && msg.stats.finish !== 'interrupted' && !msg.content) {
@@ -214,7 +216,7 @@ function copyButton(text) {
 }
 
 // How a reply ended, first in its Stats card: grey when it ended normally, coloured when it didn't.
-const FINISH = { stop: ['Completed', ''], tool_calls: ['Completed', ''], length: ['Cut off: hit the length limit', 'bad'], content_filter: ['Blocked by the provider\'s content filter', 'bad'], stopped: ['Stopped by you', 'odd'], interrupted: ['Interrupted by your message', 'odd'] };
+const FINISH = { stop: ['Completed', ''], tool_calls: ['Completed', ''], length: ['Cut off: hit the length limit', 'bad'], content_filter: ['Blocked by the provider\'s content filter', 'bad'], unfinished: ['Didn\'t finish: the connection ended', 'bad'], stopped: ['Stopped by you', 'odd'], interrupted: ['Interrupted by your message', 'odd'] };
 const PHASES = [['wait', 'Waiting'], ['think', 'Thinking'], ['tools', 'Tools'], ['write', 'Writing']];
 const MIN_PHASE = 72; // px: the narrowest a part of the time bar gets, so its label above fits
 

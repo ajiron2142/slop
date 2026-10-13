@@ -198,6 +198,17 @@ export async function startMock() {
         }
       }
 
+      // How a stream can end: "dropped …" stops mid-reply with no word of how it ended (a lost connection);
+      // "droppedtool …" stops mid-tool-call the same way; "nodone …" says it finished but never sends [DONE];
+      // "doneonly …" sends [DONE] but no finish_reason.
+      if (/^(dropped|droppedtool|nodone|doneonly) /.test(text)) {
+        const kind = text.split(' ')[0];
+        if (kind === 'droppedtool') sse(res, { choices: [{ delta: { tool_calls: [{ index: 0, id: 'd1', type: 'function', function: { name: 'made_up_tool', arguments: '{"a":' } }] } }] });
+        else sse(res, { choices: [{ delta: { content: 'The first half of the answer' } }] });
+        if (kind === 'nodone') { sse(res, { choices: [{ delta: {}, finish_reason: 'stop' }] }); return res.end(); }
+        if (kind === 'doneonly') return res.end('data: [DONE]\n\n');
+        return res.end();
+      }
       if (text.startsWith('rogue ')) { // calls the named tool whether or not it was offered, then reports what came back
         const [, name, args] = text.split("\n")[0].match(/^rogue (\S+) ?(.*)$/);
         const results = body.messages.filter((m) => m.role === 'tool');
